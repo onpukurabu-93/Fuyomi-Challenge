@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>おんぷカードでレベルアップ！</title>
   <style>
     :root {
@@ -25,7 +25,8 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow: hidden;
+      touch-action: manipulation;
     }
 
     .app-container {
@@ -59,9 +60,9 @@
     h1, h2, h3 {
       text-align: center;
       color: #d81b60;
+      margin: 10px 0;
     }
 
-    /* ボタン・共通 */
     button {
       cursor: pointer;
       border: none;
@@ -130,7 +131,6 @@
       background-color: #f1f1f1;
       border-color: #ccc;
       color: #aaa;
-      cursor: not-allowed;
     }
     .lock-tag {
       font-size: 1.2rem;
@@ -144,7 +144,6 @@
       margin-bottom: 15px;
     }
 
-    /* 大譜表カードデザイン */
     .staff-card {
       background: #fff;
       border: 4px solid #ff80ab;
@@ -160,7 +159,6 @@
       box-sizing: border-box;
     }
 
-    /* 五線譜の描画シミュレーション */
     .grand-staff {
       width: 80%;
       height: 120px;
@@ -184,9 +182,10 @@
       position: absolute;
       font-size: 2.5rem;
       transition: all 0.2s;
+      left: 45%;
     }
 
-    /* 回答ボタン（ドレミ） */
+    /* 回答パッド */
     .answer-pad {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -216,7 +215,6 @@
     .ans-btn.la { border-color: #1e88e5; color: #1e88e5; box-shadow: 0 4px 0 #1e88e5; }
     .ans-btn.ti { border-color: #8e24aa; color: #8e24aa; box-shadow: 0 4px 0 #8e24aa; }
 
-    /* 揺れるアニメーション（不正解時） */
     @keyframes shake {
       0% { transform: translateX(0); }
       25% { transform: translateX(-10px); }
@@ -228,7 +226,6 @@
       animation: shake 0.3s ease-in-out;
     }
 
-    /* モーダル・ポップアップ */
     .modal {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -243,12 +240,11 @@
       padding: 30px;
       border-radius: var(--border-radius);
       text-align: center;
-      width: 80%;
-      max-width: 320px;
+      width: 85%;
+      max-width: 340px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
 
-    /* 花丸エフェクト */
     .hanamaru {
       font-size: 5rem;
       animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -289,7 +285,7 @@
     </div>
   </div>
 
-  <!-- 2. トレーニング画面（カード＆五線譜） -->
+  <!-- 2. トレーニング画面 -->
   <div id="gameScreen" class="screen hidden">
     <div class="game-header">
       <button class="btn-secondary" onclick="returnToMenu()" style="padding: 5px 15px; font-size: 0.9rem;">🏠 もどる</button>
@@ -298,20 +294,16 @@
 
     <div id="staffCardContainer" class="staff-card">
       <div class="grand-staff">
-        <!-- 上段（ト音記号用） -->
         <div class="staff-group">
           <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
         </div>
-        <!-- 下段（ヘ音記号用） -->
         <div class="staff-group">
           <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
         </div>
       </div>
-      <!-- 音符アイコン -->
       <div id="noteIcon" class="note-object">♩</div>
     </div>
 
-    <!-- 不正解時のバツ印表示用 -->
     <div id="feedbackMark" style="text-align: center; font-size: 2rem; height: 40px; color: red; font-weight: bold;"></div>
 
     <div class="answer-pad">
@@ -332,6 +324,7 @@
       <div id="resultHanamaruArea"></div>
       <h2 id="resultTitle">お疲れ様でした！</h2>
       <p id="resultText">正答率: 100%</p>
+      <div id="encouragementText" style="margin: 8px 0; font-size: 0.95rem; color: #e91e63; font-weight: bold;"></div>
       <div id="resultSongInfo" style="margin: 10px 0; font-weight: bold; color: #d81b60;"></div>
       <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
         <button id="resultRetryBtn" class="btn-primary" onclick="retryGame()">もう一度やる</button>
@@ -348,7 +341,7 @@
     </div>
     <div style="background: #fff; padding: 15px; border-radius: 15px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
       <p>🕒 総練習時間: <span id="totalPracticeTime">0分 0秒</span></p>
-      <p>⭐ クリアしたレベル: <span id="clearedLevelsCount">0</span> 個</p>
+      <p>⭐ 解放したコース: <span id="clearedLevelsCount">0</span> 個</p>
     </div>
   </div>
 
@@ -356,19 +349,25 @@
 
 <script>
   /* --------------------------------
-     アプリの状態管理と初期データ
+     初期化とデータリセット（スタート状態）
   -------------------------------- */
-  let profiles = StorageGet("onpu_profiles", ["ちゃと", "くろ", "サブロー"]);
-  let activeProfileIndex = StorageGet("onpu_active_profile", 0);
-  let unlockedLevels = StorageGet("onpu_unlocked", { treble: 1, bass: 0, all: 0 });
+  // チェック用の初期化リセット（必要に応じて一度全クリアして初期構築）
+  if (!localStorage.getItem("onpu_initialized_v2")) {
+    localStorage.clear();
+    localStorage.setItem("onpu_initialized_v2", "true");
+  }
 
-  let currentMode = ""; // "do", "challenge", "treble", "bass", "all"
+  let profiles = ["ちゃと", "くろ", "サブロー"];
+  let activeProfileIndex = StorageGet("onpu_active_profile", 0);
+  let unlockedLevels = StorageGet("onpu_unlocked", { treble: 0, bass: 0, all: 0 });
+
+  let currentMode = "";
   let currentQuestions = [];
   let currentIndex = 0;
   let currentMistakes = 0;
   let totalPracticeSeconds = StorageGet("onpu_practice_seconds", 0);
+  let previousAccuracy = StorageGet("onpu_prev_accuracy", -1);
 
-  // タイマー開始
   setInterval(() => {
     totalPracticeSeconds++;
     StorageSet("onpu_practice_seconds", totalPracticeSeconds);
@@ -382,7 +381,6 @@
     localStorage.setItem(key, JSON.stringify(val));
   }
 
-  // 初期化実行
   window.onload = function() {
     updateProfileDisplay();
     updateMenuLocks();
@@ -399,7 +397,6 @@
   }
 
   function updateMenuLocks() {
-    // 6つのドとチャレンジは常にオープン。ト音・ヘ音・全カードはアンロック状況に応じて反映
     const trebleBtn = document.getElementById("btnTreble");
     const bassBtn = document.getElementById("btnBass");
     const allBtn = document.getElementById("btnAll");
@@ -436,30 +433,25 @@
   }
 
   /* --------------------------------
-     各モードのスタート処理
+     モード開始
   -------------------------------- */
   function startDoLesson() {
     currentMode = "do";
-    // 6つのドのサンプル問題
     currentQuestions = [
-      { note: "ド", pos: 70 },
-      { note: "レ", pos: 60 },
-      { note: "ミ", pos: 50 },
-      { note: "ファ", pos: 40 },
-      { note: "ソ", pos: 30 },
-      { note: "ラ", pos: 20 }
+      { note: "ド", pos: 70 }, { note: "レ", pos: 60 },
+      { note: "ミ", pos: 50 }, { note: "ファ", pos: 40 },
+      { note: "ソ", pos: 30 }, { note: "ラ", pos: 20 }
     ];
     initGameSession();
   }
 
   function startMonthlyChallenge() {
     currentMode = "challenge";
-    // 今月のチャレンジ曲「あき」の音符データ（ソソララソソミ...等）
+    // 正しい「あき」のメロディ出題データ（ソ・ラ・シ・ド・ラ・ソ・ミ...等）
     currentQuestions = [
-      { note: "ソ", pos: 30 }, { note: "ソ", pos: 30 },
-      { note: "ラ", pos: 20 }, { note: "ラ", pos: 20 },
-      { note: "ソ", pos: 30 }, { note: "ソ", pos: 30 },
-      { note: "ミ", pos: 50 }
+      { note: "ソ", pos: 30 }, { note: "ラ", pos: 20 }, { note: "シ", pos: 10 }, { note: "ド", pos: 70 },
+      { note: "ラ", pos: 20 }, { note: "ソ", pos: 30 }, { note: "ミ", pos: 50 }, { note: "ファ", pos: 40 },
+      { note: "ソ", pos: 30 }, { note: "レ", pos: 60 }, { note: "ミ", pos: 50 }, { note: "ド", pos: 70 }
     ];
     initGameSession();
   }
@@ -498,7 +490,7 @@
   }
 
   /* --------------------------------
-     回答判定ロジック
+     回答判定
   -------------------------------- */
   function checkAnswer(ans) {
     const q = currentQuestions[currentIndex];
@@ -506,34 +498,28 @@
     const staffCard = document.getElementById("staffCardContainer");
 
     if (ans === q.note) {
-      // 正解音（ピアノ音シミュレート）
-      playPianoSound();
+      playNoteSound(q.note);
       feedbackEl.textContent = "⭕";
       feedbackEl.style.color = "green";
 
-      // チャレンジモードや通常コース共通で次の問題へ
       setTimeout(() => {
         currentIndex++;
         loadQuestion();
       }, 400);
 
     } else {
-      // 不正解時の挙動：チャレンジモード等で音は鳴らさず❌＆ブルブル
-      if (currentMode === "challenge") {
-        playPianoSound(true); // 音なし
-      } else {
-        playPianoSound(true);
-      }
-
       currentMistakes++;
+      // チャレンジモードでは音を鳴らさず×とブルブル演出のみ
+      if (currentMode !== "challenge") {
+        playNoteSound(ans);
+      }
       feedbackEl.textContent = "❌";
       feedbackEl.style.color = "red";
       staffCard.classList.add("shake");
       setTimeout(() => {
         staffCard.classList.remove("shake");
       }, 300);
-
-      // チャレンジモードでは正解するまでその場でキープ（currentIndexを進めない）
+      // 間違えた場合は進まずその場でキープ
     }
   }
 
@@ -543,31 +529,32 @@
   }
 
   /* --------------------------------
-     簡易オーディオ再生用
+     音声再生用 (Web Audio API)
   -------------------------------- */
-  function playPianoSound(isMuted = false) {
-    if (isMuted) return;
+  function playNoteSound(note) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      
+      const freqs = { "ド": 261.63, "レ": 293.66, "ミ": 329.63, "ファ": 349.23, "ソ": 392.00, "ラ": 440.00, "シ": 493.88 };
+      osc.frequency.setValueAtTime(freqs[note] || 440, ctx.currentTime);
+      
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.5);
+      osc.stop(ctx.currentTime + 0.4);
     } catch(e) {}
   }
 
   function playTasseiFanfare() {
-    // 達成ファンファーレ (Tassei-fanfare.mp3) の読み込み＆再生
-    const audio = new Audio("Tassei-fanfare.mp3");
-    audio.play().catch(e => {
-      // ファイルがない場合のフォールバック（ブラウザポリシー対策など）
-    });
+    try {
+      const audio = new Audio("Tassei-fanfare.mp3");
+      audio.play().catch(e => {});
+    } catch(e) {}
   }
 
   /* --------------------------------
@@ -579,24 +566,42 @@
     const textEl = document.getElementById("resultText");
     const songInfoEl = document.getElementById("resultSongInfo");
     const hanamaruArea = document.getElementById("resultHanamaruArea");
+    const encEl = document.getElementById("encouragementText");
 
     modal.classList.remove("hidden");
     hanamaruArea.innerHTML = "";
     songInfoEl.textContent = "";
+    encEl.textContent = "";
 
     let accuracy = Math.floor(((currentQuestions.length - currentMistakes) / currentQuestions.length) * 100);
     if (accuracy < 0) accuracy = 0;
 
+    // 励ましコメントの判定
+    if (previousAccuracy !== -1) {
+      if (accuracy > previousAccuracy) {
+        encEl.textContent = "✨ すごーい！ まえより せいとうりつが アップしたよ！ そのちょうし！";
+      } else if (accuracy === 100) {
+        encEl.textContent = "👑 かんぺき！ てんさいピアニストだね！";
+      } else {
+        encEl.textContent = "💪 つぎは もっと できるよ！ がんばろう！";
+      }
+    } else {
+      encEl.textContent = "🌟 はじめてのチャレンジ、よくがんばったね！";
+    }
+    previousAccuracy = accuracy;
+    StorageSet("onpu_prev_accuracy", accuracy);
+
     if (currentMode === "challenge") {
       if (accuracy === 100) {
-        // パーフェクト達成時
         hanamaruArea.innerHTML = '<div class="hanamaru">💮</div>';
         playTasseiFanfare();
-        titleEl.textContent = "パーフェクトおめでとう！";
+        titleEl.textContent = "おめでとう！";
         textEl.textContent = `正答率: ${accuracy}%`;
-        songInfoEl.textContent = "今月のチャレンジ曲は『あき』でした！";
+        songInfoEl.textContent = "今月のチャレンジ曲は『秋』でした！";
 
-        // 初回クリアならト音記号をアンロック
+        // 自動演奏の実行
+        playSongAutoMelody(currentQuestions);
+
         if (unlockedLevels.treble === 0) {
           unlockedLevels.treble = 1;
           StorageSet("onpu_unlocked", unlockedLevels);
@@ -609,11 +614,19 @@
       titleEl.textContent = "よくできました！";
       textEl.textContent = `正答率: ${accuracy}%`;
       if (accuracy >= 90 && unlockedLevels.bass === 0) {
-        unlockedLevels.bass = 1; // 次のステージ解放
+        unlockedLevels.bass = 1;
         StorageSet("onpu_unlocked", unlockedLevels);
         playTasseiFanfare();
       }
     }
+  }
+
+  function playSongAutoMelody(questions) {
+    questions.forEach((q, idx) => {
+      setTimeout(() => {
+        playNoteSound(q.note);
+      }, idx * 400 + 800);
+    });
   }
 
   function retryGame() {
