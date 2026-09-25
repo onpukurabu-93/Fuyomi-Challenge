@@ -801,7 +801,20 @@ function selectMode(type, val, btn) {
   btn.classList.add("selected");
 }
 
-function startTrainingConfirmed() { toggleModal("trainingModal", false); startTrainingWithConfig(); }
+function startTrainingConfirmed() { toggleModal("trainingModal", false);
+  // 乱数でモードを選ぶ
+  const mode = Math.random() < 0.5 ? 'count' : 'time';
+  const countOptions = [10, 20, 30];
+  const timeOptions = [30, 60];
+  
+  if (mode === 'count') {
+    trainingType = 'count';
+    targetValue = countOptions[Math.floor(Math.random() * countOptions.length)];
+  } else {
+    trainingType = 'time';
+    targetValue = timeOptions[Math.floor(Math.random() * timeOptions.length)];
+  }
+                                   startTrainingWithConfig(); }
 
 function startTrainingWithConfig() {
   if (selectedClef === "do") { trainingType = "count"; targetValue = 20; }
