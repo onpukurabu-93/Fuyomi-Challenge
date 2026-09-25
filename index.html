@@ -81,7 +81,16 @@ body { display: flex; justify-content: center; align-items: center; }
 
 /* カード画面 */
 .card-screen { padding: 10px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-.card-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 6px; gap: 8px; }
+  <!-- カウントダウン画面 -->
+  <section id="countdownScreen" class="screen hidden">
+    <div class="countdown-display">
+      <div id="countdownNumber" class="countdown-number">3</div>
+    </div>
+  </section>
+
+  <!-- カード画面 -->
+  <section id="cardScreen" class="card-screen hidden">
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 6px; gap: 8px; }
 .card-back { border: none; background: transparent; color: #5b4636; font-size: 17px; cursor: pointer; }
 .card-title { flex: 1; text-align: center; color: #5b4636; font-size: 20px; font-weight: 700; }
 .level-badge { background: #eadcc8; color: #5b4636; border-radius: 20px; padding: 5px 10px; font-size: 13px; font-weight: 700; }
