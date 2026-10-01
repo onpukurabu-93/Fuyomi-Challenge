@@ -45,12 +45,14 @@ body { display: flex; justify-content: center; align-items: center; }
   width: 100%; border: none; border-radius: 18px; padding: 13px 12px; margin-bottom: 8px;
   background: white; color: #5b4636; font-size: 16px; font-weight: 700;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative;
+  transition: transform 0.1s, opacity 0.2s;
 }
+.select-button:active { transform: scale(0.98); }
 .select-button.accent { background: #78a9c8; color: white; }
 .select-button.info { background: #e6b26a; color: white; }
 .select-button.special { background: #8dbb8d; color: white; }
 .select-button.challenge { background: #e99595; color: white; }
-.select-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.select-button:disabled { opacity: 0.6; cursor: pointer; }
 
 .lock-tag {
   position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
@@ -90,20 +92,20 @@ body { display: flex; justify-content: center; align-items: center; }
 /* カード表示エリア */
 .card-area {
   flex: 1; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
-  padding: 5px 10px; margin-bottom: 6px;
+  padding: 5px 10px; margin-bottom: 6px; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
 }
 .note-card-wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .note-card-img { max-width: 100%; max-height: 96%; width: auto; height: auto; object-fit: contain; }
-.training-cover { position: absolute; width: 100%; height: 36%; left: 0; bottom: 0; background: white; transition: opacity 0.3s; }
+.training-cover { position: absolute; width: 100%; height: 36%; left: 0; bottom: 0; background: white; transition: opacity 0.2s; }
 .training-cover.reveal { opacity: 0; }
 
 .timer-display { position: absolute; top: 10px; left: 10px; background: #e99595; color: white; padding: 4px 12px; border-radius: 20px; font-size: 15px; font-weight: 700; z-index: 10; }
 
 .correct-circle {
-  position: absolute; width: 160px; height: 160px; border: 8px solid #f04444; border-radius: 50%;
-  left: 50%; top: 34%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none;
+  position: absolute; width: 160px; height: 160px; border: 10px solid #5abf7d; border-radius: 50%;
+  left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 20;
 }
-.correct-circle.show { animation: correctCircle 0.6s ease-out forwards; }
+.correct-circle.show { animation: correctCircle 0.4s ease-out forwards; }
 @keyframes correctCircle {
   0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
   50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
@@ -111,10 +113,10 @@ body { display: flex; justify-content: center; align-items: center; }
 }
 
 .incorrect-x {
-  position: absolute; font-size: 140px; color: #f04444; font-weight: 900;
-  left: 50%; top: 34%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none;
+  position: absolute; font-size: 140px; color: #e99595; font-weight: 900;
+  left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 20;
 }
-.incorrect-x.show { animation: incorrectX 0.5s ease-out forwards; }
+.incorrect-x.show { animation: incorrectX 0.4s ease-out forwards; }
 @keyframes incorrectX {
   0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
   50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
@@ -124,12 +126,30 @@ body { display: flex; justify-content: center; align-items: center; }
 .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: none; border-radius: 50%; background: rgba(253,248,237,0.95); font-size: 28px; cursor: pointer; z-index: 5; }
 .arrow-left { left: 4px; } .arrow-right { right: 4px; }
 
-/* 鍵盤デザイン */
-.keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding-top: 4px; }
-.key-btn { border: none; border-radius: 12px; min-height: 52px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; position: relative; }
-.key-do { background: #e99595; } .key-re { background: #e6b26a; } .key-mi { background: #d6c45d; }
-.key-fa { background: #8dbb8d; } .key-so { background: #78a9c8; } .key-la { background: #5a82d6; }
-.key-si { background: #b28bb9; }
+/* 🎹 ピアノ鍵盤デザインの刷新 */
+.keyboard {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  padding: 8px 4px 4px; background: #e0d0ba; border-radius: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.key-btn {
+  border: none; border-radius: 6px 6px 12px 12px; min-height: 64px; color: #4a3b32; font-size: 16px; font-weight: 800;
+  cursor: pointer; position: relative; background: #ffffff;
+  box-shadow: 0 4px 0 #c2b09a, 0 5px 6px rgba(0,0,0,0.15);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px;
+  transition: all 0.05s ease;
+}
+.key-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #c2b09a, 0 2px 3px rgba(0,0,0,0.1);
+}
+/* ほんのり色味を付けて識別を補助 */
+.key-do { border-bottom: 5px solid #e99595; }
+.key-re { border-bottom: 5px solid #e6b26a; }
+.key-mi { border-bottom: 5px solid #d6c45d; }
+.key-fa { border-bottom: 5px solid #8dbb8d; }
+.key-so { border-bottom: 5px solid #78a9c8; }
+.key-la { border-bottom: 5px solid #5a82d6; }
+.key-si { border-bottom: 5px solid #b28bb9; }
 
 /* モーダル */
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
@@ -149,7 +169,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .result-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; position: relative; }
 .result-clef-badge { display: inline-block; background: #eadcc8; color: #5b4636; font-size: 15px; font-weight: 700; padding: 4px 14px; border-radius: 12px; margin-bottom: 8px; }
 .result-title { font-size: 26px; font-weight: 700; color: #5b4636; margin-bottom: 12px; }
-.result-message { font-size: 16px; font-weight: 700; color: #78a9c8; margin-bottom: 12px; }
+.result-message { font-size: 16px; font-weight: 700; color: #78a9c8; margin-bottom: 12px; line-height: 1.4; padding: 0 10px; }
 .result-detail { font-size: 18px; color: #806c5a; margin-bottom: 8px; }
 
 .result-best {
@@ -543,10 +563,7 @@ function checkDoLockStatus() {
   const bassCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
   const allUnlocked = clefUnlocked && trebleCleared && bassCleared;
 
-  document.getElementById("btnTreble").disabled = !clefUnlocked;
-  document.getElementById("btnBass").disabled = !clefUnlocked;
-  document.getElementById("btnAll").disabled = !allUnlocked;
-
+  // ロック解除処理
   document.getElementById("lockTreble").style.display = clefUnlocked ? "none" : "inline";
   document.getElementById("lockBass").style.display = clefUnlocked ? "none" : "inline";
   document.getElementById("lockAll").style.display = allUnlocked ? "none" : "inline";
@@ -705,8 +722,27 @@ function handleCardBack() {
   selectedClef === "do" ? showSelectScreen() : showLevelScreen();
 }
 
+/* ロック時の丁寧な案内誘導を追加 */
 function selectClef(clef) {
   if (!profiles[activeProfileIndex]) return openAdminModal();
+  const doBest = getDoTestBest(activeProfileIndex);
+  const clefUnlocked = !!(doBest && doBest.accuracy >= 90);
+  const trebleCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
+  const bassCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
+  const allUnlocked = clefUnlocked && trebleCleared && bassCleared;
+
+  if (clef === 'treble' || clef === 'bass') {
+    if (!clefUnlocked) {
+      alert("まずは「6つの『ド』をおぼえよう！」でトレーニング（20問）をやって、90点以上をとってね！");
+      return;
+    }
+  } else if (clef === 'all') {
+    if (!allUnlocked) {
+      alert("ト音記号とヘ音記号のすべてのレベルをクリアすると解放されるよ！");
+      return;
+    }
+  }
+
   selectedClef = clef; isChallengeMode = false; showLevelScreen();
 }
 
@@ -733,7 +769,7 @@ function showLevelCover(level) {
   document.getElementById("coverLevelNumber").textContent = level;
   setTimeout(() => {
     if (!document.getElementById("coverScreen").classList.contains("hidden")) proceedToCards();
-  }, 1500);
+  }, 1200);
 }
 
 function proceedToCards() {
@@ -827,7 +863,7 @@ function showRandomTrainingQuestion() {
   showCurrentCard();
 }
 
-/* キー入力処理 */
+/* キー入力処理（サクサク進むように切り替え時間を短縮） */
 function pressKey(key) {
   if (!currentCards.length) return;
   const card = currentCards[currentIndex];
@@ -841,7 +877,7 @@ function pressKey(key) {
         challengeAdvanceTimer = null; currentIndex++;
         if (currentIndex < currentCards.length) { challengeLocked = false; showCurrentCard(); }
         else { finishMonthlyChallenge(); }
-      }, 500);
+      }, 350);
     } else {
       challengeMistakes++; playPokon();
       const xEl = document.getElementById("incorrectX");
@@ -868,7 +904,8 @@ function pressKey(key) {
     const audio = document.getElementById("seikaiAudio");
     audio.currentTime = 0; audio.play().catch(()=>{});
 
-    setTimeout(() => { if (trainingMode) showRandomTrainingQuestion(); }, 1000);
+    // 次の問題への切り替えを400msに短縮（スピード感アップ）
+    setTimeout(() => { if (trainingMode) showRandomTrainingQuestion(); }, 400);
     return;
   }
 
