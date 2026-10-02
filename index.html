@@ -2,20 +2,26 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ふよみチャレンジ</title>
   <style>
+    /* 長押しによるテキスト選択や誤拡大を防止 */
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
     body { font-family: sans-serif; text-align: center; background: #f0f8ff; margin: 0; padding: 20px; }
     .card { background: white; border-radius: 12px; padding: 20px; max-width: 480px; margin: 0 auto 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .banner { background: #ffe4e1; border: 2px dashed #ff69b4; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-weight: bold; color: #d87093; }
     button { background: #4caf50; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 5px; }
     button:hover { background: #45a049; }
-    input { padding: 10px; font-size: 16px; width: 160px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }
+    input, select { padding: 8px; font-size: 15px; text-align: center; border: 1px solid #ccc; border-radius: 6px; user-select: text; -webkit-user-select: text; }
     .hidden { display: none; }
     .locked-msg { color: #e53935; font-weight: bold; margin-top: 15px; }
     .unlocked-msg { color: #2e7d32; font-weight: bold; margin-top: 15px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 12px; }
     th { background: #f2f2f2; }
     .toggle-btn { padding: 6px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; color: white; }
     .btn-on { background: #2196f3; }
@@ -23,13 +29,26 @@
     .register-box { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
     .tab-btn { background: #e0e0e0; color: #333; padding: 6px 12px; font-size: 13px; margin: 2px; }
     .tab-btn.active { background: #1976d2; color: white; }
+    .award-card { background: #fff8dc; border: 4px double #ffd700; border-radius: 12px; padding: 20px; margin-top: 15px; }
+    
+    /* モチベーション表示パーツ */
+    .streak-badge { background: #fff3e0; border: 2px solid #ff9800; color: #e65100; padding: 6px 12px; border-radius: 20px; font-weight: bold; display: inline-block; margin: 10px 0; }
+    .stamp-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
+    .stamp-slot { background: #f9f9f9; border: 2px dashed #ccc; border-radius: 8px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: #aaa; }
+    .stamp-slot.stamped { background: #e8f5e9; border: 2px solid #4caf50; }
+
+    /* 5種類のカードデザインスタイル */
+    .card-theme-cool { background: #1a237e !important; color: #fff !important; border: 4px solid #ffd700 !important; }
+    .card-theme-game { background: #212121 !important; color: #00e676 !important; border: 4px double #00e676 !important; font-family: monospace; }
+    .card-theme-cat { background: #fff0f5 !important; color: #333 !important; border: 4px solid #ffb6c1 !important; }
+    .card-theme-pop { background: #e0f7fa !important; color: #006064 !important; border: 4px solid #00bcd4 !important; }
+    .card-theme-classic { background: #ffffff !important; color: #000 !important; border: 3px solid #333 !important; }
   </style>
 </head>
 <body>
 
   <!-- メイン画面 -->
   <div id="main-screen" class="card">
-    <!-- 1月新春大会バナー -->
     <div class="banner">
       🏆 【新春イベント予告】第1回 ふよみ大会！<br>
       <span style="font-size: 13px; color: #333;">開催期間: 1月1日 〜 1月31日（表彰: 3月）</span>
@@ -40,14 +59,37 @@
     <!-- 【生徒用】初回名前登録エリア -->
     <div id="register-area" class="register-box">
       <p style="margin-top:0; font-weight:bold;">🎒 はじめてのひとは なまえを とうろくしてね！</p>
-      <input type="text" id="student-name-input" placeholder="おなまえ（ひらがな）">
+      <input type="text" id="student-name-input" placeholder="おなまえ（ひらがな）"><br><br>
+      <label style="font-size:13px; font-weight:bold;">🎴 お気に入りのカードデザイン:</label><br>
+      <select id="student-card-theme" style="margin-top:5px;">
+        <option value="cat">🐱 ふたりペア＆ねこ（可愛い系）</option>
+        <option value="cool">⚡ クール＆ブラック（男の子人気！）</option>
+        <option value="game">🎮 ゲーム・アドベンチャー（ゲーム風）</option>
+        <option value="pop">🌈 にじいろポップ（音符色分け）</option>
+        <option value="classic">🎼 クラシック＆シンプル（本格派）</option>
+      </select><br><br>
       <button onclick="registerStudent()">とうろく</button>
     </div>
 
     <!-- 【生徒用】ログイン中プレイヤー表示 -->
     <div id="player-info-area" class="hidden">
-      <p style="font-size: 18px; font-weight: bold;">👤 プレイヤー: <span id="current-player-name" style="color: #1976d2;"></span></p>
-      <button onclick="changePlayer()" style="background:#888; font-size:12px; padding:4px 8px;">なまえを かえる</button>
+      <p style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+        👤 プレイヤー: <span id="current-player-name" style="color: #1976d2;"></span>
+      </p>
+      <button onclick="editPlayerName()" style="background:#888; font-size:12px; padding:4px 8px;">なまえを かえる</button>
+      <button onclick="editCardTheme()" style="background:#ff9800; font-size:12px; padding:4px 8px;">カードを かえる</button>
+
+      <br>
+      <!-- 連続記録・スタンプ状態 -->
+      <div class="streak-badge">
+        🔥 <span id="streak-days">0</span> 日れんぞく！
+      </div>
+
+      <!-- デイリースタンプ帳（10マス） -->
+      <div style="text-align:left; margin-top:10px;">
+        <p style="font-size:13px; font-weight:bold; margin:0;">💮 こんげつのスタンプちょう（10回で1シート）</p>
+        <div class="stamp-grid" id="stamp-grid"></div>
+      </div>
     </div>
 
     <br>
@@ -68,15 +110,15 @@
     <button onclick="login()">ログイン</button>
   </div>
 
-  <!-- 保護者専用画面 (数字4桁) -->
+  <!-- 保護者専用画面 -->
   <div id="parent-screen" class="card hidden">
     <h2>📊 保護者用：練習の成果・データ</h2>
     <p><span id="parent-student-name"></span> お子様の成長記録を確認できます。</p>
     <table>
       <tr><th>項目</th><th>記録</th></tr>
-      <tr><td>今週の最高コンボ</td><td>12 コンボ</td></tr>
-      <tr><td>今週の練習回数</td><td>5 回</td></tr>
-      <tr><td>クリアタイム（平均）</td><td>18 秒</td></tr>
+      <tr><td>連続練習日数</td><td><span id="parent-streak">0</span> 日連続 🔥</td></tr>
+      <tr><td>獲得スタンプ数</td><td><span id="parent-stamps">0</span> 個 💮</td></tr>
+      <tr><td>今週の練習回数</td><td><span id="parent-weekly">0</span> 回</td></tr>
       <tr><td>苦手な音符</td><td>ファ / ソ</td></tr>
     </table>
     <br>
@@ -87,29 +129,25 @@
   <div id="teacher-screen" class="card hidden">
     <h2>🔑 先生専用：管理画面</h2>
     
-    <!-- タブ切り替え -->
     <div style="margin-bottom: 15px;">
       <button class="tab-btn active" id="tab1-btn" onclick="switchTeacherTab(1)">⚡ 今のリアルタイム成績</button>
       <button class="tab-btn" id="tab2-btn" onclick="switchTeacherTab(2)">🔑 サブスク鍵管理</button>
       <button class="tab-btn" id="tab3-btn" onclick="switchTeacherTab(3)">🏆 半年表彰データ</button>
     </div>
 
-    <!-- タブ1: 今の成績（メイン） -->
+    <!-- タブ1: 今の成績 -->
     <div id="teacher-tab-1">
       <h3>📈 生徒の今の練習状況（直近データ）</h3>
-      <p style="font-size: 12px; color: #666;">レッスンでの声かけにご活用ください</p>
       <table>
         <thead>
           <tr>
             <th>生徒名</th>
-            <th>今週の練習</th>
-            <th>最高コンボ</th>
-            <th>苦手な音</th>
+            <th>連続日数</th>
+            <th>スタンプ</th>
+            <th>選んでいるカード</th>
           </tr>
         </thead>
-        <tbody id="student-stats-list">
-          <!-- JSで表示 -->
-        </tbody>
+        <tbody id="student-stats-list"></tbody>
       </table>
     </div>
 
@@ -124,13 +162,11 @@
             <th>操作</th>
           </tr>
         </thead>
-        <tbody id="student-list">
-          <!-- JSで表示 -->
-        </tbody>
+        <tbody id="student-list"></tbody>
       </table>
     </div>
 
-    <!-- タブ3: 半年成績（表彰用） -->
+    <!-- タブ3: 半年成績 -->
     <div id="teacher-tab-3" class="hidden">
       <h3>🏆 半年間の集計データ（3月/9月表彰用）</h3>
       <table>
@@ -145,18 +181,51 @@
     <button onclick="logout()" style="background:#888;">ログアウト</button>
   </div>
 
-  <!-- ゲームプレイ画面 -->
+  <!-- ゲームプレイ画面（デザインテーマ対応） -->
   <div id="game-screen" class="card hidden">
-    <h2>🎵 ゲームプレイ中！</h2>
-    <p>ド・レ・ミ… どの音かな？</p>
-    <div style="font-size: 40px; margin: 30px;">🎼 🎹</div>
-    <button onclick="finishGame()">ゲーム終了（メインへ戻る）</button>
+    <h2>🎵 おんぷ ふよみチャレンジ</h2>
+    <p style="font-size:13px;">カードの問題に答えて全問正解をめざそう！</p>
+    
+    <div id="game-quiz-area" class="card" style="padding:15px; margin:15px 0;">
+      <div id="card-header-icon" style="font-size: 40px;">🐱🐾</div>
+      <p style="font-size: 18px; font-weight: bold;">第 <span id="quiz-num">1</span> 問 / 全 5 問</p>
+      <p style="font-size: 24px; font-weight: bold;" id="quiz-title">「ド」の音はどれかな？</p>
+      <div style="margin: 20px 0;">
+        <button onclick="answerQuiz(true)" style="font-size: 18px; padding: 10px 20px;">① ド</button>
+        <button onclick="answerQuiz(false)" style="font-size: 18px; padding: 10px 20px;">② レ</button>
+        <button onclick="answerQuiz(false)" style="font-size: 18px; padding: 10px 20px;">③ ミ</button>
+      </div>
+    </div>
+
+    <!-- パーフェクト（全問正解）表彰画面 -->
+    <div id="perfect-award-area" class="award-card hidden">
+      <h1 style="color: #d4af37; margin:0;">🏆 ひょうしょうじょう 🏆</h1>
+      <h3 style="color: #333; margin: 10px 0;"><span id="award-player-name" style="color:#1976d2;"></span> どの</h3>
+      <p style="font-size: 15px; line-height: 1.6;">
+        あなたは 「ふよみチャレンジ」において<br>
+        すべてのカードを かんぺきに クリアしました！<br>
+        きょうの スタンプ✨ を おすよ！
+      </p>
+      <button onclick="finishGame()" style="background:#ff9800;">スタンプをもらって もどる</button>
+    </div>
+
+    <br>
+    <button onclick="finishGame()" style="background:#888;">メイン画面へもどる</button>
   </div>
 
   <script>
     let defaultStudents = [];
     let students = JSON.parse(localStorage.getItem('fuyomi_students')) || defaultStudents;
     let currentStudentId = localStorage.getItem('fuyomi_current_student_id') || null;
+    let quizStep = 1;
+
+    const themeNames = {
+      cat: "🐱 ふたりペア＆ねこ",
+      cool: "⚡ クール＆ブラック",
+      game: "🎮 ゲーム・アドベンチャー",
+      pop: "🌈 にじいろポップ",
+      classic: "🎼 クラシック＆シンプル"
+    };
 
     initScreen();
 
@@ -176,6 +245,10 @@
           regArea.classList.add('hidden');
           playerArea.classList.remove('hidden');
           currentNameSpan.innerText = currentStudent.name;
+
+          // 連続記録・スタンプの初期表示
+          document.getElementById('streak-days').innerText = currentStudent.streak || 0;
+          renderStampGrid(currentStudent.stamps || 0);
 
           const now = new Date();
           const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
@@ -199,6 +272,22 @@
       }
     }
 
+    function renderStampGrid(count) {
+      const grid = document.getElementById('stamp-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 10; i++) {
+        const slot = document.createElement('div');
+        if (i <= count) {
+          slot.className = 'stamp-slot stamped';
+          slot.innerText = '💮';
+        } else {
+          slot.className = 'stamp-slot';
+          slot.innerText = i;
+        }
+        grid.appendChild(slot);
+      }
+    }
+
     function showRegister() {
       document.getElementById('register-area').classList.remove('hidden');
       document.getElementById('player-info-area').classList.add('hidden');
@@ -206,24 +295,34 @@
 
     function registerStudent() {
       const nameInput = document.getElementById('student-name-input').value.trim();
+      const cardTheme = document.getElementById('student-card-theme').value;
+
       if (!nameInput) {
         alert("おなまえを にゅうりょくしてね！");
         return;
       }
 
+      const isExist = students.some(s => s.name === nameInput);
+      if (isExist) {
+        alert("そのなまえは 使えません");
+        return;
+      }
+
       const now = new Date();
       const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
-
       const newId = Date.now();
+
       const newStudent = {
         id: newId,
         name: nameInput,
+        cardTheme: cardTheme,
         unlocked: false,
         stopNextMonth: false,
         lastActiveMonth: currentMonthKey,
         weeklyCount: 0,
-        maxCombo: 0,
-        weakNote: '-'
+        streak: 0,
+        stamps: 0,
+        lastPracticeDate: null
       };
 
       students.push(newStudent);
@@ -233,14 +332,48 @@
       localStorage.setItem('fuyomi_current_student_id', newId);
 
       document.getElementById('student-name-input').value = '';
-      alert("とうろく できたよ！ せんせいに かぎを あけてもらってね！");
+      alert(`「${nameInput}」さんを とうろくしたよ！`);
       initScreen();
     }
 
-    function changePlayer() {
-      localStorage.removeItem('fuyomi_current_student_id');
-      currentStudentId = null;
+    function editPlayerName() {
+      const currentStudent = students.find(s => s.id == currentStudentId);
+      if (!currentStudent) return;
+
+      const newName = prompt("あたらしい おなまえを にゅうりょくしてね", currentStudent.name);
+      if (newName === null) return;
+
+      const trimmedName = newName.trim();
+      if (!trimmedName) {
+        alert("おなまえを にゅうりょくしてね！");
+        return;
+      }
+
+      const isExist = students.some(s => s.name === trimmedName && s.id !== currentStudent.id);
+      if (isExist) {
+        alert("そのなまえは 使えません");
+        return;
+      }
+
+      currentStudent.name = trimmedName;
+      localStorage.setItem('fuyomi_students', JSON.stringify(students));
       initScreen();
+    }
+
+    function editCardTheme() {
+      const currentStudent = students.find(s => s.id == currentStudentId);
+      if (!currentStudent) return;
+
+      const selected = prompt(
+        "カードデザインの 番号を選んでね：\n1: 🐱 ねこ\n2: ⚡ クール\n3: 🎮 ゲーム\n4: 🌈 ポップ\n5: 🎼 クラシック",
+        "1"
+      );
+      const keys = ["cat", "cool", "game", "pop", "classic"];
+      if (selected && keys[selected - 1]) {
+        currentStudent.cardTheme = keys[selected - 1];
+        localStorage.setItem('fuyomi_students', JSON.stringify(students));
+        alert("カードデザインを変更したよ！");
+      }
     }
 
     function login() {
@@ -251,7 +384,12 @@
         document.getElementById('teacher-screen').classList.remove('hidden');
       } else if (/^\d{4}$/.test(pass)) {
         const currentStudent = students.find(s => s.id == currentStudentId);
-        document.getElementById('parent-student-name').innerText = currentStudent ? `【${currentStudent.name} 様】` : '';
+        if (currentStudent) {
+          document.getElementById('parent-student-name').innerText = `【${currentStudent.name} 様】`;
+          document.getElementById('parent-streak').innerText = currentStudent.streak || 0;
+          document.getElementById('parent-stamps').innerText = currentStudent.stamps || 0;
+          document.getElementById('parent-weekly').innerText = currentStudent.weeklyCount || 0;
+        }
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('parent-screen').classList.remove('hidden');
       } else {
@@ -267,7 +405,6 @@
       initScreen();
     }
 
-    // 先生画面のタブ切り替え
     function switchTeacherTab(tabNum) {
       document.getElementById('teacher-tab-1').classList.add('hidden');
       document.getElementById('teacher-tab-2').classList.add('hidden');
@@ -281,7 +418,6 @@
     }
 
     function renderTeacherView() {
-      // 1. 今の成績テーブルを描画
       const statsTbody = document.getElementById('student-stats-list');
       statsTbody.innerHTML = '';
       if (students.length === 0) {
@@ -291,15 +427,14 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td><strong>${student.name}</strong></td>
-            <td>${student.weeklyCount || 0} 回</td>
-            <td>${student.maxCombo || 0} コンボ</td>
-            <td>${student.weakNote || '-'}</td>
+            <td>🔥 ${student.streak || 0} 日</td>
+            <td>💮 ${student.stamps || 0} 個</td>
+            <td>${themeNames[student.cardTheme] || '🐱 ねこ'}</td>
           `;
           statsTbody.appendChild(tr);
         });
       }
 
-      // 2. 鍵管理テーブルを描画
       const tbody = document.getElementById('student-list');
       tbody.innerHTML = '';
       if (students.length === 0) {
@@ -364,11 +499,56 @@
       }
       const currentStudent = students.find(s => s.id == currentStudentId);
       if (currentStudent && currentStudent.unlocked) {
+        applyQuizTheme(currentStudent.cardTheme);
+        resetGame();
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
       } else {
         alert("今月はアクセス鍵が閉まっています。先生に確認してね！");
       }
+    }
+
+    function applyQuizTheme(theme) {
+      const quizCard = document.getElementById('game-quiz-area');
+      const headerIcon = document.getElementById('card-header-icon');
+      quizCard.className = "card card-theme-" + (theme || 'cat');
+
+      if (theme === 'cool') headerIcon.innerText = "⚡🐈‍⬛";
+      else if (theme === 'game') headerIcon.innerText = "🎮🐱Lv.99";
+      else if (theme === 'pop') headerIcon.innerText = "🌈🎵🐱";
+      else if (theme === 'classic') headerIcon.innerText = "🎼🐱";
+      else headerIcon.innerText = "🐱🐾🐈";
+    }
+
+    function answerQuiz(isCorrect) {
+      if (quizStep < 5) {
+        quizStep++;
+        document.getElementById('quiz-num').innerText = quizStep;
+      } else {
+        const currentStudent = students.find(s => s.id == currentStudentId);
+        document.getElementById('award-player-name').innerText = currentStudent ? currentStudent.name : 'プレイヤー';
+        document.getElementById('game-quiz-area').classList.add('hidden');
+        document.getElementById('perfect-award-area').classList.remove('hidden');
+
+        // デイリースタンプ ＆ 連続日数の更新ロジック
+        if (currentStudent) {
+          const today = new Date().toDateString();
+          if (currentStudent.lastPracticeDate !== today) {
+            currentStudent.stamps = ((currentStudent.stamps || 0) % 10) + 1;
+            currentStudent.streak = (currentStudent.streak || 0) + 1;
+            currentStudent.weeklyCount = (currentStudent.weeklyCount || 0) + 1;
+            currentStudent.lastPracticeDate = today;
+            localStorage.setItem('fuyomi_students', JSON.stringify(students));
+          }
+        }
+      }
+    }
+
+    function resetGame() {
+      quizStep = 1;
+      document.getElementById('quiz-num').innerText = 1;
+      document.getElementById('game-quiz-area').classList.remove('hidden');
+      document.getElementById('perfect-award-area').classList.add('hidden');
     }
 
     function finishGame() {
