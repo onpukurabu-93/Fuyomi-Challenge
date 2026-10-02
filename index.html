@@ -46,10 +46,7 @@ body { display: flex; justify-content: center; align-items: center; }
 }
 .profile-label { font-size: 13px; color: #806c5a; margin-bottom: 4px; }
 .profile-current { font-size: 17px; font-weight: 700; color: #5b4636; margin-bottom: 6px; }
-.profile-select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid #eadcc8; font-size: 14px; color: #5b4636; background: #fdf8ed; margin-bottom: 6px; }
-.profile-edit-btn { background: transparent; border: none; color: #b28bb9; font-size: 13px; cursor: pointer; font-weight: 700; margin: 2px 4px; }
 
-/* ストリーク＆スタンプ表示バナー */
 .streak-badge {
   display: inline-block; background: #ff7043; color: white; font-size: 13px; font-weight: 800;
   padding: 4px 12px; border-radius: 20px; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(255,112,67,0.3);
@@ -61,6 +58,9 @@ body { display: flex; justify-content: center; align-items: center; }
 .stamp-dot { width: 22px; height: 22px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .stamp-dot.active { background: #ff5722; color: white; font-weight: bold; }
 
+.profile-select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid #eadcc8; font-size: 14px; color: #5b4636; background: #fdf8ed; margin-bottom: 6px; }
+.profile-edit-btn { background: transparent; border: none; color: #b28bb9; font-size: 13px; cursor: pointer; font-weight: 700; margin: 2px 4px; }
+
 .select-button {
   width: 100%; border: none; border-radius: 18px; padding: 13px 12px; margin-bottom: 8px;
   background: white; color: #5b4636; font-size: 16px; font-weight: 700;
@@ -71,7 +71,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .select-button.accent { background: #78a9c8; color: white; }
 .select-button.info { background: #e6b26a; color: white; }
 .select-button.special { background: #8dbb8d; color: white; }
-.select-button.challenge { background: #e99595; color: white; }
+.select-button.challenge { background: #b28bb9; color: white; }
 .select-button:disabled { opacity: 0.6; cursor: pointer; }
 
 .lock-tag {
@@ -121,8 +121,9 @@ body { display: flex; justify-content: center; align-items: center; }
 
 .timer-display { position: absolute; top: 10px; left: 10px; background: #e99595; color: white; padding: 4px 12px; border-radius: 20px; font-size: 15px; font-weight: 700; z-index: 10; }
 
+/* 正解の〇を赤色に変更 */
 .correct-circle {
-  position: absolute; width: 160px; height: 160px; border: 10px solid #5abf7d; border-radius: 50%;
+  position: absolute; width: 160px; height: 160px; border: 10px solid #e99595; border-radius: 50%;
   left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 20;
 }
 .correct-circle.show { animation: correctCircle 0.4s ease-out forwards; }
@@ -146,29 +147,29 @@ body { display: flex; justify-content: center; align-items: center; }
 .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: none; border-radius: 50%; background: rgba(253,248,237,0.95); font-size: 28px; cursor: pointer; z-index: 5; }
 .arrow-left { left: 4px; } .arrow-right { right: 4px; }
 
-/* ピアノ鍵盤 */
+/* 🎹 ピアノ鍵盤：ボタン全体をそれぞれの鍵盤色に */
 .keyboard {
   display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
   padding: 8px 4px 4px; background: #e0d0ba; border-radius: 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 .key-btn {
-  border: none; border-radius: 6px 6px 12px 12px; min-height: 64px; color: #4a3b32; font-size: 16px; font-weight: 800;
-  cursor: pointer; position: relative; background: #ffffff;
-  box-shadow: 0 4px 0 #c2b09a, 0 5px 6px rgba(0,0,0,0.15);
-  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px;
-  transition: all 0.05s ease;
+  border: none; border-radius: 8px; min-height: 64px; color: #ffffff; font-size: 17px; font-weight: 900;
+  cursor: pointer; position: relative;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 5px 6px rgba(0,0,0,0.15);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 10px;
+  transition: all 0.05s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
 }
 .key-btn:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 #c2b09a, 0 2px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 2px 3px rgba(0,0,0,0.1);
 }
-.key-do { border-bottom: 5px solid #e99595; }
-.key-re { border-bottom: 5px solid #e6b26a; }
-.key-mi { border-bottom: 5px solid #d6c45d; }
-.key-fa { border-bottom: 5px solid #8dbb8d; }
-.key-so { border-bottom: 5px solid #78a9c8; }
-.key-la { border-bottom: 5px solid #5a82d6; }
-.key-si { border-bottom: 5px solid #b28bb9; }
+.key-do { background: #e99595; }
+.key-re { background: #e6b26a; }
+.key-mi { background: #d6c45d; }
+.key-fa { background: #8dbb8d; }
+.key-so { background: #78a9c8; }
+.key-la { background: #5a82d6; }
+.key-si { background: #b28bb9; }
 
 /* モーダル */
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
@@ -184,15 +185,12 @@ body { display: flex; justify-content: center; align-items: center; }
 .q-btn.selected { background: #78a9c8; color: white; border-color: #78a9c8; }
 .q-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* デザインテーマ選択UI */
 .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
 .theme-card-btn {
   padding: 12px 8px; border: 2px solid #eadcc8; background: #fff; border-radius: 12px;
   font-size: 13px; font-weight: bold; color: #5b4636; cursor: pointer; text-align: center;
 }
-.theme-card-btn.selected { border-color: #ff7043; background: #fff3e0; color: #d84315; }
 
-/* 先生管理画面用タブ */
 .teacher-tabs { display: flex; justify-content: space-between; margin-bottom: 12px; gap: 4px; }
 .teacher-tab-btn { flex: 1; padding: 8px 4px; font-size: 11px; font-weight: bold; border: 1px solid #eadcc8; background: #fdf8ed; border-radius: 8px; cursor: pointer; }
 .teacher-tab-btn.active { background: #1976d2; color: white; border-color: #1976d2; }
@@ -213,7 +211,6 @@ body { display: flex; justify-content: center; align-items: center; }
   100% { opacity: 0.3; transform: scale(1.05); }
 }
 
-/* スコア画面・保護者エリア */
 .score-card { background: white; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .score-card-title { font-size: 15px; font-weight: 700; color: #5b4636; margin-bottom: 8px; border-bottom: 2px solid #fdf8ed; padding-bottom: 4px; }
 .score-row { display: flex; justify-content: space-between; font-size: 13.5px; color: #806c5a; margin-bottom: 5px; }
@@ -230,6 +227,15 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="seikaiAudio" preload="auto" src="seikai.mp3"></audio>
 <audio id="fanfareAudio" preload="auto" src="tassei-fanfare.mp3"></audio>
 
+<!-- 🎵 ご指定の追加音声ファイル -->
+<audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
+<audio id="audio6do" preload="auto" src="6do.mp3"></audio>
+<audio id="audioToon1" preload="auto" src="toon1.mp3"></audio>
+<audio id="audioToon2" preload="auto" src="toon2.mp3"></audio>
+<audio id="audioHeon1" preload="auto" src="heon1.mp3"></audio>
+<audio id="audioHeon2" preload="auto" src="heon2.mp3"></audio>
+<audio id="audioKanpeki" preload="auto" src="kanpeki.mp3"></audio>
+
 <div class="app-container" id="appContainer">
 
   <!-- トップ画面 -->
@@ -241,7 +247,6 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="profile-label">プレイヤーを選ぶ</div>
       <div class="profile-current" id="currentProfileName">未設定</div>
       
-      <!-- ストリーク・スタンプミニ表示 -->
       <div id="streakBadge" class="streak-badge">🔥 0日れんぞく！</div>
       <div id="stampMiniBox" class="stamp-mini-box"></div>
 
@@ -250,7 +255,7 @@ body { display: flex; justify-content: center; align-items: center; }
       </select>
       <div>
         <button class="profile-edit-btn" onclick="openThemeModal()">🐱 カードデザインをえらぶ</button>
-        <button class="profile-edit-btn" onclick="openAdminModal()">🔒 教室ネーム登録（先生）</button>
+        <button class="profile-edit-btn" onclick="openStudentRegisterModal()">✏️ なまえを とうろくする</button>
       </div>
     </div>
 
@@ -268,8 +273,9 @@ body { display: flex; justify-content: center; align-items: center; }
       全カード <span id="lockAll" class="lock-tag">🔒 </span>
     </button>
 
-    <button id="btnChallenge" class="select-button challenge" onclick="startMonthlyChallenge()">
-      🏗️工事中
+    <!-- 🏗️工事中 ➔ 🔒 管理ページ（保護者・先生）に統合 -->
+    <button class="select-button challenge" onclick="openManagementModal()">
+      🔒 管理ページ（保護者・先生）
     </button>
   </section>
 
@@ -297,7 +303,7 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="header-spacer"></div>
     </div>
     <div id="scoreContent"></div>
-    <button class="select-button accent" style="margin-top:10px;" onclick="openParentModal()">🔒 保護者専用ページ</button>
+    <button class="select-button accent" style="margin-top:10px;" onclick="openManagementModal()">🔒 管理ページへ</button>
   </section>
 
   <!-- カード画面 -->
@@ -310,7 +316,7 @@ body { display: flex; justify-content: center; align-items: center; }
     </div>
 
     <div id="cardArea" class="card-area">
-      <div id="timerDisplay" class="timer-display hidden">⏱️ 30s</div>
+      <div id="timerDisplay" class="timer-display hidden">⏱️️ 30s</div>
       <button id="arrowLeft" class="arrow arrow-left" onclick="previousCard()">‹</button>
 
       <div class="note-card-wrap">
@@ -323,6 +329,7 @@ body { display: flex; justify-content: center; align-items: center; }
       <button id="arrowRight" class="arrow arrow-right" onclick="nextCard()">›</button>
     </div>
 
+    <!-- 🎹 ボタン全体がそれぞれの鍵盤色のピアノ鍵盤 -->
     <div class="keyboard">
       <button class="key-btn key-do" onclick="pressKey('ド')">ド</button>
       <button class="key-btn key-re" onclick="pressKey('レ')">レ</button>
@@ -340,13 +347,13 @@ body { display: flex; justify-content: center; align-items: center; }
     <div class="result-container">
       <div class="result-clef-badge" id="resultClefBadge">ト音記号 レベル1</div>
       <div class="result-title" id="resultTitle">🎉 クリア！</div>
-      <div class="result-message" id="resultMessage"></div>
+      <div class="result-message" id="resultMessage" style="display:none;"></div>
       <div class="result-detail" id="resultScore">正答率: 100%</div>
       <div class="result-detail" id="resultTime">タイム: 0.0秒</div>
       <div class="result-best" id="resultBest">✨ 過去最高記録更新！</div>
       
       <button id="nextLevelBtn" class="select-button accent hidden" onclick="goToNextLevel()">🚀 次のステージへ！</button>
-      <button class="select-button" onclick="restartTraining()">もう一度挑戦する</button>
+      <button class="select-button" onclick="restartTrainingDirect()">もう一度挑戦する</button>
       <button class="select-button" onclick="showSelectScreen()">トップへ戻る</button>
     </div>
   </section>
@@ -377,82 +384,99 @@ body { display: flex; justify-content: center; align-items: center; }
   <div class="modal-box">
     <div class="modal-title">🐱 カードデザインをえらぶ</div>
     <div class="theme-grid">
-      <button class="theme-card-btn" onclick="setTheme('cat', this)">🐱 ふたりペア＆ねこ</button>
-      <button class="theme-card-btn" onclick="setTheme('cool', this)">⚡ クール＆ブラック</button>
-      <button class="theme-card-btn" onclick="setTheme('game', this)">🎮 ゲームアドベンチャー</button>
-      <button class="theme-card-btn" onclick="setTheme('pop', this)">🌈 にじいろポップ</button>
-      <button class="theme-card-btn" style="grid-column: span 2;" onclick="setTheme('classic', this)">🎼 クラシック＆シンプル</button>
+      <button class="theme-card-btn" onclick="setTheme('cat')">🐱 ふたりペア＆ねこ</button>
+      <button class="theme-card-btn" onclick="setTheme('cool')">⚡ クール＆ブラック</button>
+      <button class="theme-card-btn" onclick="setTheme('game')">🎮 ゲームアドベンチャー</button>
+      <button class="theme-card-btn" onclick="setTheme('pop')">🌈 にじいろポップ</button>
+      <button class="theme-card-btn" style="grid-column: span 2;" onclick="setTheme('classic')">🎼 クラシック＆シンプル</button>
     </div>
     <button class="modal-btn cancel" onclick="toggleModal('themeModal', false)">閉じる</button>
   </div>
 </div>
 
-<!-- 先生（管理者）モーダル -->
-<div id="adminModal" class="modal-bg hidden">
+<!-- 生徒名 申請用モーダル -->
+<div id="studentRegisterModal" class="modal-bg hidden">
   <div class="modal-box">
-    <div class="modal-title">🔑 先生専用：管理画面</div>
-    <div id="adminAuthSection">
-      <input type="password" id="adminPassInput" class="modal-input" placeholder="パスワード (2357go)">
-      <button class="modal-btn" onclick="verifyAdminPass()">認証</button>
-      <button class="modal-btn cancel" onclick="toggleModal('adminModal', false)">キャンセル</button>
-    </div>
-    <div id="adminEditSection" class="hidden">
-      
-      <!-- 先生専用 3つのタブ切り替え -->
-      <div class="teacher-tabs">
-        <button id="tTab1" class="teacher-tab-btn active" onclick="switchTeacherTab(1)">⚡リアルタイム成績</button>
-        <button id="tTab2" class="teacher-tab-btn" onclick="switchTeacherTab(2)">🔑サブスク鍵管理</button>
-        <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">🏆半年表彰データ</button>
-      </div>
-
-      <!-- タブ1: リアルタイム成績 -->
-      <div id="teacherTab1">
-        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">生徒の最新練習・テーマ選択状況</div>
-        <div id="teacherStatsList"></div>
-      </div>
-
-      <!-- タブ2: 鍵管理 ＆ 名前登録 -->
-      <div id="teacherTab2" class="hidden">
-        <div style="font-size: 12px; color: #666; margin-bottom: 6px;">生徒名の登録・変更</div>
-        <select id="slotSelect" class="modal-input">
-          <option value="0">プレイヤー 1</option>
-          <option value="1">プレイヤー 2</option>
-          <option value="2">プレイヤー 3</option>
-        </select>
-        <input type="text" id="profileInputName" class="modal-input" placeholder="例: ピアノねこ">
-        <button class="modal-btn" onclick="saveProfile()" style="margin-bottom:12px;">生徒名を保存する</button>
-
-        <div style="font-size: 12px; color: #666; margin-bottom: 6px;">サブスク継続・鍵状態</div>
-        <div id="teacherLockList"></div>
-      </div>
-
-      <!-- タブ3: 半年表彰データ -->
-      <div id="teacherTab3" class="hidden">
-        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">🏆 3月/9月 表彰用集計データ</div>
-        <div id="teacherAwardList"></div>
-      </div>
-
-      <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('adminModal', false)">閉じる</button>
-    </div>
+    <div class="modal-title">✏️ なまえを とうろくする</div>
+    <div style="font-size:12px; color:#666; margin-bottom:8px;">とうろくする スロットを選んで なまえを入れてね</div>
+    <select id="studentSlotSelect" class="modal-input">
+      <option value="0">プレイヤー 1</option>
+      <option value="1">プレイヤー 2</option>
+      <option value="2">プレイヤー 3</option>
+    </select>
+    <input type="text" id="studentNameInput" class="modal-input" placeholder="なまえ（ひらがな）">
+    <button class="modal-btn" onclick="submitStudentRegistration()">とうろく（せんせいに しんせい）</button>
+    <button class="modal-btn cancel" onclick="toggleModal('studentRegisterModal', false)">やめる</button>
   </div>
 </div>
 
-<div id="parentModal" class="modal-bg hidden">
+<!-- 🔒 統合管理モーダル（保護者・先生 分岐） -->
+<div id="managementModal" class="modal-bg hidden">
   <div class="modal-box">
-    <div class="modal-title">🔒 保護者専用エリア</div>
-    <div id="parentAuthSection">
-      <div style="font-size:13px; color:#806c5a; margin-bottom:8px;">パスワードを入力してください (初期: 1234)</div>
-      <input type="password" id="parentPassInput" class="modal-input" placeholder="パスワード">
-      <button class="modal-btn" onclick="verifyParentPass()">認証</button>
-      <button class="modal-btn cancel" onclick="toggleModal('parentModal', false)">閉じる</button>
+    <div class="modal-title">🔒 管理ページ</div>
+    <div id="mgSelectSection">
+      <div style="font-size:13px; color:#806c5a; margin-bottom:12px;">どちらのエリアに入りますか？</div>
+      <button class="modal-btn" style="background:#8dbb8d; margin-bottom:8px;" onclick="showParentAuth()">👨‍👩‍👧 保護者専用ページ</button>
+      <button class="modal-btn" style="background:#78a9c8;" onclick="showTeacherAuth()">🔑 先生専用ページ</button>
+      <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('managementModal', false)">閉じる</button>
     </div>
-    <div id="parentContentSection" class="hidden">
-      <div class="modal-text" style="font-size:12.5px;">
-        <strong>📊 プレイヤーごとの学習記録・比較データ</strong>
+
+    <!-- 保護者認証・コンテンツ -->
+    <div id="parentSection" class="hidden">
+      <div id="parentAuthBox">
+        <div style="font-size:12.5px; color:#806c5a; margin-bottom:8px;">保護者パスワード（初期: 0123）</div>
+        <input type="password" id="parentPassInput" class="modal-input" placeholder="パスワード">
+        <button class="modal-btn" onclick="verifyParentPass()">ログイン</button>
+        <button class="modal-btn cancel" onclick="resetMgSection()">戻る</button>
       </div>
-      <div id="parentCompareTable"></div>
-      <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('parentModal', false)">閉じる</button>
+      <div id="parentContentBox" class="hidden">
+        <div style="font-size:13px; font-weight:bold; color:#5b4636; margin-bottom:6px;">📊 お子様の学習成績</div>
+        <div id="parentCompareTable"></div>
+        <hr style="border:none; border-top:1px dashed #eadcc8; margin:12px 0;">
+        <div style="font-size:13px; font-weight:bold; color:#5b4636; margin-bottom:6px;">🔑 パスワード変更</div>
+        <input type="password" id="parentNewPassInput" class="modal-input" placeholder="新しいパスワード">
+        <button class="modal-btn" onclick="changeParentPassword()">パスワード変更を保存</button>
+        <button class="modal-btn cancel" style="margin-top:8px;" onclick="toggleModal('managementModal', false)">閉じる</button>
+      </div>
     </div>
+
+    <!-- 先生認証・コンテンツ（3タブ ＋ 救済＆承認） -->
+    <div id="teacherSection" class="hidden">
+      <div id="teacherAuthBox">
+        <input type="password" id="teacherPassInput" class="modal-input" placeholder="先生パスワード (2357go)">
+        <button class="modal-btn" onclick="verifyTeacherPass()">認証</button>
+        <button class="modal-btn cancel" onclick="resetMgSection()">戻る</button>
+      </div>
+      <div id="teacherContentBox" class="hidden">
+        <div class="teacher-tabs">
+          <button id="tTab1" class="teacher-tab-btn active" onclick="switchTeacherTab(1)">⚡成績</button>
+          <button id="tTab2" class="teacher-tab-btn" onclick="switchTeacherTab(2)">🔑鍵＆承認</button>
+          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">🏆表彰</button>
+        </div>
+
+        <!-- タブ1: 成績 -->
+        <div id="teacherTab1">
+          <div id="teacherStatsList"></div>
+        </div>
+
+        <!-- タブ2: 生徒承認＆保護者パスワード救済 -->
+        <div id="teacherTab2" class="hidden">
+          <div style="font-size: 12px; font-weight:bold; color: #5b4636; margin-bottom: 4px; text-align:left;">生徒ネーム承認（鍵開け）</div>
+          <div id="teacherApprovalList"></div>
+          <hr style="border:none; border-top:1px dashed #eadcc8; margin:10px 0;">
+          <div style="font-size: 12px; font-weight:bold; color: #5b4636; margin-bottom: 4px; text-align:left;">👨‍👩‍👧 保護者パスワード忘れ救済</div>
+          <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを初期値(0123)にリセット</button>
+        </div>
+
+        <!-- タブ3: 表彰データ -->
+        <div id="teacherTab3" class="hidden">
+          <div id="teacherAwardList"></div>
+        </div>
+
+        <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('managementModal', false)">閉じる</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -475,15 +499,6 @@ body { display: flex; justify-content: center; align-items: center; }
   </div>
 </div>
 
-<div id="challengeResultModal" class="modal-bg hidden">
-  <div class="modal-box">
-    <div class="modal-title" id="challengeResultTitle"></div>
-    <div class="modal-text" id="challengeResultText" style="text-align:center;"></div>
-    <button id="challengeRetryBtn" class="modal-btn" onclick="retryMonthlyChallenge()">もう一度挑戦</button>
-    <button id="challengeEndBtn" class="modal-btn cancel" onclick="endMonthlyChallenge()">終わる</button>
-  </div>
-</div>
-
 <script>
 /* 共通ストレージヘルパー */
 const Storage = {
@@ -497,7 +512,7 @@ const Storage = {
   getNumber: (key, defaultValue = 0) => parseInt(localStorage.getItem(key)) || defaultValue
 };
 
-/* 画面・モーダル制御ヘルパー */
+/* 画面・モーダル制御 */
 function toggleModal(modalId, show = true) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.toggle("hidden", !show);
@@ -509,7 +524,7 @@ function navigateTo(screenId) {
   document.getElementById(screenId)?.classList.remove("hidden");
 }
 
-/* 共通AudioContext */
+/* AudioContext */
 let audioCtx = null;
 function getAudioContext() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -590,10 +605,6 @@ bassCards[5] = [ ...bassCards[1], ...bassCards[2], ...bassCards[3], ...bassCards
 
 const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [ ...trebleCards[5] ], 5: [ ...trebleCards[5], ...bassCards[5] ] };
 
-const songAkiCards = [
-  { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_b1", key:"シ", img:"t_b1.png" }, { id:"t_c2", key:"ド", img:"t_c2.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_f1", key:"ファ", img:"t_f1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_d1", key:"レ", img:"t_d1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_b1", key:"シ", img:"t_b1.png" }, { id:"t_c2", key:"ド", img:"t_c2.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_b1", key:"シ", img:"t_b1.png" }, { id:"t_c2", key:"ド", img:"t_c2.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_b1", key:"シ", img:"t_b1.png" }, { id:"t_c2", key:"ド", img:"t_c2.png" }, { id:"t_a1", key:"ラ", img:"t_a1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_f1", key:"ファ", img:"t_f1.png" }, { id:"t_g1", key:"ソ", img:"t_g1.png" }, { id:"t_d1", key:"レ", img:"t_d1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" }
-];
-
 /* 状態管理 */
 let profiles = Storage.get("onpu_profiles", ["", "", ""]);
 let activeProfileIndex = Storage.getNumber("onpu_active_profile", 0);
@@ -603,31 +614,20 @@ let currentIndex = 0, trainingMode = false, trainingLocked = false, lastTraining
 let trainingType = 'count', targetValue = 10, remainingTime = 0, timeTimer = null;
 let trainingQuestionCount = 0, trainingMistakes = 0, trainingStartTime = 0;
 let nextActionClef = null, nextActionLevel = 1;
-let isChallengeMode = false, challengeMistakes = 0, challengeLocked = false;
-let challengeAdvanceTimer = null, challengeSongTimer = null, challengeSongPlaying = false;
 
-/* テーマ＆スタンプヘルパー */
-const themeNames = { cat: "🐱 ふたりペア＆ねこ", cool: "⚡ クール＆ブラック", game: "🎮 ゲームアドベンチャー", pop: "🌈 にじいろポップ", classic: "🎼 クラシック＆シンプル" };
-
-function getProfileTheme(profileIndex) {
-  return Storage.get(`onpu_theme_${profileIndex}`, "cat");
-}
-function setProfileTheme(profileIndex, themeKey) {
-  Storage.set(`onpu_theme_${profileIndex}`, themeKey);
-  applyTheme(themeKey);
-}
-function applyTheme(themeKey) {
-  const container = document.getElementById("appContainer");
-  container.className = `app-container theme-${themeKey}`;
+/* テーマ＆ヘルパー */
+function getProfileTheme(idx) { return Storage.get(`onpu_theme_${idx}`, "cat"); }
+function setTheme(themeKey) {
+  Storage.set(`onpu_theme_${activeProfileIndex}`, themeKey);
+  document.getElementById("appContainer").className = `app-container theme-${themeKey}`;
+  toggleModal("themeModal", false);
 }
 
 function calculateStreak(profileIndex) {
   const days = Storage.get(`onpu_days_${profileIndex}`, []);
   if (!days.length) return 0;
   days.sort();
-  let streak = 0;
-  let today = new Date();
-  
+  let streak = 0, today = new Date();
   for (let i = 0; i < 30; i++) {
     let dStr = new Date(today.getTime() - i * 86400000).toISOString().split("T")[0];
     if (days.includes(dStr)) streak++;
@@ -648,13 +648,10 @@ function renderStampMini(profileIndex) {
   }
 }
 
-/* 記録・判定関数 */
 function getCountBest(profileIndex, clef, level) {
   return Storage.get(`onpu_count_best_${profileIndex}_${clef}_${level}`) || Storage.get(`onpu_best_${profileIndex}_${clef}_${level}`);
 }
-function getDoTestBest(profileIndex) {
-  return Storage.get(`onpu_do_test_best_${profileIndex}`);
-}
+function getDoTestBest(profileIndex) { return Storage.get(`onpu_do_test_best_${profileIndex}`); }
 function hasLevelCleared(profileIndex, clef, level) {
   const best = getCountBest(profileIndex, clef, level);
   return !!(best && best.accuracy >= 90);
@@ -678,15 +675,10 @@ function initProfiles() {
       select.appendChild(opt);
     }
   });
-  document.getElementById("currentProfileName").textContent = profiles[activeProfileIndex] || "未登録（先生画面から登録）";
-  
-  const currentTheme = getProfileTheme(activeProfileIndex);
-  applyTheme(currentTheme);
-
-  const streak = calculateStreak(activeProfileIndex);
-  document.getElementById("streakBadge").textContent = `🔥 ${streak}日れんぞく！`;
+  document.getElementById("currentProfileName").textContent = profiles[activeProfileIndex] || "未登録";
+  document.getElementById("appContainer").className = `app-container theme-${getProfileTheme(activeProfileIndex)}`;
+  document.getElementById("streakBadge").textContent = `🔥 ${calculateStreak(activeProfileIndex)}日れんぞく！`;
   renderStampMini(activeProfileIndex);
-
   checkDoLockStatus();
 }
 
@@ -711,222 +703,148 @@ function switchProfile(val) {
 
 const openIntroModal = () => toggleModal("introModal", true);
 const startDoLessonFromIntro = () => { toggleModal("introModal", false); startDoLesson(); };
+const openThemeModal = () => toggleModal("themeModal", true);
 
-function openThemeModal() {
-  toggleModal("themeModal", true);
+function openStudentRegisterModal() {
+  document.getElementById("studentSlotSelect").value = activeProfileIndex;
+  document.getElementById("studentNameInput").value = profiles[activeProfileIndex] || "";
+  toggleModal("studentRegisterModal", true);
 }
-function setTheme(themeKey, btn) {
-  setProfileTheme(activeProfileIndex, themeKey);
-  toggleModal("themeModal", false);
+function submitStudentRegistration() {
+  const slot = parseInt(document.getElementById("studentSlotSelect").value);
+  const name = document.getElementById("studentNameInput").value.trim();
+  if (!name) return alert("なまえを入力してね");
+  Storage.set(`onpu_pending_name_${slot}`, name);
+  toggleModal("studentRegisterModal", false);
+  alert("せんせいに しんせいしたよ！クリアして かぎを開けてもらおう！");
 }
 
-/* コース開始処理 */
+/* コース開始 */
 function startDoLesson() {
-  if (!profiles[activeProfileIndex]) return openAdminModal();
-  selectedClef = "do"; selectedLevel = 0; isChallengeMode = false;
-  currentCards = doCards; currentIndex = 0; trainingMode = false;
-  
+  if (!profiles[activeProfileIndex]) return openStudentRegisterModal();
+  selectedClef = "do"; selectedLevel = 0; currentCards = doCards; currentIndex = 0; trainingMode = false;
   navigateTo("cardScreen");
   document.getElementById("levelBadge").textContent = "6つのド";
   document.getElementById("cardScreenTitle").textContent = "おんぷカード";
-  document.getElementById("arrowLeft").classList.remove("hidden");
-  document.getElementById("arrowRight").classList.remove("hidden");
-  document.getElementById("trainingButton").classList.remove("hidden");
   showCurrentCard();
 }
 
-function clearChallengeTimers() {
-  if (challengeAdvanceTimer) { clearTimeout(challengeAdvanceTimer); challengeAdvanceTimer = null; }
-  if (challengeSongTimer) { clearTimeout(challengeSongTimer); challengeSongTimer = null; }
+/* 🔒 統合管理モーダル（保護者・先生） */
+function openManagementModal() {
+  resetMgSection();
+  toggleModal("managementModal", true);
 }
-function stopChallengeSong() { clearChallengeTimers(); challengeSongPlaying = false; }
-
-function startMonthlyChallenge() {
-  if (!profiles[activeProfileIndex]) return openAdminModal();
-  stopChallengeSong();
-  isChallengeMode = true; trainingMode = false; challengeMistakes = 0; challengeLocked = false;
-  currentCards = songAkiCards; currentIndex = 0;
-
-  toggleModal("challengeResultModal", false);
-  navigateTo("cardScreen");
-
-  document.getElementById("levelBadge").textContent = "チャレンジ";
-  document.getElementById("cardScreenTitle").textContent = "";
-  document.getElementById("arrowLeft").classList.add("hidden");
-  document.getElementById("arrowRight").classList.add("hidden");
-  document.getElementById("trainingButton").classList.add("hidden");
-  showCurrentCard();
+function resetMgSection() {
+  document.getElementById("mgSelectSection").classList.remove("hidden");
+  document.getElementById("parentSection").classList.add("hidden");
+  document.getElementById("teacherSection").classList.add("hidden");
 }
-
-function playChallengeSong() {
-  stopChallengeSong();
-  challengeSongPlaying = true;
-  let idx = 0;
-  function playNext() {
-    if (!challengeSongPlaying) return;
-    if (idx >= songAkiCards.length) { challengeSongPlaying = false; challengeSongTimer = null; return; }
-    playNoteSound(songAkiCards[idx].id, songAkiCards[idx].key);
-    idx++;
-    challengeSongTimer = setTimeout(playNext, 420);
-  }
-  playNext();
+function showParentAuth() {
+  document.getElementById("mgSelectSection").classList.add("hidden");
+  document.getElementById("parentSection").classList.remove("hidden");
+  document.getElementById("parentAuthBox").classList.remove("hidden");
+  document.getElementById("parentContentBox").classList.add("hidden");
+  document.getElementById("parentPassInput").value = "";
 }
-
-function finishMonthlyChallenge() {
-  challengeLocked = true; isChallengeMode = false; clearChallengeTimers();
-  document.querySelectorAll(".screen, .card-screen, .cover-screen").forEach(s => s.classList.add("hidden"));
-
-  const titleEl = document.getElementById("challengeResultTitle");
-  const textEl = document.getElementById("challengeResultText");
-  const retryBtn = document.getElementById("challengeRetryBtn");
-  const endBtn = document.getElementById("challengeEndBtn");
-
-  if (challengeMistakes > 0) {
-    titleEl.textContent = "もう一度挑戦してね"; textEl.textContent = "";
-    retryBtn.classList.remove("hidden"); endBtn.classList.remove("hidden");
-  } else {
-    titleEl.textContent = "「あき」"; textEl.textContent = "よくできました！";
-    retryBtn.classList.add("hidden"); endBtn.classList.remove("hidden");
-    playChallengeSong();
-  }
-  toggleModal("challengeResultModal", true);
+function verifyParentPass() {
+  const savedPass = Storage.get("onpu_parent_pass", "0123");
+  if (document.getElementById("parentPassInput").value === savedPass) {
+    document.getElementById("parentAuthBox").classList.add("hidden");
+    document.getElementById("parentContentBox").classList.remove("hidden");
+    renderParentCompareTable();
+  } else { alert("パスワードが違います"); }
 }
-
-function retryMonthlyChallenge() {
-  stopChallengeSong(); toggleModal("challengeResultModal", false); startMonthlyChallenge();
+function changeParentPassword() {
+  const newPass = document.getElementById("parentNewPassInput").value.trim();
+  if (!newPass) return alert("新しいパスワードを入力してください");
+  Storage.set("onpu_parent_pass", newPass);
+  alert("保護者パスワードを変更しました！");
+  document.getElementById("parentNewPassInput").value = "";
 }
-function endMonthlyChallenge() {
-  stopChallengeSong(); toggleModal("challengeResultModal", false); isChallengeMode = false; showSelectScreen();
+function showTeacherAuth() {
+  document.getElementById("mgSelectSection").classList.add("hidden");
+  document.getElementById("teacherSection").classList.remove("hidden");
+  document.getElementById("teacherAuthBox").classList.remove("hidden");
+  document.getElementById("teacherContentBox").classList.add("hidden");
+  document.getElementById("teacherPassInput").value = "";
 }
-
-/* 先生（管理者）モーダル */
-function openAdminModal() {
-  document.getElementById("adminAuthSection").classList.remove("hidden");
-  document.getElementById("adminEditSection").classList.add("hidden");
-  document.getElementById("adminPassInput").value = "";
-  toggleModal("adminModal", true);
-}
-
-function verifyAdminPass() {
-  if (document.getElementById("adminPassInput").value === "2357go") {
-    document.getElementById("adminAuthSection").classList.add("hidden");
-    document.getElementById("adminEditSection").classList.remove("hidden");
-    document.getElementById("slotSelect").value = activeProfileIndex;
-    document.getElementById("profileInputName").value = profiles[activeProfileIndex] || "";
+function verifyTeacherPass() {
+  if (document.getElementById("teacherPassInput").value === "2357go") {
+    document.getElementById("teacherAuthBox").classList.add("hidden");
+    document.getElementById("teacherContentBox").classList.remove("hidden");
     renderTeacherView();
   } else { alert("パスワードが違います"); }
 }
-
+function resetParentPasswordByTeacher() {
+  Storage.set("onpu_parent_pass", "0123");
+  alert("保護者パスワードを初期値 [ 0123 ] にリセットしました");
+}
 function switchTeacherTab(tabNum) {
   [1, 2, 3].forEach(n => {
     document.getElementById(`teacherTab${n}`).classList.toggle("hidden", n !== tabNum);
     document.getElementById(`tTab${n}`).classList.toggle("active", n === tabNum);
   });
 }
-
 function renderTeacherView() {
-  // タブ1：リアルタイム成績
-  let statsHtml = `<table class="compare-table"><thead><tr><th>生徒名</th><th>テーマ</th><th>連続</th><th>スタンプ</th></tr></thead><tbody>`;
+  let statsHtml = `<table class="compare-table"><thead><tr><th>生徒名</th><th>連続</th><th>スタンプ</th></tr></thead><tbody>`;
   profiles.forEach((name, idx) => {
-    if (name) {
-      const theme = themeNames[getProfileTheme(idx)] || "標準";
-      const streak = calculateStreak(idx);
-      const stamps = Storage.getNumber(`onpu_stamps_${idx}`, 0);
-      statsHtml += `<tr><td><strong>${name}</strong></td><td>${theme}</td><td>${streak}日</td><td>${stamps}個</td></tr>`;
-    }
+    if (name) statsHtml += `<tr><td><strong>${name}</strong></td><td>${calculateStreak(idx)}日</td><td>${Storage.getNumber(`onpu_stamps_${idx}`, 0)}個</td></tr>`;
   });
   document.getElementById("teacherStatsList").innerHTML = statsHtml + `</tbody></table>`;
 
-  // タブ2：鍵管理
-  let lockHtml = `<table class="compare-table"><thead><tr><th>生徒名</th><th>状態</th></tr></thead><tbody>`;
-  profiles.forEach((name, idx) => {
-    if (name) {
-      lockHtml += `<tr><td><strong>${name}</strong></td><td><span style="color:#2e7d32;font-weight:bold;">🔓 利用可能</span></td></tr>`;
-    }
-  });
-  document.getElementById("teacherLockList").innerHTML = lockHtml + `</tbody></table>`;
+  let appHtml = `<table class="compare-table"><thead><tr><th>スロット</th><th>申請中ネーム</th><th>操作</th></tr></thead><tbody>`;
+  for (let i = 0; i < 3; i++) {
+    const pending = Storage.get(`onpu_pending_name_${i}`);
+    const current = profiles[i] || "未登録";
+    appHtml += `<tr><td>${i+1} (${current})</td><td>${pending || 'なし'}</td><td>${pending ? `<button onclick="approveStudentName(${i})" style="font-size:11px;padding:2px 6px;">承認</button>` : '-'}</td></tr>`;
+  }
+  document.getElementById("teacherApprovalList").innerHTML = appHtml + `</tbody></table>`;
 
-  // タブ3：半年表彰データ
-  let awardHtml = `<table class="compare-table"><thead><tr><th>順位</th><th>生徒名</th><th>6つのド最高</th></tr></thead><tbody>`;
+  let awardHtml = `<table class="compare-table"><thead><tr><th>順位</th><th>生徒名</th><th>6つのド最高点</th></tr></thead><tbody>`;
   const ranking = getDoRanking();
   if (ranking.length) {
-    ranking.forEach((r, idx) => {
-      awardHtml += `<tr><td>${idx+1}位</td><td><strong>${r.name}</strong></td><td>${r.accuracy}% (${r.time}秒)</td></tr>`;
-    });
-  } else {
-    awardHtml += `<tr><td colspan="3">データがありません</td></tr>`;
-  }
+    ranking.forEach((r, idx) => { awardHtml += `<tr><td>${idx+1}位</td><td><strong>${r.name}</strong></td><td>${r.accuracy}%</td></tr>`; });
+  } else { awardHtml += `<tr><td colspan="3">データなし</td></tr>`; }
   document.getElementById("teacherAwardList").innerHTML = awardHtml + `</tbody></table>`;
 }
-
-function saveProfile() {
-  const slot = parseInt(document.getElementById("slotSelect").value);
-  const name = document.getElementById("profileInputName").value.trim();
-  if (!name) return alert("名前を入力してください");
-  profiles[slot] = name; activeProfileIndex = slot;
-  Storage.set("onpu_profiles", profiles); Storage.set("onpu_active_profile", activeProfileIndex);
-  renderTeacherView(); initProfiles(); alert("保存しました！");
+function approveStudentName(slot) {
+  const pending = Storage.get(`onpu_pending_name_${slot}`);
+  if (pending) {
+    profiles[slot] = pending; Storage.set("onpu_profiles", profiles);
+    localStorage.removeItem(`onpu_pending_name_${slot}`);
+    renderTeacherView(); initProfiles(); alert(`プレイヤー${slot+1}を [${pending}] で承認・鍵開けしました！`);
+  }
 }
-
-/* 保護者専用モーダル */
-function openParentModal() {
-  document.getElementById("parentAuthSection").classList.remove("hidden");
-  document.getElementById("parentContentSection").classList.add("hidden");
-  document.getElementById("parentPassInput").value = "";
-  toggleModal("parentModal", true);
-}
-
-function verifyParentPass() {
-  if (document.getElementById("parentPassInput").value === "1234") {
-    document.getElementById("parentAuthSection").classList.add("hidden");
-    document.getElementById("parentContentSection").classList.remove("hidden");
-    renderParentCompareTable();
-  } else { alert("パスワードが違います"); }
-}
-
 function renderParentCompareTable() {
-  const container = document.getElementById("parentCompareTable");
-  let html = `<table class="compare-table"><thead><tr><th>プレイヤー</th><th>連続練習</th><th>総練習時間</th><th>6つのド最高点</th></tr></thead><tbody>`;
+  let html = `<table class="compare-table"><thead><tr><th>プレイヤー</th><th>連続</th><th>総練習時間</th><th>6つのド</th></tr></thead><tbody>`;
   profiles.forEach((name, idx) => {
     const pName = name || `未登録 (${idx+1})`;
-    const streak = calculateStreak(idx);
     const totalSec = Storage.getNumber(`onpu_time_${idx}`, 0);
     const doBest = getDoTestBest(idx);
-    html += `<tr><td><strong>${pName}</strong></td><td>${streak} 日</td><td>${Math.floor(totalSec / 60)} 分</td><td>${doBest ? doBest.accuracy + '%' : '-'}</td></tr>`;
+    html += `<tr><td><strong>${pName}</strong></td><td>${calculateStreak(idx)}日</td><td>${Math.floor(totalSec/60)}分</td><td>${doBest ? doBest.accuracy+'%' : '-'}</td></tr>`;
   });
-  container.innerHTML = html + `</tbody></table>`;
+  document.getElementById("parentCompareTable").innerHTML = html + `</tbody></table>`;
 }
 
-/* 画面遷移 */
 function showSelectScreen() { navigateTo("selectScreen"); initProfiles(); }
 function showLevelScreen() { navigateTo("levelScreen"); createLevelButtons(); }
-
-function handleCardBack() {
-  if (isChallengeMode) { stopChallengeSong(); isChallengeMode = false; showSelectScreen(); return; }
-  selectedClef === "do" ? showSelectScreen() : showLevelScreen();
-}
+function handleCardBack() { selectedClef === "do" ? showSelectScreen() : showLevelScreen(); }
 
 function selectClef(clef) {
-  if (!profiles[activeProfileIndex]) return openAdminModal();
+  if (!profiles[activeProfileIndex]) return openStudentRegisterModal();
   const doBest = getDoTestBest(activeProfileIndex);
   const clefUnlocked = !!(doBest && doBest.accuracy >= 90);
   const trebleCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
   const bassCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
   const allUnlocked = clefUnlocked && trebleCleared && bassCleared;
 
-  if (clef === 'treble' || clef === 'bass') {
-    if (!clefUnlocked) {
-      alert("まずは「6つの『ド』をおぼえよう！」でトレーニング（20問）をやって、90点以上をとってね！");
-      return;
-    }
-  } else if (clef === 'all') {
-    if (!allUnlocked) {
-      alert("ト音記号とヘ音記号のすべてのレベルをクリアすると解放されるよ！");
-      return;
-    }
+  if ((clef === 'treble' || clef === 'bass') && !clefUnlocked) {
+    return alert("まずは「6つの『ド』」でトレーニング（20問）をやって、90点以上をとってね！");
   }
-
-  selectedClef = clef; isChallengeMode = false; showLevelScreen();
+  if (clef === 'all' && !allUnlocked) {
+    return alert("ト音記号とヘ音記号のすべてのレベルをクリアすると解放されるよ！");
+  }
+  selectedClef = clef; showLevelScreen();
 }
 
 function createLevelButtons() {
@@ -950,20 +868,15 @@ function showLevelCover(level) {
   selectedLevel = level;
   navigateTo("coverScreen");
   document.getElementById("coverLevelNumber").textContent = level;
-  setTimeout(() => {
-    if (!document.getElementById("coverScreen").classList.contains("hidden")) proceedToCards();
-  }, 1200);
+  setTimeout(() => { if (!document.getElementById("coverScreen").classList.contains("hidden")) proceedToCards(); }, 1200);
 }
 
 function proceedToCards() {
   currentCards = (selectedClef === "treble") ? trebleCards[selectedLevel] : (selectedClef === "bass") ? bassCards[selectedLevel] : allCards[selectedLevel];
-  currentIndex = 0; trainingMode = false; isChallengeMode = false;
+  currentIndex = 0; trainingMode = false;
   navigateTo("cardScreen");
   document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}`;
   document.getElementById("cardScreenTitle").textContent = "おんぷカード";
-  document.getElementById("arrowLeft").classList.remove("hidden");
-  document.getElementById("arrowRight").classList.remove("hidden");
-  document.getElementById("trainingButton").classList.remove("hidden");
   showCurrentCard();
 }
 
@@ -976,10 +889,9 @@ function showCurrentCard() {
   document.getElementById("incorrectX").classList.remove("show");
 }
 
-function nextCard() { if (!trainingMode && !isChallengeMode) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
-function previousCard() { if (!trainingMode && !isChallengeMode) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
+function nextCard() { if (!trainingMode) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
+function previousCard() { if (!trainingMode) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
 
-/* トレーニング処理 */
 function openTrainingSettings() {
   const q10Btn = document.getElementById("q10Btn"), q20Btn = document.getElementById("q20Btn"), q30Btn = document.getElementById("q30Btn");
   const t30Btn = document.getElementById("t30Btn"), t60Btn = document.getElementById("t60Btn");
@@ -991,19 +903,15 @@ function openTrainingSettings() {
     document.querySelectorAll(".q-btn").forEach(b => b.classList.remove("selected"));
     q20Btn.classList.add("selected");
   } else {
-    const unlock20 = localStorage.getItem(`onpu_unlock_20_${activeProfileIndex}`) === "true";
-    const unlock30 = localStorage.getItem(`onpu_unlock_30_${activeProfileIndex}`) === "true";
-    q10Btn.disabled = false; q20Btn.disabled = !unlock20; q30Btn.disabled = !unlock30;
+    /* 10問クリアで20問解放（30問やらなくても鍵は開く） */
+    const unlock20 = (getCountBest(activeProfileIndex, selectedClef, selectedLevel)?.accuracy >= 90) || localStorage.getItem(`onpu_unlock_20_${activeProfileIndex}`) === "true";
+    q10Btn.disabled = false; q20Btn.disabled = !unlock20; q30Btn.disabled = false;
     t30Btn.disabled = false; t60Btn.disabled = false;
     document.querySelectorAll(".q-btn").forEach(b => b.classList.remove("selected"));
-
     if (trainingType === "count") {
       if (targetValue === 20 && unlock20) q20Btn.classList.add("selected");
-      else if (targetValue === 30 && unlock30) q30Btn.classList.add("selected");
       else { trainingType = "count"; targetValue = 10; q10Btn.classList.add("selected"); }
-    } else {
-      (targetValue === 30 ? t30Btn : t60Btn).classList.add("selected");
-    }
+    } else { (targetValue === 30 ? t30Btn : t60Btn).classList.add("selected"); }
   }
   toggleModal("trainingModal", true);
 }
@@ -1034,7 +942,8 @@ function startTrainingWithConfig() {
   showRandomTrainingQuestion();
 }
 
-function restartTraining() { navigateTo("cardScreen"); startTrainingWithConfig(); }
+/* スムーズ再トライ：直接トレーニング開始 */
+function restartTrainingDirect() { navigateTo("cardScreen"); startTrainingWithConfig(); }
 
 function showRandomTrainingQuestion() {
   if (trainingType === "count" && trainingQuestionCount >= targetValue) { showResultScreen(); return; }
@@ -1046,33 +955,20 @@ function showRandomTrainingQuestion() {
   showCurrentCard();
 }
 
-/* キー入力処理（音高再生・テンポ感保持） */
+/* キー入力＆osi.mp3（惜しい！）再生 */
 function pressKey(key) {
   if (!currentCards.length) return;
   const card = currentCards[currentIndex];
 
-  if (isChallengeMode) {
-    if (challengeLocked) return;
-    if (key === card.key) {
-      challengeLocked = true;
-      playNoteSound(card.id, key);
-      challengeAdvanceTimer = setTimeout(() => {
-        challengeAdvanceTimer = null; currentIndex++;
-        if (currentIndex < currentCards.length) { challengeLocked = false; showCurrentCard(); }
-        else { finishMonthlyChallenge(); }
-      }, 350);
-    } else {
-      challengeMistakes++; playPokon();
-      const xEl = document.getElementById("incorrectX");
-      xEl.classList.remove("show"); void xEl.offsetWidth; xEl.classList.add("show");
-    }
-    return;
-  }
-
   if (trainingMode) {
     if (trainingLocked) return;
     if (key !== card.key) {
-      trainingMistakes++; playPokon();
+      trainingMistakes++;
+      playPokon();
+      /* 惜しい時 osi.mp3 再生 */
+      const osi = document.getElementById("osiAudio");
+      if (osi) { osi.currentTime = 0; osi.play().catch(()=>{}); }
+
       const xEl = document.getElementById("incorrectX");
       xEl.classList.remove("show"); void xEl.offsetWidth; xEl.classList.add("show");
       return;
@@ -1094,7 +990,6 @@ function pressKey(key) {
   if (key === card.key) playNoteSound(card.id, key);
 }
 
-/* 記録保存＆1日1スタンプ更新 */
 function saveCountBest(profileIndex, clef, level, accuracy, duration) {
   const key = `onpu_count_best_${profileIndex}_${clef}_${level}`;
   const oldBest = Storage.get(key);
@@ -1102,7 +997,6 @@ function saveCountBest(profileIndex, clef, level, accuracy, duration) {
     Storage.set(key, { accuracy, time: duration, mode: "count", count: targetValue });
   }
 }
-
 function saveDoTestBest(accuracy, duration) {
   const key = `onpu_do_test_best_${activeProfileIndex}`;
   const oldBest = Storage.get(key);
@@ -1110,11 +1004,9 @@ function saveDoTestBest(accuracy, duration) {
     Storage.set(key, { accuracy, time: duration, mode: "count", count: 20 });
   }
 }
-
 function saveOverallBest(bestKey, accuracy, duration, mode, count) {
   const savedBest = Storage.get(bestKey);
   let isNewRecord = false, recordType = "";
-
   if (!savedBest) { isNewRecord = true; recordType = "accuracy_time"; }
   else {
     if (accuracy > savedBest.accuracy) { isNewRecord = true; recordType = "accuracy"; }
@@ -1124,7 +1016,7 @@ function saveOverallBest(bestKey, accuracy, duration, mode, count) {
   return { isNewRecord, recordType };
 }
 
-/* リザルト画面表示・レベル移行判定 */
+/* 🏆 リザルト画面表示＆条件分岐音声再生 */
 function showResultScreen() {
   trainingMode = false;
   if (timeTimer) { clearInterval(timeTimer); timeTimer = null; }
@@ -1135,22 +1027,12 @@ function showResultScreen() {
   const total = trainingQuestionCount + trainingMistakes;
   const accuracy = total > 0 ? Math.round((trainingQuestionCount / total) * 100) : 0;
 
-  /* 90%以上達成時の1日1スタンプ付与 */
   if (accuracy >= 90) {
     const todayStr = new Date().toISOString().split("T")[0];
-    const lastStampDate = Storage.get(`onpu_last_stamp_date_${activeProfileIndex}`);
-    if (lastStampDate !== todayStr) {
+    if (Storage.get(`onpu_last_stamp_date_${activeProfileIndex}`) !== todayStr) {
       Storage.set(`onpu_last_stamp_date_${activeProfileIndex}`, todayStr);
-      const currentStamps = Storage.getNumber(`onpu_stamps_${activeProfileIndex}`, 0);
-      Storage.set(`onpu_stamps_${activeProfileIndex}`, currentStamps + 1);
+      Storage.set(`onpu_stamps_${activeProfileIndex}`, Storage.getNumber(`onpu_stamps_${activeProfileIndex}`, 0) + 1);
     }
-  }
-
-  if (trainingType === "count" && targetValue === 10 && accuracy >= 90) {
-    Storage.set(`onpu_unlock_20_${activeProfileIndex}`, "true");
-  }
-  if (trainingType === "count" && targetValue === 20 && accuracy >= 90 && selectedClef !== "do") {
-    Storage.set(`onpu_unlock_30_${activeProfileIndex}`, "true");
   }
 
   const isDoTest = (selectedClef === "do" && trainingType === "count" && targetValue === 20);
@@ -1159,8 +1041,7 @@ function showResultScreen() {
     saveCountBest(activeProfileIndex, selectedClef, selectedLevel, accuracy, duration);
   }
 
-  const bestKey = `onpu_best_${activeProfileIndex}_${selectedClef}_${selectedLevel}`;
-  const recordResult = saveOverallBest(bestKey, accuracy, duration, trainingType, targetValue);
+  const recordResult = saveOverallBest(`onpu_best_${activeProfileIndex}_${selectedClef}_${selectedLevel}`, accuracy, duration, trainingType, targetValue);
 
   navigateTo("resultScreen");
 
@@ -1171,36 +1052,30 @@ function showResultScreen() {
 
   const bestEl = document.getElementById("resultBest");
   if (recordResult.isNewRecord) {
-    bestEl.textContent = recordResult.recordType === "accuracy" ? "✨ 正答率の最高記録更新！" : recordResult.recordType === "time" ? "✨ タイムの最高記録更新！" : "✨ 正答率・タイムの最高記録更新！";
-    const fanfare = document.getElementById("fanfareAudio");
-    fanfare.currentTime = 0; fanfare.play().catch(()=>{});
+    bestEl.textContent = "✨ 過去最高記録更新！";
+    document.getElementById("fanfareAudio").currentTime = 0;
+    document.getElementById("fanfareAudio").play().catch(()=>{});
   } else { bestEl.textContent = ""; }
 
-  const msgEl = document.getElementById("resultMessage");
   const nextBtn = document.getElementById("nextLevelBtn");
-  msgEl.textContent = ""; nextBtn.classList.add("hidden");
+  nextBtn.classList.add("hidden");
 
-  /* 進行判定ロジック */
-  if (selectedClef === "do") {
-    if (isDoTest && accuracy >= 90) {
+  /* 🎵 音声再生分岐ロジック */
+  if (accuracy >= 90) {
+    if (selectedClef === "do" && isDoTest) {
       checkDoLockStatus();
-      msgEl.textContent = "6つの「ド」クリア！ト音記号・ヘ音記号コースが解放されました！";
+      playAudioById("audio6do");
       nextActionClef = "treble"; nextActionLevel = getFirstUnclearedLevel("treble");
-      nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ挑戦！`;
+      nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ！`;
       nextBtn.classList.remove("hidden");
-    } else {
-      msgEl.textContent = "20問のテストで90%以上をとると、ト音記号・ヘ音記号コースが解放されるよ！がんばろう！";
-    }
-  } else if (trainingType === "count" && accuracy >= 90) {
-    if (targetValue === 10) {
-      msgEl.textContent = `レベル ${selectedLevel} の10問クリア！次は20問に挑戦しよう！`;
+    } else if (trainingType === "count" && targetValue === 10) {
       nextActionClef = selectedClef; nextActionLevel = selectedLevel;
-      nextBtn.textContent = `🚀 レベル ${selectedLevel} の20問へ挑戦！`;
+      nextBtn.textContent = `🚀 レベル${selectedLevel} の20問へ！`;
       nextBtn.classList.remove("hidden");
-    } else if (targetValue >= 20) {
+    } else if (trainingType === "count" && targetValue >= 20) {
       if (selectedLevel < 5) {
         nextActionClef = selectedClef; nextActionLevel = selectedLevel + 1;
-        nextBtn.textContent = "🚀 次のレベルへ挑戦！";
+        nextBtn.textContent = "🚀 次のレベルへ！";
         nextBtn.classList.remove("hidden");
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
@@ -1208,36 +1083,40 @@ function showResultScreen() {
 
         if (selectedClef === "treble") {
           if (!bCleared) {
-            msgEl.textContent = "ト音記号マスター！次はヘ音記号もがんばってね！";
+            playAudioById("audioToon1");
             nextActionClef = "bass"; nextActionLevel = getFirstUnclearedLevel("bass");
-            nextBtn.textContent = `🚀 ヘ音記号 レベル${nextActionLevel}へ挑戦！`;
+            nextBtn.textContent = `🚀 ヘ音記号 レベル${nextActionLevel}へ！`;
             nextBtn.classList.remove("hidden");
           } else {
-            msgEl.textContent = "すごーい！ト音記号・ヘ音記号をマスター！全カードモードへ進もう！";
+            playAudioById("audioToon2");
             nextActionClef = "all"; nextActionLevel = 1;
-            nextBtn.textContent = "🚀 全カード レベル1へ挑戦！";
+            nextBtn.textContent = "🚀 全カード レベル1へ！";
             nextBtn.classList.remove("hidden");
           }
         } else if (selectedClef === "bass") {
           if (!tCleared) {
-            msgEl.textContent = "ヘ音記号マスター！次はト音記号もがんばってね！";
+            playAudioById("audioHeon1");
             nextActionClef = "treble"; nextActionLevel = getFirstUnclearedLevel("treble");
-            nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ挑戦！`;
+            nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ！`;
             nextBtn.classList.remove("hidden");
           } else {
-            msgEl.textContent = "すごーい！ト音記号・ヘ音記号をマスター！全カードモードへ進もう！";
+            playAudioById("audioHeon2");
             nextActionClef = "all"; nextActionLevel = 1;
-            nextBtn.textContent = "🚀 全カード レベル1へ挑戦！";
+            nextBtn.textContent = "🚀 全カード レベル1へ！";
             nextBtn.classList.remove("hidden");
           }
         } else if (selectedClef === "all") {
-          msgEl.textContent = "👑 パーフェクト！すべてのカードをマスターしました！ 🌟 次のステージへ進もう！";
-          nextBtn.classList.add("hidden");
+          playAudioById("audioKanpeki");
         }
       }
     }
   }
   startConfetti();
+}
+
+function playAudioById(audioId) {
+  const el = document.getElementById(audioId);
+  if (el) { el.currentTime = 0; el.play().catch(()=>{}); }
 }
 
 function goToNextLevel() {
@@ -1251,9 +1130,7 @@ function recordPracticeStats(durationSec) {
   let days = Storage.get(dateKey, []);
   const today = new Date().toISOString().split("T")[0];
   if (!days.includes(today)) { days.push(today); Storage.set(dateKey, days); }
-
-  const timeKey = `onpu_time_${activeProfileIndex}`;
-  Storage.set(timeKey, Storage.getNumber(timeKey, 0) + durationSec);
+  Storage.set(`onpu_time_${activeProfileIndex}`, Storage.getNumber(`onpu_time_${activeProfileIndex}`, 0) + durationSec);
 }
 
 function getDoRanking() {
