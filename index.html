@@ -129,7 +129,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: none; border-radius: 50%; background: rgba(253,248,237,0.95); font-size: 28px; cursor: pointer; z-index: 5; }
 .arrow-left { left: 4px; } .arrow-right { right: 4px; }
 
-/* 🎹 鍵盤デザイン（全面しっかり色付け復元） */
+/* 🎹 鍵盤デザイン（全面しっかり色付け） */
 .keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding-top: 4px; }
 .key-btn {
   border: none; border-radius: 12px; min-height: 58px; color: white; font-size: 16px; font-weight: 800;
@@ -187,6 +187,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
 <audio id="seikaiAudio" preload="auto" src="seikai.mp3"></audio>
 <audio id="fanfareAudio" preload="auto" src="tassei-fanfare.mp3"></audio>
+<audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
 
 <div class="app-container">
 
@@ -511,7 +512,7 @@ let trainingType = 'count', targetValue = 10, remainingTime = 0, timeTimer = nul
 let trainingQuestionCount = 0, trainingMistakes = 0, trainingStartTime = 0;
 let nextActionClef = null, nextActionLevel = 1, nextActionTargetValue = 10;
 
-/* 記録・判定関数（20問達成をクリア基準に変更） */
+/* 記録・判定関数 */
 function getCountBest(profileIndex, clef, level) {
   return Storage.get(`onpu_count20_best_${profileIndex}_${clef}_${level}`) || Storage.get(`onpu_count_best_${profileIndex}_${clef}_${level}`);
 }
@@ -668,7 +669,6 @@ function selectClef(clef) {
   selectedClef = clef; showLevelScreen();
 }
 
-/* レベルボタン作成（未達成レベルは半透明化） */
 function createLevelButtons() {
   const list = document.getElementById("levelList");
   list.innerHTML = "";
@@ -760,7 +760,6 @@ function startTrainingWithConfig() {
   trainingMode = true; trainingQuestionCount = 0; trainingMistakes = 0; trainingStartTime = Date.now(); lastTrainingIndex = -1;
   document.getElementById("timerDisplay").classList.toggle("hidden", trainingType !== "time");
 
-  // 直接トレーニング開始時の画面表示調整
   document.getElementById("arrowLeft").classList.add("hidden");
   document.getElementById("arrowRight").classList.add("hidden");
   document.getElementById("trainingButton").classList.add("hidden");
@@ -778,7 +777,6 @@ function startTrainingWithConfig() {
   showRandomTrainingQuestion();
 }
 
-/* ショートカット：直接再挑戦 */
 function restartTrainingDirect() {
   navigateTo("cardScreen");
   startTrainingWithConfig();
@@ -854,7 +852,7 @@ function saveOverallBest(bestKey, accuracy, duration, mode, count) {
   return { isNewRecord, recordType };
 }
 
-/* リザルト画面表示・判定＆演出切り替え */
+/* リザルト画面表示（ずんだもんボイス osi.mp3 分岐入り） */
 function showResultScreen() {
   trainingMode = false;
   if (timeTimer) { clearInterval(timeTimer); timeTimer = null; }
@@ -888,16 +886,25 @@ function showResultScreen() {
   document.getElementById("resultScore").textContent = `正答数: ${trainingQuestionCount}問 （正答率 ${accuracy}%）`;
   document.getElementById("resultTime").textContent = `タイム: ${duration}秒`;
 
-  /* ファンファーレ分岐：100%達成 vs 新記録 */
+  /* ボイス＆ファンファーレ演出 */
   const bestEl = document.getElementById("resultBest");
   if (accuracy === 100) {
     playPerfectSound();
     bestEl.textContent = "💯 パーフェクト達成！すばらしい！";
-  } else if (recordResult.isNewRecord) {
-    bestEl.textContent = recordResult.recordType === "accuracy" ? "✨ 正答率の最高記録更新！" : recordResult.recordType === "time" ? "✨ タイムの最高記録更新！" : "✨ 正答率・タイムの最高記録更新！";
-    const fanfare = document.getElementById("fanfareAudio");
-    fanfare.currentTime = 0; fanfare.play().catch(()=>{});
-  } else { bestEl.textContent = ""; }
+  } else {
+    /* 100%未満のときは「osi.mp3」（惜しい！あと少し！）を再生 */
+    const osiAudio = document.getElementById("osiAudio");
+    if (osiAudio) {
+      osiAudio.currentTime = 0;
+      osiAudio.play().catch(()=>{});
+    }
+
+    if (recordResult.isNewRecord) {
+      bestEl.textContent = recordResult.recordType === "accuracy" ? "✨ 正答率の最高記録更新！" : recordResult.recordType === "time" ? "✨ タイムの最高記録更新！" : "✨ 正答率・タイムの最高記録更新！";
+    } else {
+      bestEl.textContent = "あとちょっとでパーフェクト！";
+    }
+  }
 
   const msgEl = document.getElementById("resultMessage");
   const nextBtn = document.getElementById("nextLevelBtn");
@@ -963,7 +970,6 @@ function showResultScreen() {
   startConfetti();
 }
 
-/* ボタン押下時：直接トレーニング画面へダイレクト遷移 */
 function goToNextLevel() {
   if (!nextActionClef) return;
   selectedClef = nextActionClef; selectedLevel = nextActionLevel;
