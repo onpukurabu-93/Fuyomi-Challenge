@@ -51,23 +51,21 @@ body { display: flex; justify-content: center; align-items: center; }
 .select-button.accent { background: #78a9c8; color: white; }
 .select-button.info { background: #e6b26a; color: white; }
 .select-button.special { background: #8dbb8d; color: white; }
+.select-button.warning { background: #e99595; color: white; }
 
 .lock-tag {
   position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
   font-size: 12px; background: rgba(0,0,0,0.15); padding: 3px 8px; border-radius: 10px;
 }
 
-/* レベル画面（未解放レベルは半透明化） */
+/* レベル画面 */
 .level-list { display: flex; flex-direction: column; gap: 12px; }
 .level-button {
   width: 100%; text-align: left; border: none; border-radius: 18px; background: white;
   padding: 16px; color: #5b4636; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative;
   transition: opacity 0.3s;
 }
-.level-button.is-locked {
-  opacity: 0.45;
-  background: #f5efe6;
-}
+.level-button.is-locked { opacity: 0.45; background: #f5efe6; }
 .level-number { display: block; font-size: 18px; font-weight: 700; }
 .locked-badge { position: absolute; top: 16px; right: 16px; background: #e99595; color: white; padding: 4px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; }
 
@@ -103,6 +101,11 @@ body { display: flex; justify-content: center; align-items: center; }
 .training-cover.reveal { opacity: 0; }
 
 .timer-display { position: absolute; top: 10px; left: 10px; background: #e99595; color: white; padding: 4px 12px; border-radius: 20px; font-size: 15px; font-weight: 700; z-index: 10; }
+.combo-display {
+  position: absolute; top: 10px; right: 10px; background: #f5a623; color: white; padding: 4px 12px; border-radius: 20px; font-size: 15px; font-weight: 800; z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); animation: popCombo 0.3s ease-out;
+}
+@keyframes popCombo { 0% { transform: scale(0.5); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
 .correct-circle {
   position: absolute; width: 160px; height: 160px; border: 10px solid #f04444; border-radius: 50%;
@@ -134,12 +137,19 @@ body { display: flex; justify-content: center; align-items: center; }
 .key-btn {
   border: none; border-radius: 12px; min-height: 58px; color: white; font-size: 16px; font-weight: 800;
   cursor: pointer; position: relative; box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-  transition: transform 0.05s, box-shadow 0.05s;
+  transition: transform 0.05s, box-shadow 0.05s, background-color 0.2s;
 }
 .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.15); }
 .key-do { background: #e99595; } .key-re { background: #e6b26a; } .key-mi { background: #d6c45d; }
 .key-fa { background: #8dbb8d; } .key-so { background: #78a9c8; } .key-la { background: #5a82d6; }
 .key-si { background: #b28bb9; }
+
+/* 正解アシストガイド点滅 */
+.key-btn.guide-highlight {
+  animation: guidePulse 0.6s infinite alternate;
+  box-shadow: 0 0 15px #f5a623;
+}
+@keyframes guidePulse { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
 
 /* モーダル */
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
@@ -166,10 +176,7 @@ body { display: flex; justify-content: center; align-items: center; }
   font-size: 18px; color: #e99595; font-weight: 800; margin-bottom: 20px;
   animation: blinkText 0.8s ease-in-out infinite alternate;
 }
-@keyframes blinkText {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0.3; transform: scale(1.05); }
-}
+@keyframes blinkText { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.3; transform: scale(1.05); } }
 
 /* スコア画面・保護者エリア */
 .score-card { background: white; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -189,6 +196,9 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="fanfareAudio" preload="auto" src="tassei-fanfare.mp3"></audio>
 <audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
 <audio id="ganbatteAudio" preload="auto" src="ganbatte.mp3"></audio>
+<audio id="clearTrebleAudio" preload="auto" src="clear_treble.mp3"></audio>
+<audio id="clearBassAudio" preload="auto" src="clear_bass.mp3"></audio>
+<audio id="clearAllAudio" preload="auto" src="clear_all.mp3"></audio>
 
 <div class="app-container">
 
@@ -244,6 +254,7 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="header-title">せいせき</div>
       <div class="header-spacer"></div>
     </div>
+    <button class="select-button warning" style="margin-bottom:14px;" onclick="startWeaknessTraining()">🎯 にがてカードだけ練習する！</button>
     <div id="scoreContent"></div>
     <button class="select-button accent" style="margin-top:10px;" onclick="openParentModal()">🔒 保護者専用ページ</button>
   </section>
@@ -259,6 +270,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
     <div id="cardArea" class="card-area">
       <div id="timerDisplay" class="timer-display hidden">⏱️ 30s</div>
+      <div id="comboDisplay" class="combo-display hidden">🔥 0コンボ</div>
       <button id="arrowLeft" class="arrow arrow-left" onclick="previousCard()">‹</button>
 
       <div class="note-card-wrap">
@@ -272,13 +284,13 @@ body { display: flex; justify-content: center; align-items: center; }
     </div>
 
     <div class="keyboard">
-      <button class="key-btn key-do" onclick="pressKey('ド')">ド</button>
-      <button class="key-btn key-re" onclick="pressKey('レ')">レ</button>
-      <button class="key-btn key-mi" onclick="pressKey('ミ')">ミ</button>
-      <button class="key-btn key-fa" onclick="pressKey('ファ')">ファ</button>
-      <button class="key-btn key-so" onclick="pressKey('ソ')">ソ</button>
-      <button class="key-btn key-la" onclick="pressKey('ラ')">ラ</button>
-      <button class="key-btn key-si" onclick="pressKey('シ')">シ</button>
+      <button class="key-btn key-do" data-key="ド" onclick="pressKey('ド')">ド</button>
+      <button class="key-btn key-re" data-key="レ" onclick="pressKey('レ')">レ</button>
+      <button class="key-btn key-mi" data-key="ミ" onclick="pressKey('ミ')">ミ</button>
+      <button class="key-btn key-fa" data-key="ファ" onclick="pressKey('ファ')">ファ</button>
+      <button class="key-btn key-so" data-key="ソ" onclick="pressKey('ソ')">ソ</button>
+      <button class="key-btn key-la" data-key="ラ" onclick="pressKey('ラ')">ラ</button>
+      <button class="key-btn key-si" data-key="シ" onclick="pressKey('シ')">シ</button>
     </div>
   </section>
 
@@ -429,12 +441,13 @@ function playPokon() {
 }
 
 const noteFrequencies = {
-  "h_cdo": 65.41,  "h_dre": 73.42,  "h_emi": 82.41,  "h_ffa": 87.31,  "h_gso": 98.00,  "h_ara": 110.00, "h_bsi": 123.47,
-  "h_c00": 130.81, "h_d": 146.83,   "h_e": 164.81,   "h_f": 174.61,   "h_g": 196.00,   "h_a0": 220.00,  "h_b0": 246.94,
-  "h_c1": 261.63,  "h_d1": 293.66,  "h_e1": 329.63,  "h_f1": 349.23,  "t_e": 164.81,   "t_f": 174.61,   "t_g": 196.00,
-  "t_a": 220.00,   "t_b": 246.94,   "t_c1": 261.63,  "t_d1": 293.66,  "t_e1": 329.63,  "t_f1": 349.23,  "t_g1": 392.00,
-  "t_a1": 440.00,  "t_b1": 493.88,  "t_c2": 523.25,  "t_d2": 587.33,  "t_e2": 659.25,  "t_f2": 698.46,  "t_g2": 783.99,
-  "t_a2": 880.00,  "t_b2": 987.77,  "t_c3": 1046.50, "t_d3": 1174.66, "t_e3": 1318.51
+  "h_aRa1": 55.00,  "h_bSi1": 61.74,
+  "h_cdo": 65.41,   "h_dre": 73.42,   "h_emi": 82.41,   "h_ffa": 87.31,  "h_gso": 98.00,  "h_ara": 110.00, "h_bsi": 123.47,
+  "h_c00": 130.81,  "h_d": 146.83,    "h_e": 164.81,    "h_f": 174.61,   "h_g": 196.00,   "h_a0": 220.00,  "h_b0": 246.94,
+  "h_c1": 261.63,   "h_d1": 293.66,   "h_e1": 329.63,   "h_f1": 349.23,  "t_e": 164.81,   "t_f": 174.61,   "t_g": 196.00,
+  "t_a": 220.00,    "t_b": 246.94,    "t_c1": 261.63,   "t_d1": 293.66,  "t_e1": 329.63,  "t_f1": 349.23,  "t_g1": 392.00,
+  "t_a1": 440.00,   "t_b1": 493.88,   "t_c2": 523.25,   "t_d2": 587.33,  "t_e2": 659.25,  "t_f2": 698.46,  "t_g2": 783.99,
+  "t_a2": 880.00,   "t_b2": 987.77,   "t_c3": 1046.50,  "t_d3": 1174.66, "t_e3": 1318.51
 };
 const defaultKeyFreqs = { "ド": 261.63, "レ": 293.66, "ミ": 329.63, "ファ": 349.23, "ソ": 392.00, "ラ": 440.00, "シ": 493.88 };
 
@@ -459,11 +472,10 @@ function playNoteSound(cardId, noteKey) {
   } catch (e) { console.log("Piano Sound Error:", e); }
 }
 
-/* 100%正解時の特製サウンド */
 function playPerfectSound() {
   try {
     const ctx = getAudioContext();
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // ド・ミ・ソ・ド
+    const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const now = ctx.currentTime + idx * 0.08;
       const osc = ctx.createOscillator();
@@ -478,7 +490,7 @@ function playPerfectSound() {
   } catch (e) {}
 }
 
-/* カードデータ */
+/* カードデータ定義 */
 const doCards = [
   { id:"h_c1", key:"ド", img:"h_c1.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" },
   { id:"h_c00", key:"ド", img:"h_c00.png" }, { id:"h_cdo", key:"ド", img:"h_cdo.png" },
@@ -501,7 +513,13 @@ const bassCards = {
 };
 bassCards[5] = [ ...bassCards[1], ...bassCards[2], ...bassCards[3], ...bassCards[4] ];
 
-const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [ ...trebleCards[5] ], 5: [ ...trebleCards[5], ...bassCards[5] ] };
+const allCards = {
+  1: [ ...trebleCards[1], ...bassCards[1] ],
+  2: [ ...trebleCards[2], ...bassCards[2] ],
+  3: [ ...trebleCards[3], ...bassCards[3] ],
+  4: [ ...trebleCards[4], ...bassCards[4] ],
+  5: [ ...trebleCards[5], ...bassCards[5] ]
+};
 
 /* 状態管理 */
 let profiles = Storage.get("onpu_profiles", ["", "", ""]);
@@ -512,6 +530,50 @@ let currentIndex = 0, trainingMode = false, trainingLocked = false, lastTraining
 let trainingType = 'count', targetValue = 10, remainingTime = 0, timeTimer = null;
 let trainingQuestionCount = 0, trainingMistakes = 0, trainingStartTime = 0;
 let nextActionClef = null, nextActionLevel = 1, nextActionTargetValue = 10;
+
+/* コンボ数＆2連続ミスアシスト用変数 */
+let currentCombo = 0;
+let cardMissAttempts = 0;
+
+/* 弱点（苦手カード）記録・管理ロジック */
+function recordMissCard(cardId) {
+  const key = `onpu_miss_${activeProfileIndex}`;
+  let missMap = Storage.get(key, {});
+  missMap[cardId] = (missMap[cardId] || 0) + 1;
+  Storage.set(key, missMap);
+}
+
+/* 成績画面から呼び出す「🎯 にがてカード集中トレーニング」 */
+function startWeaknessTraining() {
+  const missMap = Storage.get(`onpu_miss_${activeProfileIndex}`, {});
+  const missCardIds = Object.keys(missMap).filter(id => missMap[id] > 0);
+
+  if (missCardIds.length === 0) {
+    alert("素晴らしい！まだ苦手なカードはありません！🎉");
+    return;
+  }
+
+  // 全カードリストの中からミス記録のあるカードだけを抽出
+  const allCardPool = [ ...trebleCards[5], ...bassCards[5] ];
+  const weakCards = allCardPool.filter(c => missCardIds.includes(c.id));
+
+  // 重複を除去
+  const uniqueWeakCards = [];
+  const seenIds = new Set();
+  weakCards.forEach(c => {
+    if (!seenIds.has(c.id)) { seenIds.add(c.id); uniqueWeakCards.push(c); }
+  });
+
+  currentCards = uniqueWeakCards;
+  selectedClef = "weakness"; selectedLevel = 0;
+  targetValue = 10; trainingType = "count";
+
+  navigateTo("cardScreen");
+  document.getElementById("levelBadge").textContent = "🎯 苦手克服";
+  document.getElementById("cardScreenTitle").textContent = "にがて特訓";
+  
+  startTrainingWithConfig();
+}
 
 /* 記録・判定関数 */
 function getCountBest(profileIndex, clef, level) {
@@ -714,6 +776,9 @@ function showCurrentCard() {
   document.getElementById("trainingCover").classList.remove("reveal");
   document.getElementById("correctCircle").classList.remove("show");
   document.getElementById("incorrectX").classList.remove("show");
+
+  // ガイドハイライトを解除
+  document.querySelectorAll(".key-btn").forEach(btn => btn.classList.remove("guide-highlight"));
 }
 
 function nextCard() { if (!trainingMode) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
@@ -759,7 +824,10 @@ function startTrainingConfirmed() { toggleModal("trainingModal", false); startTr
 function startTrainingWithConfig() {
   if (selectedClef === "do") { trainingType = "count"; targetValue = 20; }
   trainingMode = true; trainingQuestionCount = 0; trainingMistakes = 0; trainingStartTime = Date.now(); lastTrainingIndex = -1;
+  currentCombo = 0; cardMissAttempts = 0;
+
   document.getElementById("timerDisplay").classList.toggle("hidden", trainingType !== "time");
+  updateComboDisplay();
 
   document.getElementById("arrowLeft").classList.add("hidden");
   document.getElementById("arrowRight").classList.add("hidden");
@@ -783,17 +851,50 @@ function restartTrainingDirect() {
   startTrainingWithConfig();
 }
 
+function updateComboDisplay() {
+  const comboEl = document.getElementById("comboDisplay");
+  if (currentCombo >= 3) {
+    comboEl.textContent = `🔥 ${currentCombo}コンボ!`;
+    comboEl.classList.remove("hidden");
+  } else {
+    comboEl.classList.add("hidden");
+  }
+}
+
+/* ★ 弱点克服（ミス頻度に応じた重み付け出題）＆連続出題防止 ★ */
 function showRandomTrainingQuestion() {
   if (trainingType === "count" && trainingQuestionCount >= targetValue) { showResultScreen(); return; }
-  let nextIdx;
+
+  cardMissAttempts = 0; // ミスカウントリセット
+  const missMap = Storage.get(`onpu_miss_${activeProfileIndex}`, {});
+  let nextIdx = -1;
+
   if (currentCards.length > 1) {
-    do { nextIdx = Math.floor(Math.random() * currentCards.length); } while (nextIdx === lastTrainingIndex);
+    // 各カードの重み付け（通常1、過去ミス回数ごとに+2加算）
+    const weights = currentCards.map((card, idx) => {
+      if (idx === lastTrainingIndex) return 0; // 直前と同じ問題は出さない
+      const missCount = missMap[card.id] || 0;
+      return 1 + (missCount * 2);
+    });
+
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    let randomNum = Math.random() * totalWeight;
+
+    for (let i = 0; i < currentCards.length; i++) {
+      if (randomNum < weights[i]) {
+        nextIdx = i;
+        break;
+      }
+      randomNum -= weights[i];
+    }
+    if (nextIdx === -1) nextIdx = 0;
   } else { nextIdx = 0; }
+
   lastTrainingIndex = nextIdx; currentIndex = nextIdx; trainingLocked = false;
   showCurrentCard();
 }
 
-/* キー入力処理 */
+/* キー入力処理（アシスト＆コンボ連動） */
 function pressKey(key) {
   if (!currentCards.length) return;
   const card = currentCards[currentIndex];
@@ -801,12 +902,32 @@ function pressKey(key) {
   if (trainingMode) {
     if (trainingLocked) return;
     if (key !== card.key) {
-      trainingMistakes++; playPokon();
+      trainingMistakes++;
+      currentCombo = 0; // コンボリセット
+      updateComboDisplay();
+      recordMissCard(card.id); // 苦手カードとして記録
+      cardMissAttempts++;
+
+      playPokon();
       const xEl = document.getElementById("incorrectX");
       xEl.classList.remove("show"); void xEl.offsetWidth; xEl.classList.add("show");
+
+      // 2回ミスしたら正解の鍵盤をガイド点滅表示
+      if (cardMissAttempts >= 2) {
+        document.querySelectorAll(".key-btn").forEach(btn => {
+          if (btn.getAttribute("data-key") === card.key) {
+            btn.classList.add("guide-highlight");
+          }
+        });
+      }
       return;
     }
+
+    // 正解時
     trainingLocked = true; trainingQuestionCount++;
+    currentCombo++;
+    updateComboDisplay();
+
     document.getElementById("trainingCover").classList.add("reveal");
     playNoteSound(card.id, key);
 
@@ -853,7 +974,7 @@ function saveOverallBest(bestKey, accuracy, duration, mode, count) {
   return { isNewRecord, recordType };
 }
 
-/* リザルト画面表示（厳格な3段階音声・ボタン分岐） */
+/* リザルト画面表示 */
 function showResultScreen() {
   trainingMode = false;
   if (timeTimer) { clearInterval(timeTimer); timeTimer = null; }
@@ -864,9 +985,6 @@ function showResultScreen() {
   const total = trainingQuestionCount + trainingMistakes;
   const accuracy = total > 0 ? Math.round((trainingQuestionCount / total) * 100) : 0;
 
-  // 今回のプレイ前のクリア状態
-  const wasAlreadyCleared = (selectedClef !== "do" && selectedLevel > 0) ? hasLevelCleared(activeProfileIndex, selectedClef, selectedLevel) : false;
-
   if (trainingType === "count" && targetValue === 10 && accuracy >= 90) {
     Storage.set(`onpu_unlock_20_${activeProfileIndex}`, "true");
   }
@@ -876,7 +994,7 @@ function showResultScreen() {
 
   const isDoTest = (selectedClef === "do" && trainingType === "count" && targetValue === 20);
   if (isDoTest) saveDoTestBest(accuracy, duration);
-  if (trainingType === "count" && selectedClef !== "do") {
+  if (trainingType === "count" && selectedClef !== "do" && selectedClef !== "weakness") {
     saveCountBest(activeProfileIndex, selectedClef, selectedLevel, accuracy, duration);
   }
 
@@ -886,7 +1004,7 @@ function showResultScreen() {
   navigateTo("resultScreen");
 
   const badgeEl = document.getElementById("resultClefBadge");
-  badgeEl.textContent = (selectedClef === "do") ? "🎵 6つの「ド」" : `${{treble:"ト音記号", bass:"ヘ音記号", all:"全カード"}[selectedClef]} レベル ${selectedLevel}`;
+  badgeEl.textContent = (selectedClef === "do") ? "🎵 6つの「ド」" : (selectedClef === "weakness") ? "🎯 にがて特訓" : `${{treble:"ト音記号", bass:"ヘ音記号", all:"全カード"}[selectedClef]} レベル ${selectedLevel}`;
   document.getElementById("resultScore").textContent = `正答数: ${trainingQuestionCount}問 （正答率 ${accuracy}%）`;
   document.getElementById("resultTime").textContent = `タイム: ${duration}秒`;
 
@@ -901,70 +1019,87 @@ function showResultScreen() {
   msgEl.textContent = "";
   nextBtn.classList.add("hidden");
 
-  /* 次のレベル案内ロジック準備 */
+  let isMasterClear = false;
+  let masterVoiceAudio = null;
+
+  /* 次のレベル案内＆コース全制覇時のセリフ分岐 */
   if (selectedClef === "do") {
     if (isDoTest && accuracy >= 90) {
       checkDoLockStatus();
       msgEl.textContent = "6つの「ド」クリア！ト音記号・ヘ音記号コースが解放されました！";
       nextActionClef = "treble"; nextActionLevel = getFirstUnclearedLevel("treble"); nextActionTargetValue = 10;
-      nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ挑戦！`;
+      nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ！`;
       nextBtn.classList.remove("hidden");
     } else {
       msgEl.textContent = "20問のテストで90%以上をとると、ト音記号・ヘ音記号コースが解放されるよ！がんばろう！";
     }
+  } else if (selectedClef === "weakness") {
+    msgEl.textContent = "🎯 にがて特訓おつかれさま！すこしずつ克服できているよ！";
   } else if (trainingType === "count" && accuracy >= 90) {
     if (targetValue === 10) {
       msgEl.textContent = `レベル ${selectedLevel} の10問クリア！次は20問に挑戦しよう！`;
       nextActionClef = selectedClef; nextActionLevel = selectedLevel; nextActionTargetValue = 20;
-      nextBtn.textContent = `🚀 レベル ${selectedLevel} の20問へ直行！`;
+      nextBtn.textContent = `🚀 レベル ${selectedLevel} の20問へ！`;
       nextBtn.classList.remove("hidden");
     } else if (targetValue >= 20) {
       if (selectedLevel < 5) {
         nextActionClef = selectedClef; nextActionLevel = selectedLevel + 1; nextActionTargetValue = 10;
-        nextBtn.textContent = "🚀 次のレベルへ直行！";
+        nextBtn.textContent = "🚀 次のレベルへ！";
         nextBtn.classList.remove("hidden");
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
         const bCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
 
         if (selectedClef === "treble") {
+          isMasterClear = true;
           if (!bCleared) {
-            msgEl.textContent = "ト音記号マスター！次はヘ音記号もがんばってね！";
+            masterVoiceAudio = document.getElementById("clearTrebleAudio");
+            msgEl.textContent = "🎉 すごーい！ト音記号マスターなのだ！✨ つぎはヘ音記号に挑戦してみよう！";
             nextActionClef = "bass"; nextActionLevel = getFirstUnclearedLevel("bass"); nextActionTargetValue = 10;
-            nextBtn.textContent = `🚀 ヘ音記号 レベル${nextActionLevel}へ挑戦！`;
+            nextBtn.textContent = `🚀 ヘ音記号 レベル${nextActionLevel}へ！`;
             nextBtn.classList.remove("hidden");
           } else {
-            msgEl.textContent = "すごーい！ト音記号・ヘ音記号をマスター！全カードモードへ進もう！";
+            masterVoiceAudio = document.getElementById("clearAllAudio");
+            msgEl.textContent = "👑 すばらしい！ト音記号もヘ音記号も完全制覇！いよいよ最終ステージ『全カード』に挑戦だ！";
             nextActionClef = "all"; nextActionLevel = 1; nextActionTargetValue = 10;
-            nextBtn.textContent = "🚀 全カード レベル1へ挑戦！";
+            nextBtn.textContent = "🚀 全カード レベル1へ！";
             nextBtn.classList.remove("hidden");
           }
         } else if (selectedClef === "bass") {
+          isMasterClear = true;
           if (!tCleared) {
-            msgEl.textContent = "ヘ音記号マスター！次はト音記号もがんばってね！";
+            masterVoiceAudio = document.getElementById("clearBassAudio");
+            msgEl.textContent = "🎉 やったのだ！ヘ音記号マスターなのだ！✨ つぎはト音記号に挑戦してみよう！";
             nextActionClef = "treble"; nextActionLevel = getFirstUnclearedLevel("treble"); nextActionTargetValue = 10;
-            nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ挑戦！`;
+            nextBtn.textContent = `🚀 ト音記号 レベル${nextActionLevel}へ！`;
             nextBtn.classList.remove("hidden");
           } else {
-            msgEl.textContent = "すごーい！ト音記号・ヘ音記号をマスター！全カードモードへ進もう！";
+            masterVoiceAudio = document.getElementById("clearAllAudio");
+            msgEl.textContent = "👑 すばらしい！ト音記号もヘ音記号も完全制覇！いよいよ最終ステージ『全カード』に挑戦だ！";
             nextActionClef = "all"; nextActionLevel = 1; nextActionTargetValue = 10;
-            nextBtn.textContent = "🚀 全カード レベル1へ挑戦！";
+            nextBtn.textContent = "🚀 全カード レベル1へ！";
             nextBtn.classList.remove("hidden");
           }
         } else if (selectedClef === "all") {
-          msgEl.textContent = "👑 パーフェクト！すべてのカードをマスターしました！ 🌟";
+          isMasterClear = true;
+          masterVoiceAudio = document.getElementById("clearAllAudio");
+          msgEl.textContent = "👑 かんぺき！両手マスター！きみはピアノの天才なのだー！ 🌟";
           nextBtn.classList.add("hidden");
         }
       }
     }
   }
 
-  /* 【音・ボイス・強調ボタンの3段階分岐】 */
+  /* 音声・演出・強調ボタンの3段階分岐 */
   if (accuracy === 100) {
-    // 100%：パーフェクトファンファーレ ＆ 次へボタン強調
     playPerfectSound();
     const fanfare = document.getElementById("fanfareAudio");
     if (fanfare) { fanfare.currentTime = 0; fanfare.play().catch(()=>{}); }
+    
+    if (isMasterClear && masterVoiceAudio) {
+      setTimeout(() => { masterVoiceAudio.currentTime = 0; masterVoiceAudio.play().catch(()=>{}); }, 600);
+    }
+    
     bestEl.textContent = "💯 パーフェクト達成！すばらしい！";
     if (!nextBtn.classList.contains("hidden")) {
       nextBtn.classList.add("accent");
@@ -973,44 +1108,47 @@ function showResultScreen() {
     }
 
   } else if (accuracy >= 90) {
-    // 90%〜99%：ずんだもん「惜しい！」（osi.mp3）
-    const osiAudio = document.getElementById("osiAudio");
-    if (osiAudio) { osiAudio.currentTime = 0; osiAudio.play().catch(()=>{}); }
-    bestEl.textContent = "あとちょっとでパーフェクト！";
-
-    if (wasAlreadyCleared) {
-      retryBtn.classList.add("accent"); // 解放済みのおさらい時は「もう一度」強調
+    if (isMasterClear && masterVoiceAudio) {
+      masterVoiceAudio.currentTime = 0; masterVoiceAudio.play().catch(()=>{});
     } else {
-      if (!nextBtn.classList.contains("hidden")) {
-        nextBtn.classList.add("accent"); // 初回クリア時は「次へ」強調
-      } else {
-        retryBtn.classList.add("accent");
-      }
+      const osiAudio = document.getElementById("osiAudio");
+      if (osiAudio) { osiAudio.currentTime = 0; osiAudio.play().catch(()=>{}); }
     }
+    bestEl.textContent = "あとちょっとでパーフェクト！";
+    retryBtn.classList.add("accent");
 
   } else {
-    // 89%以下（77%など）：ずんだもん「もう一度、がんばって！」（ganbatte.mp3）
     const ganbatteAudio = document.getElementById("ganbatteAudio");
     if (ganbatteAudio) { ganbatteAudio.currentTime = 0; ganbatteAudio.play().catch(()=>{}); }
     
     bestEl.textContent = "💪 もういちど がんばってみよう！";
-    retryBtn.classList.add("accent"); // 「もう一度挑戦する」を強調
+    retryBtn.classList.add("accent");
   }
 
   startConfetti();
 }
 
+/* 次のレベル移動処理 */
 function goToNextLevel() {
   if (!nextActionClef) return;
-  selectedClef = nextActionClef; selectedLevel = nextActionLevel;
-  targetValue = nextActionTargetValue; trainingType = "count";
+  
+  const isAlreadyCleared = (nextActionClef !== "do" && nextActionLevel > 0) ? hasLevelCleared(activeProfileIndex, nextActionClef, nextActionLevel) : false;
+
+  selectedClef = nextActionClef; 
+  selectedLevel = nextActionLevel;
+  targetValue = nextActionTargetValue; 
+  trainingType = "count";
   
   currentCards = (selectedClef === "treble") ? trebleCards[selectedLevel] : (selectedClef === "bass") ? bassCards[selectedLevel] : allCards[selectedLevel];
-  navigateTo("cardScreen");
-  document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}`;
-  document.getElementById("cardScreenTitle").textContent = "おんぷカード";
-  
-  startTrainingWithConfig();
+
+  if (isAlreadyCleared) {
+    navigateTo("cardScreen");
+    document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}`;
+    document.getElementById("cardScreenTitle").textContent = "おんぷカード";
+    startTrainingWithConfig();
+  } else {
+    showLevelCover(selectedLevel);
+  }
 }
 
 function recordPracticeStats(durationSec) {
