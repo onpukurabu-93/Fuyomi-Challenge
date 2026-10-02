@@ -8,17 +8,19 @@
     body { font-family: sans-serif; text-align: center; background: #f0f8ff; margin: 0; padding: 20px; }
     .card { background: white; border-radius: 12px; padding: 20px; max-width: 450px; margin: 0 auto 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .banner { background: #ffe4e1; border: 2px dashed #ff69b4; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-weight: bold; color: #d87093; }
-    button { background: #4caf50; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 5px; }
+    button { background: #4caf50; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 5px; }
     button:hover { background: #45a049; }
-    input { padding: 10px; font-size: 16px; width: 120px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }
+    input { padding: 10px; font-size: 16px; width: 160px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }
     .hidden { display: none; }
     .locked-msg { color: #e53935; font-weight: bold; margin-top: 15px; }
+    .unlocked-msg { color: #2e7d32; font-weight: bold; margin-top: 15px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 14px; }
     th { background: #f2f2f2; }
     .toggle-btn { padding: 6px 12px; font-size: 12px; border-radius: 4px; }
     .btn-on { background: #2196f3; }
     .btn-off { background: #757575; }
+    .register-box { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
@@ -32,27 +34,42 @@
     </div>
 
     <h1>🎹 ふよみチャレンジ</h1>
-    <p>楽しくおんぷを覚えてレベルUP！</p>
 
-    <!-- アプリ起動ボタン（鍵の状態チェック） -->
+    <!-- 【生徒用】初回名前登録エリア（未登録の場合のみ表示） -->
+    <div id="register-area" class="register-box">
+      <p style="margin-top:0; font-weight:bold;">🎒 はじめてのひとは なまえを とうろくしてね！</p>
+      <input type="text" id="student-name-input" placeholder="おなまえ（ひらがな）">
+      <button onclick="registerStudent()">とうろく</button>
+    </div>
+
+    <!-- 【生徒用】ログイン中プレイヤー表示（登録済みの場合） -->
+    <div id="player-info-area" class="hidden">
+      <p style="font-size: 18px; font-weight: bold;">👤 プレイヤー: <span id="current-player-name" style="color: #1976d2;"></span></p>
+      <button onclick="changePlayer()" style="background:#888; font-size:12px; padding:4px 8px;">なまえを かえる</button>
+    </div>
+
+    <br>
+
+    <!-- アプリ起動ボタン -->
     <div id="app-status-area">
       <button onclick="checkAccessAndStart()" style="font-size: 20px; padding: 15px 30px;">🎮 ゲームスタート</button>
-      <p id="lock-message" class="locked-msg hidden">🔒 今月のアクセス鍵が閉まっています。<br>先生に確認してね！</p>
+      <p id="lock-message" class="locked-msg hidden">🔒 アクセス鍵が閉まっています。<br>先生に鍵を開けてもらってね！</p>
+      <p id="ready-message" class="unlocked-msg hidden">🔓 鍵が開いているよ！遊んでね！</p>
     </div>
 
     <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
 
     <!-- 保護者・先生専用エリアの入り口 -->
     <h3>🔒 保護者・先生専用</h3>
-    <p style="font-size: 12px; color: #666;">パスワードを入力してログインしてください</p>
-    <input type="password" id="pass-input" placeholder="1234" maxlength="4">
+    <p style="font-size: 12px; color: #666;">パスワードを入力してログイン</p>
+    <input type="password" id="pass-input" placeholder="1234" maxlength="10">
     <button onclick="login()">ログイン</button>
   </div>
 
-  <!-- 保護者専用画面 (パスワード: 1234) -->
+  <!-- 保護者専用画面 (数字4桁パスワード: 1234など) -->
   <div id="parent-screen" class="card hidden">
     <h2>📊 保護者用：練習の成果・データ</h2>
-    <p>お子様の成長記録を確認できます。</p>
+    <p><span id="parent-student-name"></span> お子様の成長記録を確認できます。</p>
     <table>
       <tr><th>項目</th><th>記録</th></tr>
       <tr><td>今週の最高コンボ</td><td>12 コンボ</td></tr>
@@ -63,7 +80,7 @@
     <button onclick="logout()" style="background:#888;">戻る</button>
   </div>
 
-  <!-- 先生専用画面 (パスワード: 2357) -->
+  <!-- 先生専用画面 (パスワード: 2357go) -->
   <div id="teacher-screen" class="card hidden">
     <h2>🔑 先生専用：管理画面</h2>
     <p style="font-size: 12px; color: #666;">生徒ごとの鍵の開け閉め・サブスク管理</p>
@@ -78,7 +95,7 @@
         </tr>
       </thead>
       <tbody id="student-list">
-        <!-- JSで動的に表示 -->
+        <!-- JSで自動表示 -->
       </tbody>
     </table>
 
@@ -105,49 +122,125 @@
   </div>
 
   <script>
-    // 生徒リストと初期の鍵状態（ローカルストレージで保存）
-    let defaultStudents = [
-      { id: 1, name: "たろう くん", unlocked: true },
-      { id: 2, name: "はなこ ちゃん", unlocked: false },
-      { id: 3, name: "じろう くん", unlocked: true }
-    ];
+    // 初期データの生徒リスト（※登録がない場合のバックアップ）
+    let defaultStudents = [];
 
-    // 保存されている生徒データを取得（無ければ初期値）
+    // ローカルストレージからデータの読み込み
     let students = JSON.parse(localStorage.getItem('fuyomi_students')) || defaultStudents;
+    let currentStudentId = localStorage.getItem('fuyomi_current_student_id') || null;
 
-    // ログイン処理
+    // 画面初期化の実行
+    initScreen();
+
+    function initScreen() {
+      const regArea = document.getElementById('register-area');
+      const playerArea = document.getElementById('player-info-area');
+      const currentNameSpan = document.getElementById('current-player-name');
+      const lockMsg = document.getElementById('lock-message');
+      const readyMsg = document.getElementById('ready-message');
+
+      lockMsg.classList.add('hidden');
+      readyMsg.classList.add('hidden');
+
+      if (currentStudentId) {
+        const currentStudent = students.find(s => s.id == currentStudentId);
+        if (currentStudent) {
+          regArea.classList.add('hidden');
+          playerArea.classList.remove('hidden');
+          currentNameSpan.innerText = currentStudent.name;
+
+          if (currentStudent.unlocked) {
+            readyMsg.classList.remove('hidden');
+          } else {
+            lockMsg.classList.remove('hidden');
+          }
+        } else {
+          showRegister();
+        }
+      } else {
+        showRegister();
+      }
+    }
+
+    function showRegister() {
+      document.getElementById('register-area').classList.remove('hidden');
+      document.getElementById('player-info-area').classList.add('hidden');
+    }
+
+    // 【生徒】名前登録ボタンが押されたとき
+    function registerStudent() {
+      const nameInput = document.getElementById('student-name-input').value.trim();
+      if (!nameInput) {
+        alert("おなまえを にゅうりょくしてね！");
+        return;
+      }
+
+      const newId = Date.now();
+      const newStudent = {
+        id: newId,
+        name: nameInput,
+        unlocked: false // 初期状態は鍵閉じ
+      };
+
+      students.push(newStudent);
+      localStorage.setItem('fuyomi_students', JSON.stringify(students));
+      
+      currentStudentId = newId;
+      localStorage.setItem('fuyomi_current_student_id', newId);
+
+      document.getElementById('student-name-input').value = '';
+      alert("とうろく できたよ！ せんせいに かぎを あけてもらってね！");
+      initScreen();
+    }
+
+    function changePlayer() {
+      localStorage.removeItem('fuyomi_current_student_id');
+      currentStudentId = null;
+      initScreen();
+    }
+
+    // ログイン処理（保護者・先生）
     function login() {
       const pass = document.getElementById('pass-input').value;
-      if (pass === "1234") {
-        // 保護者画面へ
-        document.getElementById('main-screen').classList.add('hidden');
-        document.getElementById('parent-screen').classList.remove('hidden');
-      } else if (pass === "2357") {
-        // 先生画面へ
+      
+      // 先生専用パスワード: 2357go
+      if (pass === "2357go") {
         renderTeacherList();
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('teacher-screen').classList.remove('hidden');
-      } else {
+      } 
+      // 保護者用パスワード: 数字4桁（例: 1234）
+      else if (/^\d{4}$/.test(pass)) {
+        const currentStudent = students.find(s => s.id == currentStudentId);
+        document.getElementById('parent-student-name').innerText = currentStudent ? `【${currentStudent.name} 様】` : '';
+        document.getElementById('main-screen').classList.add('hidden');
+        document.getElementById('parent-screen').classList.remove('hidden');
+      } 
+      else {
         alert("パスワードが違います");
       }
       document.getElementById('pass-input').value = '';
     }
 
-    // ログアウト処理
     function logout() {
       document.getElementById('parent-screen').classList.add('hidden');
       document.getElementById('teacher-screen').classList.add('hidden');
       document.getElementById('main-screen').classList.remove('hidden');
+      initScreen();
     }
 
-    // 先生画面の生徒リスト描画
+    // 先生画面のリスト描画
     function renderTeacherList() {
       const tbody = document.getElementById('student-list');
       tbody.innerHTML = '';
+      if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">まだ登録されている生徒はいません</td></tr>';
+        return;
+      }
       students.forEach(student => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${student.name}</td>
+          <td><strong>${student.name}</strong></td>
           <td>${student.unlocked ? '🔓 解除中' : '🔒 停止中'}</td>
           <td>
             <button class="toggle-btn ${student.unlocked ? 'btn-off' : 'btn-on'}" onclick="toggleLock(${student.id})">
@@ -159,7 +252,7 @@
       });
     }
 
-    // 先生が鍵をトグル（ON/OFF）切替する処理
+    // 先生がポチッと鍵開けする処理
     function toggleLock(id) {
       students = students.map(s => {
         if (s.id === id) s.unlocked = !s.unlocked;
@@ -169,24 +262,25 @@
       renderTeacherList();
     }
 
-    // ゲーム開始チェック（端末のプレイヤーが有効か判定）
+    // ゲームスタートボタン押下時
     function checkAccessAndStart() {
-      // 端末でプレイ可能な状態かチェック（ここでは簡易的に1人でも解禁されていればOKとする例）
-      const hasAccess = students.some(s => s.unlocked);
-      const lockMsg = document.getElementById('lock-message');
-
-      if (hasAccess) {
-        lockMsg.classList.add('hidden');
+      if (!currentStudentId) {
+        alert("先におなまえを とうろくしてね！");
+        return;
+      }
+      const currentStudent = students.find(s => s.id == currentStudentId);
+      if (currentStudent && currentStudent.unlocked) {
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
       } else {
-        lockMsg.classList.remove('hidden');
+        alert("今月はまだ鍵が閉まっています。先生に許可をもらってね！");
       }
     }
 
     function finishGame() {
       document.getElementById('game-screen').classList.add('hidden');
       document.getElementById('main-screen').classList.remove('hidden');
+      initScreen();
     }
   </script>
 </body>
