@@ -6,7 +6,7 @@
   <title>ふよみチャレンジ</title>
   <style>
     body { font-family: sans-serif; text-align: center; background: #f0f8ff; margin: 0; padding: 20px; }
-    .card { background: white; border-radius: 12px; padding: 20px; max-width: 450px; margin: 0 auto 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .card { background: white; border-radius: 12px; padding: 20px; max-width: 480px; margin: 0 auto 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .banner { background: #ffe4e1; border: 2px dashed #ff69b4; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-weight: bold; color: #d87093; }
     button { background: #4caf50; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; margin: 5px; }
     button:hover { background: #45a049; }
@@ -15,12 +15,14 @@
     .locked-msg { color: #e53935; font-weight: bold; margin-top: 15px; }
     .unlocked-msg { color: #2e7d32; font-weight: bold; margin-top: 15px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
     th { background: #f2f2f2; }
-    .toggle-btn { padding: 6px 12px; font-size: 12px; border-radius: 4px; }
+    .toggle-btn { padding: 6px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; color: white; }
     .btn-on { background: #2196f3; }
-    .btn-off { background: #757575; }
+    .btn-cancel { background: #e65100; }
     .register-box { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    .tab-btn { background: #e0e0e0; color: #333; padding: 6px 12px; font-size: 13px; margin: 2px; }
+    .tab-btn.active { background: #1976d2; color: white; }
   </style>
 </head>
 <body>
@@ -35,14 +37,14 @@
 
     <h1>🎹 ふよみチャレンジ</h1>
 
-    <!-- 【生徒用】初回名前登録エリア（未登録の場合のみ表示） -->
+    <!-- 【生徒用】初回名前登録エリア -->
     <div id="register-area" class="register-box">
       <p style="margin-top:0; font-weight:bold;">🎒 はじめてのひとは なまえを とうろくしてね！</p>
       <input type="text" id="student-name-input" placeholder="おなまえ（ひらがな）">
       <button onclick="registerStudent()">とうろく</button>
     </div>
 
-    <!-- 【生徒用】ログイン中プレイヤー表示（登録済みの場合） -->
+    <!-- 【生徒用】ログイン中プレイヤー表示 -->
     <div id="player-info-area" class="hidden">
       <p style="font-size: 18px; font-weight: bold;">👤 プレイヤー: <span id="current-player-name" style="color: #1976d2;"></span></p>
       <button onclick="changePlayer()" style="background:#888; font-size:12px; padding:4px 8px;">なまえを かえる</button>
@@ -53,7 +55,7 @@
     <!-- アプリ起動ボタン -->
     <div id="app-status-area">
       <button onclick="checkAccessAndStart()" style="font-size: 20px; padding: 15px 30px;">🎮 ゲームスタート</button>
-      <p id="lock-message" class="locked-msg hidden">🔒 アクセス鍵が閉まっています。<br>先生に鍵を開けてもらってね！</p>
+      <p id="lock-message" class="locked-msg hidden">🔒 今月のアクセス鍵が閉まっています。<br>先生に確認してね！</p>
       <p id="ready-message" class="unlocked-msg hidden">🔓 鍵が開いているよ！遊んでね！</p>
     </div>
 
@@ -66,13 +68,14 @@
     <button onclick="login()">ログイン</button>
   </div>
 
-  <!-- 保護者専用画面 (数字4桁パスワード: 1234など) -->
+  <!-- 保護者専用画面 (数字4桁) -->
   <div id="parent-screen" class="card hidden">
     <h2>📊 保護者用：練習の成果・データ</h2>
     <p><span id="parent-student-name"></span> お子様の成長記録を確認できます。</p>
     <table>
       <tr><th>項目</th><th>記録</th></tr>
       <tr><td>今週の最高コンボ</td><td>12 コンボ</td></tr>
+      <tr><td>今週の練習回数</td><td>5 回</td></tr>
       <tr><td>クリアタイム（平均）</td><td>18 秒</td></tr>
       <tr><td>苦手な音符</td><td>ファ / ソ</td></tr>
     </table>
@@ -83,37 +86,66 @@
   <!-- 先生専用画面 (パスワード: 2357go) -->
   <div id="teacher-screen" class="card hidden">
     <h2>🔑 先生専用：管理画面</h2>
-    <p style="font-size: 12px; color: #666;">生徒ごとの鍵の開け閉め・サブスク管理</p>
+    
+    <!-- タブ切り替え -->
+    <div style="margin-bottom: 15px;">
+      <button class="tab-btn active" id="tab1-btn" onclick="switchTeacherTab(1)">⚡ 今のリアルタイム成績</button>
+      <button class="tab-btn" id="tab2-btn" onclick="switchTeacherTab(2)">🔑 サブスク鍵管理</button>
+      <button class="tab-btn" id="tab3-btn" onclick="switchTeacherTab(3)">🏆 半年表彰データ</button>
+    </div>
 
-    <h3>【生徒のアクセス有効化（ポチッと鍵開け）】</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>生徒名</th>
-          <th>状態</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="student-list">
-        <!-- JSで自動表示 -->
-      </tbody>
-    </table>
+    <!-- タブ1: 今の成績（メイン） -->
+    <div id="teacher-tab-1">
+      <h3>📈 生徒の今の練習状況（直近データ）</h3>
+      <p style="font-size: 12px; color: #666;">レッスンでの声かけにご活用ください</p>
+      <table>
+        <thead>
+          <tr>
+            <th>生徒名</th>
+            <th>今週の練習</th>
+            <th>最高コンボ</th>
+            <th>苦手な音</th>
+          </tr>
+        </thead>
+        <tbody id="student-stats-list">
+          <!-- JSで表示 -->
+        </tbody>
+      </table>
+    </div>
 
-    <hr style="margin: 20px 0;">
-    <h3>🏆 半年（1月大会含む）成績データ</h3>
-    <p style="font-size: 12px; color: #666;">3月の表彰用の自動集計データです</p>
-    <table>
-      <tr><th>順位</th><th>生徒名</th><th>最高タイム</th></tr>
-      <tr><td>🥇 1位</td><td>たろう くん</td><td>12秒</td></tr>
-      <tr><td>🥈 2位</td><td>はなこ ちゃん</td><td>15秒</td></tr>
-      <tr><td>🥉 3位</td><td>じろう くん</td><td>18秒</td></tr>
-    </table>
+    <!-- タブ2: 鍵管理 -->
+    <div id="teacher-tab-2" class="hidden">
+      <h3>🔑 サブスク鍵管理（鍵開け・退会予約）</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>生徒名</th>
+            <th>状態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="student-list">
+          <!-- JSで表示 -->
+        </tbody>
+      </table>
+    </div>
 
-    <br>
+    <!-- タブ3: 半年成績（表彰用） -->
+    <div id="teacher-tab-3" class="hidden">
+      <h3>🏆 半年間の集計データ（3月/9月表彰用）</h3>
+      <table>
+        <tr><th>順位</th><th>生徒名</th><th>最高タイム</th></tr>
+        <tr><td>🥇 1位</td><td>たろう くん</td><td>12秒</td></tr>
+        <tr><td>🥈 2位</td><td>はなこ ちゃん</td><td>15秒</td></tr>
+        <tr><td>🥉 3位</td><td>じろう くん</td><td>18秒</td></tr>
+      </table>
+    </div>
+
+    <br><br>
     <button onclick="logout()" style="background:#888;">ログアウト</button>
   </div>
 
-  <!-- ゲームプレイ画面（仮） -->
+  <!-- ゲームプレイ画面 -->
   <div id="game-screen" class="card hidden">
     <h2>🎵 ゲームプレイ中！</h2>
     <p>ド・レ・ミ… どの音かな？</p>
@@ -122,14 +154,10 @@
   </div>
 
   <script>
-    // 初期データの生徒リスト（※登録がない場合のバックアップ）
     let defaultStudents = [];
-
-    // ローカルストレージからデータの読み込み
     let students = JSON.parse(localStorage.getItem('fuyomi_students')) || defaultStudents;
     let currentStudentId = localStorage.getItem('fuyomi_current_student_id') || null;
 
-    // 画面初期化の実行
     initScreen();
 
     function initScreen() {
@@ -149,6 +177,15 @@
           playerArea.classList.remove('hidden');
           currentNameSpan.innerText = currentStudent.name;
 
+          const now = new Date();
+          const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+          
+          if (currentStudent.stopNextMonth && currentStudent.lastActiveMonth !== currentMonthKey) {
+            currentStudent.unlocked = false;
+            currentStudent.stopNextMonth = false;
+            localStorage.setItem('fuyomi_students', JSON.stringify(students));
+          }
+
           if (currentStudent.unlocked) {
             readyMsg.classList.remove('hidden');
           } else {
@@ -167,7 +204,6 @@
       document.getElementById('player-info-area').classList.add('hidden');
     }
 
-    // 【生徒】名前登録ボタンが押されたとき
     function registerStudent() {
       const nameInput = document.getElementById('student-name-input').value.trim();
       if (!nameInput) {
@@ -175,11 +211,19 @@
         return;
       }
 
+      const now = new Date();
+      const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
       const newId = Date.now();
       const newStudent = {
         id: newId,
         name: nameInput,
-        unlocked: false // 初期状態は鍵閉じ
+        unlocked: false,
+        stopNextMonth: false,
+        lastActiveMonth: currentMonthKey,
+        weeklyCount: 0,
+        maxCombo: 0,
+        weakNote: '-'
       };
 
       students.push(newStudent);
@@ -199,24 +243,18 @@
       initScreen();
     }
 
-    // ログイン処理（保護者・先生）
     function login() {
       const pass = document.getElementById('pass-input').value;
-      
-      // 先生専用パスワード: 2357go
       if (pass === "2357go") {
-        renderTeacherList();
+        renderTeacherView();
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('teacher-screen').classList.remove('hidden');
-      } 
-      // 保護者用パスワード: 数字4桁（例: 1234）
-      else if (/^\d{4}$/.test(pass)) {
+      } else if (/^\d{4}$/.test(pass)) {
         const currentStudent = students.find(s => s.id == currentStudentId);
         document.getElementById('parent-student-name').innerText = currentStudent ? `【${currentStudent.name} 様】` : '';
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('parent-screen').classList.remove('hidden');
-      } 
-      else {
+      } else {
         alert("パスワードが違います");
       }
       document.getElementById('pass-input').value = '';
@@ -229,40 +267,96 @@
       initScreen();
     }
 
-    // 先生画面のリスト描画
-    function renderTeacherList() {
+    // 先生画面のタブ切り替え
+    function switchTeacherTab(tabNum) {
+      document.getElementById('teacher-tab-1').classList.add('hidden');
+      document.getElementById('teacher-tab-2').classList.add('hidden');
+      document.getElementById('teacher-tab-3').classList.add('hidden');
+      document.getElementById('tab1-btn').classList.remove('active');
+      document.getElementById('tab2-btn').classList.remove('active');
+      document.getElementById('tab3-btn').classList.remove('active');
+
+      document.getElementById(`teacher-tab-${tabNum}`).classList.remove('hidden');
+      document.getElementById(`tab${tabNum}-btn`).classList.add('active');
+    }
+
+    function renderTeacherView() {
+      // 1. 今の成績テーブルを描画
+      const statsTbody = document.getElementById('student-stats-list');
+      statsTbody.innerHTML = '';
+      if (students.length === 0) {
+        statsTbody.innerHTML = '<tr><td colspan="4">まだ生徒が登録されていません</td></tr>';
+      } else {
+        students.forEach(student => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${student.name}</strong></td>
+            <td>${student.weeklyCount || 0} 回</td>
+            <td>${student.maxCombo || 0} コンボ</td>
+            <td>${student.weakNote || '-'}</td>
+          `;
+          statsTbody.appendChild(tr);
+        });
+      }
+
+      // 2. 鍵管理テーブルを描画
       const tbody = document.getElementById('student-list');
       tbody.innerHTML = '';
       if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3">まだ登録されている生徒はいません</td></tr>';
-        return;
+        tbody.innerHTML = '<tr><td colspan="3">まだ生徒が登録されていません</td></tr>';
+      } else {
+        students.forEach(student => {
+          const tr = document.createElement('tr');
+          let statusText = "🔒 停止中";
+          let btnText = "🔓 継続（鍵開け）";
+          let btnClass = "btn-on";
+
+          if (student.unlocked && !student.stopNextMonth) {
+            statusText = "🔓 継続利用中";
+            btnText = "⏰ 当月末で終了（退会予約）";
+            btnClass = "btn-cancel";
+          } else if (student.unlocked && student.stopNextMonth) {
+            statusText = "⏰ 今月末で終了予定";
+            btnText = "🔓 継続に戻す";
+            btnClass = "btn-on";
+          }
+
+          tr.innerHTML = `
+            <td><strong>${student.name}</strong></td>
+            <td>${statusText}</td>
+            <td>
+              <button class="toggle-btn ${btnClass}" onclick="toggleStatus(${student.id})">
+                ${btnText}
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
       }
-      students.forEach(student => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${student.name}</strong></td>
-          <td>${student.unlocked ? '🔓 解除中' : '🔒 停止中'}</td>
-          <td>
-            <button class="toggle-btn ${student.unlocked ? 'btn-off' : 'btn-on'}" onclick="toggleLock(${student.id})">
-              ${student.unlocked ? '🔒 閉じる' : '🔓 鍵を開ける'}
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
     }
 
-    // 先生がポチッと鍵開けする処理
-    function toggleLock(id) {
+    function toggleStatus(id) {
+      const now = new Date();
+      const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
       students = students.map(s => {
-        if (s.id === id) s.unlocked = !s.unlocked;
+        if (s.id === id) {
+          if (!s.unlocked) {
+            s.unlocked = true;
+            s.stopNextMonth = false;
+            s.lastActiveMonth = currentMonthKey;
+          } else if (s.unlocked && !s.stopNextMonth) {
+            s.stopNextMonth = true;
+          } else if (s.unlocked && s.stopNextMonth) {
+            s.stopNextMonth = false;
+          }
+        }
         return s;
       });
       localStorage.setItem('fuyomi_students', JSON.stringify(students));
-      renderTeacherList();
+      renderTeacherView();
     }
 
-    // ゲームスタートボタン押下時
     function checkAccessAndStart() {
       if (!currentStudentId) {
         alert("先におなまえを とうろくしてね！");
@@ -273,7 +367,7 @@
         document.getElementById('main-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
       } else {
-        alert("今月はまだ鍵が閉まっています。先生に許可をもらってね！");
+        alert("今月はアクセス鍵が閉まっています。先生に確認してね！");
       }
     }
 
