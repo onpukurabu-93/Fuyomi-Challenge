@@ -124,10 +124,10 @@ body { display: flex; justify-content: center; align-items: center; }
   box-shadow: 0 2px 6px rgba(255,112,67,0.3);
 }
 
-/* ⭕ 案A：カードエリア全体を覆う巨大な太い赤丸 */
+/* ⭕ まんまるの正円（アスペクト比 1:1 固定） */
 .correct-circle {
-  position: absolute; width: 82%; height: 82%; border: 16px solid #e99595; border-radius: 50%;
-  left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 30;
+  position: absolute; width: 230px; height: 230px; border: 16px solid #e99595; border-radius: 50%;
+  left: 50%; top: 42%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 30;
 }
 .correct-circle.show { animation: correctCircle 0.4s ease-out forwards; }
 @keyframes correctCircle {
@@ -138,7 +138,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
 .incorrect-x {
   position: absolute; font-size: 150px; color: #e99595; font-weight: 900;
-  left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 30;
+  left: 50%; top: 42%; transform: translate(-50%, -50%) scale(0.2); opacity: 0; pointer-events: none; z-index: 30;
 }
 .incorrect-x.show { animation: incorrectX 0.4s ease-out forwards; }
 @keyframes incorrectX {
@@ -287,7 +287,7 @@ body { display: flex; justify-content: center; align-items: center; }
         <div id="trainingCover" class="training-cover hidden"></div>
       </div>
 
-      <!-- ⭕ 案A：カードエリア全体を覆う巨大な赤丸 -->
+      <!-- ⭕ まんまるの正円 -->
       <div id="correctCircle" class="correct-circle"></div>
       <div id="incorrectX" class="incorrect-x">×</div>
       <button id="arrowRight" class="arrow arrow-right" onclick="nextCard()">›</button>
@@ -313,10 +313,8 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="result-detail" id="resultScore">せいかい: 10/10問</div>
       <div class="result-detail" id="resultTime">タイム: 0秒</div>
       
-      <button id="awardBtn" class="select-button special hidden" style="margin-top:15px;" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>
-      <button id="nextLevelBtn" class="select-button accent hidden" style="margin-top:10px;" onclick="goToNextLevel()">🚀 つぎの ステージへ！</button>
-      <button id="retryBtn" class="select-button accent" style="margin-top:10px;" onclick="restartTrainingDirect()">もういちど チャレンジ</button>
-      <button class="select-button" style="margin-top:6px;" onclick="showSelectScreen()">トップへ もどる</button>
+      <!-- 動的に順序変更されるボタン群 -->
+      <div id="resultButtonsWrap" style="width:100%; margin-top:10px;"></div>
     </div>
   </section>
 
@@ -401,13 +399,16 @@ body { display: flex; justify-content: center; align-items: center; }
           <div id="teacherAwardThemeList"></div>
         </div>
 
-        <!-- タブ3: データリセット -->
+        <!-- タブ3: データリセット＆デバッグ機能 -->
         <div id="teacherTab3" class="hidden">
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🔓 テスト用：全鍵解除</div>
+          <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllLevelsForDebug()">🔓 すべてのコース・レベルの鍵を一括解除</button>
+
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
           <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
           
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">全データの完全初期化（テスト用）</div>
-          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="resetAllDataForTest()">⚠️️ 全データを消去して初期ロック状態に戻す</button>
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">全データの完全初期化</div>
+          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="resetAllDataForTest()">⚠️ 全データを消去して初期状態に戻す</button>
         </div>
 
         <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('managementModal', false)">閉じる</button>
@@ -527,6 +528,15 @@ function playNoteSound(cardId, noteKey) {
   } catch (e) {}
 }
 
+/* 🔊 音抜け・連打対策クローン再生 */
+function playAudioCloned(audioId) {
+  const orig = document.getElementById(audioId);
+  if (orig) {
+    const clone = orig.cloneNode(true);
+    clone.play().catch(()=>{});
+  }
+}
+
 /* カードデータ */
 const doCards = [
   { id:"h_c1", key:"ド", img:"h_c1.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" },
@@ -560,7 +570,7 @@ let pendingSelectIndex = null;
 let selectedClef = null, selectedLevel = null, currentCards = [];
 let currentIndex = 0, trainingMode = false, trainingLocked = false, lastTrainingIndex = -1;
 let targetValue = 10;
-let trainingQuestionCount = 0, trainingMistakes = 0, trainingStartTime = 0;
+let trainingCorrectCount = 0, trainingMistakes = 0, trainingStartTime = 0;
 let nextActionClef = null, nextActionLevel = 1;
 
 function getCountBest(profileIndex, clef, level) {
@@ -569,6 +579,7 @@ function getCountBest(profileIndex, clef, level) {
 function getDoTestBest(profileIndex) { return Storage.get(`onpu_do_test_best_${profileIndex}`); }
 
 function hasLevelCleared(profileIndex, clef, level) {
+  if (Storage.get(`onpu_debug_unlocked_${profileIndex}`)) return true;
   const best = getCountBest(profileIndex, clef, level);
   return !!(best && best.count >= 20 && best.accuracy >= 90);
 }
@@ -599,11 +610,12 @@ function renderStampMini(profileIndex) {
 }
 
 function updateLockVisuals() {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const doBest = getDoTestBest(activeProfileIndex);
-  const clefUnlocked = !!(doBest && doBest.accuracy >= 90);
-  const trebleCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
-  const bassCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
-  const allUnlocked = clefUnlocked && trebleCleared && bassCleared;
+  const clefUnlocked = isDebugUnlocked || !!(doBest && doBest.accuracy >= 90);
+  const trebleCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "treble", 5);
+  const bassCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "bass", 5);
+  const allUnlocked = isDebugUnlocked || (clefUnlocked && trebleCleared && bassCleared);
 
   const btnT = document.getElementById("btnTreble");
   const btnB = document.getElementById("btnBass");
@@ -668,11 +680,12 @@ function startDoLesson() {
 }
 
 function selectClef(clef) {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const doBest = getDoTestBest(activeProfileIndex);
-  const clefUnlocked = !!(doBest && doBest.accuracy >= 90);
-  const trebleCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
-  const bassCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
-  const allUnlocked = clefUnlocked && trebleCleared && bassCleared;
+  const clefUnlocked = isDebugUnlocked || !!(doBest && doBest.accuracy >= 90);
+  const trebleCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "treble", 5);
+  const bassCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "bass", 5);
+  const allUnlocked = isDebugUnlocked || (clefUnlocked && trebleCleared && bassCleared);
 
   if ((clef === 'treble' || clef === 'bass') && !clefUnlocked) {
     return alert("まずは「6つの『ド』」でトレーニング（20問）をやろう！");
@@ -684,13 +697,14 @@ function selectClef(clef) {
 }
 
 function createLevelButtons() {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const list = document.getElementById("levelList");
   list.innerHTML = "";
   for (let level = 1; level <= 5; level++) {
     const button = document.createElement("button");
     button.className = "level-button";
     let isLocked = false;
-    if (level > 1) {
+    if (level > 1 && !isDebugUnlocked) {
       const prevCleared = hasLevelCleared(activeProfileIndex, selectedClef, level - 1);
       if (!prevCleared) isLocked = true;
     }
@@ -730,29 +744,29 @@ function showCurrentCard() {
 function nextCard() { if (!trainingMode) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
 function previousCard() { if (!trainingMode) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
 
-/* トレーニング直接スタート（問題数自動設定） */
-function startTrainingDirect() {
+/* 🆕 トレーニング直接スタート（常に10問からスタート） */
+function startTrainingDirect(force20 = false) {
   if (selectedClef === "do") {
     targetValue = 20;
   } else {
-    const best = getCountBest(activeProfileIndex, selectedClef, selectedLevel);
-    targetValue = (best && best.accuracy >= 90) ? 20 : 10;
+    targetValue = force20 ? 20 : 10;
   }
   startTrainingWithConfig();
 }
 
 function startTrainingWithConfig() {
-  trainingMode = true; trainingQuestionCount = 0; trainingMistakes = 0; trainingStartTime = Date.now(); lastTrainingIndex = -1;
+  trainingMode = true; trainingCorrectCount = 0; trainingMistakes = 0; trainingStartTime = Date.now(); lastTrainingIndex = -1;
   document.getElementById("qCountBadge").classList.remove("hidden");
   showRandomTrainingQuestion();
 }
 
-function restartTrainingDirect() { navigateTo("cardScreen"); startTrainingWithConfig(); }
+function restartTrainingDirect() { navigateTo("cardScreen"); startTrainingDirect(false); }
+function start20QuestionTraining() { navigateTo("cardScreen"); startTrainingDirect(true); }
 
 function showRandomTrainingQuestion() {
-  if (trainingQuestionCount >= targetValue) { showResultScreen(); return; }
+  if (trainingCorrectCount >= targetValue) { showResultScreen(); return; }
   
-  const remaining = targetValue - trainingQuestionCount;
+  const remaining = targetValue - trainingCorrectCount;
   document.getElementById("qCountBadge").textContent = `あと ${remaining} 問`;
 
   let nextIdx;
@@ -771,21 +785,20 @@ function pressKey(key) {
     if (trainingLocked) return;
     if (key !== card.key) {
       trainingMistakes++;
-      playPokon(); // 間違いはポコン音＋×印のみ
+      playPokon();
 
       const xEl = document.getElementById("incorrectX");
       xEl.classList.remove("show"); void xEl.offsetWidth; xEl.classList.add("show");
       return;
     }
-    trainingLocked = true; trainingQuestionCount++;
+    trainingLocked = true; trainingCorrectCount++;
     document.getElementById("trainingCover").classList.add("reveal");
     playNoteSound(card.id, key);
 
     const circle = document.getElementById("correctCircle");
     circle.classList.remove("show"); void circle.offsetWidth; circle.classList.add("show");
 
-    const audio = document.getElementById("seikaiAudio");
-    audio.currentTime = 0; audio.play().catch(()=>{});
+    playAudioCloned("seikaiAudio");
 
     setTimeout(() => { if (trainingMode) showRandomTrainingQuestion(); }, 400);
     return;
@@ -809,14 +822,14 @@ function saveDoTestBest(accuracy, duration) {
   }
 }
 
-/* リザルト画面 */
+/* 🆕 リザルト画面＆ボタン最優先表示処理 */
 function showResultScreen() {
   trainingMode = false;
   document.getElementById("qCountBadge").classList.add("hidden");
   const duration = Math.round((Date.now() - trainingStartTime) / 1000);
 
-  const total = trainingQuestionCount + trainingMistakes;
-  const accuracy = total > 0 ? Math.round((trainingQuestionCount / total) * 100) : 0;
+  const totalAttempts = trainingCorrectCount + trainingMistakes;
+  const accuracy = totalAttempts > 0 ? Math.round((trainingCorrectCount / totalAttempts) * 100) : 0;
 
   if (accuracy >= 90) {
     const todayStr = new Date().toISOString().split("T")[0];
@@ -834,88 +847,80 @@ function showResultScreen() {
 
   navigateTo("resultScreen");
 
-  const nextBtn = document.getElementById("nextLevelBtn");
-  const awardBtn = document.getElementById("awardBtn");
-  const retryBtn = document.getElementById("retryBtn");
-  nextBtn.classList.add("hidden");
-  awardBtn.classList.add("hidden");
-
-  document.getElementById("resultScore").textContent = `せいかい: ${trainingQuestionCount}/${total}問 (${accuracy}%)`;
+  // 出題数の正しい結果表記
+  document.getElementById("resultScore").textContent = `${targetValue}問中 ${trainingCorrectCount}問せいかい (${accuracy}%)`;
   document.getElementById("resultTime").textContent = `タイム: ${duration}秒`;
 
-  if (accuracy >= 90) {
-    document.getElementById("resultTitleBig").textContent = "おめでとう！";
-    retryBtn.style.background = "#ffffff"; retryBtn.style.color = "#5b4636";
+  const btnWrap = document.getElementById("resultButtonsWrap");
+  btnWrap.innerHTML = "";
 
-    if (accuracy === 100) playAudioById("tfanAudio");
+  const isPerfect = (accuracy === 100);
+
+  if (accuracy >= 90) {
+    document.getElementById("resultTitleBig").textContent = isPerfect ? "かんぺき！" : "おめでとう！";
+
+    if (isPerfect) playAudioCloned("tfanAudio");
     else playSynthFanfare();
 
+    // 1. 100%パーフェクト時：次のステップ推進ボタンを一番上にドカンと出す
     if (selectedClef === "do" && isDoTest) {
       updateLockVisuals();
-      playAudioById("audio6do");
-      nextActionClef = "treble"; nextActionLevel = 1;
-      nextBtn.textContent = `🚀 ト音記号 レベル1へ！`;
-      nextBtn.classList.remove("hidden");
-    } else if (targetValue === 10) {
-      nextActionClef = selectedClef; nextActionLevel = selectedLevel;
-      nextBtn.textContent = `🚀 レベル${selectedLevel} の20問へ！`;
-      nextBtn.classList.remove("hidden");
-    } else if (targetValue >= 20) {
+      playAudioCloned("audio6do");
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`;
+    } else if (targetValue === 10 && isPerfect) {
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">🚀 レベル${selectedLevel} の20問テストへ！</button>`;
+    } else if (targetValue >= 20 && isPerfect) {
       if (selectedLevel < 5) {
-        nextActionClef = selectedClef; nextActionLevel = selectedLevel + 1;
-        nextBtn.textContent = "🚀 つぎの レベルへ！";
-        nextBtn.classList.remove("hidden");
+        btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
         const bCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
 
         if (selectedClef === "treble") {
           if (!bCleared) {
-            playAudioById("audioToon1");
-            nextActionClef = "bass"; nextActionLevel = 1;
-            nextBtn.textContent = `🚀 ヘ音記号 レベル1へ！`;
-            nextBtn.classList.remove("hidden");
+            playAudioCloned("audioToon1");
+            btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('bass', 1)">🚀 ヘ音記号 レベル1へ！</button>`;
           } else {
-            playAudioById("audioToon2");
-            nextActionClef = "all"; nextActionLevel = 1;
-            nextBtn.textContent = "🚀 全カード レベル1へ！";
-            nextBtn.classList.remove("hidden");
+            playAudioCloned("audioToon2");
+            btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`;
           }
         } else if (selectedClef === "bass") {
           if (!tCleared) {
-            playAudioById("audioHeon1");
-            nextActionClef = "treble"; nextActionLevel = 1;
-            nextBtn.textContent = `🚀 ト音記号 レベル1へ！`;
-            nextBtn.classList.remove("hidden");
+            playAudioCloned("audioHeon1");
+            btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`;
           } else {
-            playAudioById("audioHeon2");
-            nextActionClef = "all"; nextActionLevel = 1;
-            nextBtn.textContent = "🚀 全カード レベル1へ！";
-            nextBtn.classList.remove("hidden");
+            playAudioCloned("audioHeon2");
+            btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`;
           }
         } else if (selectedClef === "all") {
-          playAudioById("audioKanpeki");
-          awardBtn.classList.remove("hidden");
+          playAudioCloned("audioKanpeki");
+          btnWrap.innerHTML += `<button class="select-button special" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
         }
       }
     }
+
+    // 2. 100%未満（90〜99%）の合格時：もう一度（10問）を最優先にする
+    if (!isPerfect && targetValue === 10) {
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もう一度 チャレンジ（100%をめざそう！）</button>`;
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問テストに進む</button>`;
+    } else {
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="restartTrainingDirect()">もういちど チャレンジ</button>`;
+    }
+
     startConfetti();
   } else {
+    // 3. 不合格（89%以下）の時：もう一度チャレンジを最上部にドカンと出す
     document.getElementById("resultTitleBig").textContent = "おしかったね！";
-    retryBtn.style.background = "#ff7043"; retryBtn.style.color = "#ffffff";
-    playAudioById("osiAudio");
+    playAudioCloned("osiAudio");
+    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ</button>`;
   }
+
+  btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="showSelectScreen()">トップへ もどる</button>`;
 }
 
-function playAudioById(audioId) {
-  const el = document.getElementById(audioId);
-  if (el) { el.currentTime = 0; el.play().catch(()=>{}); }
-}
-
-function goToNextLevel() {
-  if (!nextActionClef) return;
-  selectedClef = nextActionClef; selectedLevel = nextActionLevel;
-  showLevelCover(nextActionLevel);
+function goToNextLevelClef(clef, level) {
+  selectedClef = clef; selectedLevel = level;
+  showLevelCover(level);
 }
 
 function openAwardModal() {
@@ -1008,28 +1013,36 @@ function renderTeacherView() {
   document.getElementById("teacherAwardThemeList").innerHTML = themeHtml + `</tbody></table>`;
 }
 
-/* 🔒 厳格「ひらがな」限定フィルター（他文字は一切不可） */
+/* 🔒 厳格「ひらがな」限定チェック */
 function saveStudentByTeacher(slot) {
   let rawName = document.getElementById(`tName_${slot}`).value.trim();
   
-  // ひらがな（\u3040-\u309F）と長音符（ー）以外をすべて自動除去
-  let hiraganaOnlyName = rawName.replace(/[^ぁ-んー]/g, '');
-  
-  if (!hiraganaOnlyName) {
-    hiraganaOnlyName = `せいと${slot+1}`;
+  // ひらがな（\u3040-\u309F）と長音符（ー）以外が含まれていたら警告してブロック
+  const isHiraganaOnly = /^[\u3040-\u309Fー]+$/.test(rawName);
+
+  if (!isHiraganaOnly) {
+    alert("おなまえは「ひらがな」だけで 入力してください！\n（漢字、カタカナ、英数字、絵文字、記号は使えません）");
+    return;
   }
 
   const newPin = document.getElementById(`tPin_${slot}`).value.trim() || "0000";
 
-  profiles[slot] = hiraganaOnlyName;
+  profiles[slot] = rawName;
   Storage.set("onpu_profiles", profiles);
   Storage.set(`onpu_pin_${slot}`, newPin);
   initProfiles();
-  alert(`スロット${slot+1} を [${hiraganaOnlyName}] （PIN: ${newPin}）で保存しました！`);
+  alert(`スロット${slot+1} を [${rawName}] （PIN: ${newPin}）で保存しました！`);
 }
 
 function saveAwardTheme(slot, themeVal) {
   Storage.set(`onpu_award_theme_${slot}`, themeVal);
+}
+
+/* 🔓 デバッグ用全鍵一括解除 */
+function unlockAllLevelsForDebug() {
+  Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true);
+  alert("すべてのコースとレベルの鍵を解除しました！（テスト用）");
+  initProfiles();
 }
 
 function resetParentPasswordByTeacher() {
@@ -1038,7 +1051,7 @@ function resetParentPasswordByTeacher() {
 }
 
 function resetAllDataForTest() {
-  if (confirm("本当にすべてのデータを消去して初期ロック状態に戻しますか？")) {
+  if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) {
     localStorage.clear();
     alert("全データを初期化しました！");
     location.reload();
