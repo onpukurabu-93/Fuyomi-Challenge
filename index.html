@@ -238,6 +238,7 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="audioHeon1" preload="auto" src="heon1.mp3"></audio>
 <audio id="audioHeon2" preload="auto" src="heon2.mp3"></audio>
 <audio id="audioKanpeki" preload="auto" src="kanpeki.mp3"></audio>
+<audio id="tasseiFanfareAudio" preload="auto" src="Tassei-fanfare.mp3"></audio>
 
 <div class="app-container" id="appContainer">
 
@@ -409,7 +410,7 @@ body { display: flex; justify-content: center; align-items: center; }
     <div class="modal-title">🔒 管理ページ</div>
     <div id="mgSelectSection">
       <div style="font-size:13px; color:#806c5a; margin-bottom:12px;">どちらのエリアに入りますか？</div>
-      <button class="modal-btn" style="background:#8dbb8d; margin-bottom:8px;" onclick="showParentAuth()">👨👩‍👧 保護者専用ページ</button>
+      <button class="modal-btn" style="background:#8dbb8d; margin-bottom:8px;" onclick="showParentAuth()">👨👩‍‍👧 保護者専用ページ</button>
       <button class="modal-btn" style="background:#78a9c8;" onclick="showTeacherAuth()">🔑 先生専用ページ</button>
       <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('managementModal', false)">閉じる</button>
     </div>
@@ -1015,10 +1016,10 @@ function showResultScreen() {
 
   const isPerfect = (accuracy === 100);
 
-  /* 音声切り替え指定: 100% -> kanpeki.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
   if (accuracy === 100) {
     document.getElementById("resultTitleBig").textContent = "かんぺき！";
-    playAudioCloned("audioKanpeki");
+    playAudioCloned("tasseiFanfareAudio");
   } else if (accuracy >= 90) {
     document.getElementById("resultTitleBig").textContent = "おめでとう！";
     playAudioCloned("osiAudio");
@@ -1236,4 +1237,3 @@ showSelectScreen();
 </script>
 </body>
 </html>
-
