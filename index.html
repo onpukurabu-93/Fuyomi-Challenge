@@ -33,19 +33,18 @@ body { display: flex; justify-content: center; align-items: center; }
 .main-title { text-align: center; color: #5b4636; font-size: 26px; font-weight: 800; margin: 6px 0 2px; }
 .main-subtitle { text-align: center; color: #806c5a; font-size: 13px; margin-bottom: 10px; }
 
-/* じぶんの成績・プロフィールボックス（1箇所にスッキリ統合） */
+/* じぶんの成績・プロフィールボックス（1箇所のみにスッキリ整理） */
 .profile-box {
   background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; border: 1px solid #f0e6d2;
 }
-.profile-label { font-size: 11px; color: #806c5a; margin-bottom: 2px; }
-.profile-current { font-size: 20px; font-weight: 800; color: #5b4636; margin-bottom: 6px; }
+.profile-label { font-size: 12px; font-weight: bold; color: #5b4636; margin-bottom: 6px; text-align: left; }
 
 .profile-select-wrap {
-  display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 6px;
+  display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 8px;
 }
-.profile-select { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid #eadcc8; font-size: 14px; color: #5b4636; background: #fdf8ed; font-weight: bold; }
-.profile-confirm-btn { background: #ff7043; color: white; border: none; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.profile-select { flex: 1; padding: 10px 8px; border-radius: 10px; border: 2px solid #eadcc8; font-size: 16px; color: #5b4636; background: #fdf8ed; font-weight: bold; }
+.profile-confirm-btn { background: #ff7043; color: white; border: none; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 
 .my-stats-summary {
   background: #fdf8ed; border-radius: 12px; padding: 6px 10px; margin: 8px 0;
@@ -231,11 +230,17 @@ body { display: flex; justify-content: center; align-items: center; }
     <div class="main-title">ふよみチャレンジ</div>
     <div class="main-subtitle">おんぷを よんで みよう！</div>
 
-    <!-- じぶんの成績・プロフィール選択（1箇所に統一） -->
+    <!-- プレイヤー表示と選択を1箇所に完全統合 -->
     <div class="profile-box">
-      <div class="profile-label">現在のプレイヤー</div>
-      <div class="profile-current" id="currentProfileName">みせってい</div>
+      <div class="profile-label">👤 プレイヤー選択</div>
       
+      <div class="profile-select-wrap">
+        <select id="profileSelect" class="profile-select">
+          <!-- スクリプトで自動選択・表示 -->
+        </select>
+        <button class="profile-confirm-btn" onclick="confirmProfileSelect()">スタート</button>
+      </div>
+
       <div class="my-stats-summary">
         <div class="my-stat-item">
           <div>ぜんかい</div>
@@ -249,13 +254,6 @@ body { display: flex; justify-content: center; align-items: center; }
 
       <div id="streakBadge" class="streak-badge">🔥 0日れんぞく！</div>
       <div id="stampMiniBox" class="stamp-mini-box"></div>
-
-      <div class="profile-select-wrap">
-        <select id="profileSelect" class="profile-select">
-          <option value="">-- プレイヤー変更 --</option>
-        </select>
-        <button class="profile-confirm-btn" onclick="confirmProfileSelect()">決定・スタート</button>
-      </div>
     </div>
 
     <!-- 🏆 ランキング（みんなの成績）ボタン -->
@@ -428,7 +426,7 @@ body { display: flex; justify-content: center; align-items: center; }
         <div class="teacher-tabs">
           <button id="tTab1" class="teacher-tab-btn active" onclick="switchTeacherTab(1)">⚡生徒登録</button>
           <button id="tTab2" class="teacher-tab-btn" onclick="switchTeacherTab(2)">🎨表彰カード</button>
-          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">⚙️️管理・リセット</button>
+          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">⚙管理・リセット</button>
         </div>
 
         <!-- タブ1: 生徒名前・区分・PIN登録 -->
@@ -485,17 +483,15 @@ const CATEGORIES = [
 
 function getNextCategory(currentCat) {
   const idx = CATEGORIES.indexOf(currentCat);
-  if (idx === -1 || idx >= CATEGORIES.length - 1) return currentCat; // 大学・一般は繰り上がらない
+  if (idx === -1 || idx >= CATEGORIES.length - 1) return currentCat;
   return CATEGORIES[idx + 1];
 }
 
-/* 4月1日自動進級（繰り上げ）チェック機能 */
 function checkAutoGradePromotion() {
   const lastPromotedYear = Storage.getNumber("onpu_last_promoted_year", 0);
   const now = new Date();
   const currentYear = now.getFullYear();
-  // 今年の4月1日を超えているか
-  const aprilFirst = new Date(currentYear, 3, 1); // 4月1日
+  const aprilFirst = new Date(currentYear, 3, 1);
   
   if (now >= aprilFirst && lastPromotedYear < currentYear) {
     let profs = Storage.get("onpu_profiles", ["せいと1", "せいと2", "せいと3"]);
@@ -518,7 +514,7 @@ function navigateTo(screenId) {
   document.getElementById(screenId)?.classList.remove("hidden");
 }
 
-/* 🔊 高速サウンド処理 (Web Audio API & AudioContext サウンドプール) */
+/* 🔊 高速サウンド処理 (Web Audio API) */
 let audioCtx = null;
 let audioInitialized = false;
 
@@ -553,7 +549,6 @@ function playPokon() {
   } catch (e) {}
 }
 
-/* 🎵 正しい低音・高音周波数設定 */
 const noteFrequencies = {
   "h_cdo": 65.41,  "h_dre": 73.42,  "h_emi": 82.41,  "h_ffa": 87.31,  "h_gso": 98.00,  "h_ara": 110.00, "h_bsi": 123.47,
   "h_c00": 130.81, "h_d": 146.83,   "h_e": 164.81,   "h_f": 174.61,   "h_g": 196.00,   "h_a0": 220.00,  "h_b0": 246.94,
@@ -683,23 +678,22 @@ function updateLockVisuals() {
   document.getElementById("lockAll").style.display = allUnlocked ? "none" : "inline";
 }
 
+/* 1箇所に集約したドロップダウン選択・表示の初期化 */
 function initProfiles() {
-  checkAutoGradePromotion(); // 4月1日の進級を自動確認
+  checkAutoGradePromotion();
   const select = document.getElementById("profileSelect");
-  select.innerHTML = '<option value="">-- プレイヤー変更 --</option>';
+  select.innerHTML = '';
   profiles.forEach((name, idx) => {
     if (name) {
       const category = Storage.get(`onpu_category_${idx}`, "年少");
       const opt = document.createElement("option");
-      opt.value = idx; opt.textContent = `${name} (${category})`;
+      opt.value = idx;
+      opt.textContent = `${name} (${category})`;
       if (idx === activeProfileIndex) opt.selected = true;
       select.appendChild(opt);
     }
   });
   
-  const curName = profiles[activeProfileIndex] || "みせってい";
-  const curCategory = Storage.get(`onpu_category_${activeProfileIndex}`, "");
-  document.getElementById("currentProfileName").textContent = curCategory ? `${curName} (${curCategory})` : curName;
   document.getElementById("streakBadge").textContent = `🔥 ${calculateStreak(activeProfileIndex)}日れんぞく！`;
   
   const lastAcc = Storage.get(`onpu_last_acc_${activeProfileIndex}`, null);
@@ -712,15 +706,14 @@ function initProfiles() {
   updateLockVisuals();
 }
 
-/* 「決定・スタート」ボタンが押された時に確認 */
+/* スタートボタンが押された際の認証・切替 */
 function confirmProfileSelect() {
   const val = document.getElementById("profileSelect").value;
-  if (val === "") return alert("プレイヤーを選択してください");
+  if (val === "") return;
   pendingSelectIndex = parseInt(val);
-  
+
   if (pendingSelectIndex === activeProfileIndex) {
-    alert("現在選択されているプレイヤーです");
-    return;
+    return; // 同じプレイヤー選択時は何もしない
   }
 
   document.getElementById("pinModalStudentName").textContent = `${profiles[pendingSelectIndex]} の ログイン`;
@@ -869,7 +862,6 @@ function showRandomTrainingQuestion() {
   showCurrentCard();
 }
 
-/* 高精細・ノー遅延タップ入力処理 */
 function pressKey(key) {
   if (!currentCards.length) return;
   const card = currentCards[currentIndex];
