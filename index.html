@@ -228,8 +228,10 @@ body { display: flex; justify-content: center; align-items: center; }
 
 <audio id="seikaiAudio" preload="auto" src="seikai.mp3"></audio>
 <audio id="tfanAudio" preload="auto" src="tfan.mp3"></audio>
+<audio id="hyoshoFanfare1Audio" preload="auto" src="表彰ファンファーレ1.mp3"></audio>
 <audio id="hyoshoFanfareAudio" preload="auto" src="表彰ファンファーレ.mp3"></audio>
 <audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
+<audio id="ganbatteAudio" preload="auto" src="ganbatte.mp3"></audio>
 <audio id="audio6do" preload="auto" src="6do.mp3"></audio>
 <audio id="audioToon1" preload="auto" src="toon1.mp3"></audio>
 <audio id="audioToon2" preload="auto" src="toon2.mp3"></audio>
@@ -351,15 +353,15 @@ body { display: flex; justify-content: center; align-items: center; }
       <button id="arrowRight" class="arrow arrow-right" onclick="nextCard()">›</button>
     </div>
 
-    <!-- 🎹 ピアノ鍵盤 -->
+    <!-- 🎹 ピアノ鍵盤 (pointerdownでタッチ遅延解消) -->
     <div class="keyboard">
-      <button class="key-btn key-do" onclick="pressKey('ド')">ド</button>
-      <button class="key-btn key-re" onclick="pressKey('レ')">レ</button>
-      <button class="key-btn key-mi" onclick="pressKey('ミ')">ミ</button>
-      <button class="key-btn key-fa" onclick="pressKey('ファ')">ファ</button>
-      <button class="key-btn key-so" onclick="pressKey('ソ')">ソ</button>
-      <button class="key-btn key-la" onclick="pressKey('ラ')">ラ</button>
-      <button class="key-btn key-si" onclick="pressKey('シ')">シ</button>
+      <button class="key-btn key-do" onpointerdown="handleKeyPress('ド', event)">ド</button>
+      <button class="key-btn key-re" onpointerdown="handleKeyPress('レ', event)">レ</button>
+      <button class="key-btn key-mi" onpointerdown="handleKeyPress('ミ', event)">ミ</button>
+      <button class="key-btn key-fa" onpointerdown="handleKeyPress('ファ', event)">ファ</button>
+      <button class="key-btn key-so" onpointerdown="handleKeyPress('ソ', event)">ソ</button>
+      <button class="key-btn key-la" onpointerdown="handleKeyPress('ラ', event)">ラ</button>
+      <button class="key-btn key-si" onpointerdown="handleKeyPress('シ', event)">シ</button>
     </div>
   </section>
 
@@ -478,7 +480,7 @@ body { display: flex; justify-content: center; align-items: center; }
 </div>
 
 <script>
-/* ストレージ管理 (一貫したJSONエンコード・デコード処理に修復) */
+/* ストレージ管理 (一貫したJSONエンコード・デコード処理) */
 const Storage = {
   get: (key, defaultValue = null) => {
     try {
@@ -553,6 +555,7 @@ function initAudioContext() {
 
 document.addEventListener('touchstart', initAudioContext, {once:true});
 document.addEventListener('mousedown', initAudioContext, {once:true});
+document.addEventListener('pointerdown', initAudioContext, {once:true});
 
 function getAudioContext() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -575,7 +578,7 @@ function playPokon() {
   } catch (e) {}
 }
 
-/* 音符周波数テーブル (低音の音階データ h_bSi1, h_aRa1 も完全補完) */
+/* 音符周波数テーブル */
 const noteFrequencies = {
   "h_cdo": 65.41,  "h_dre": 73.42,  "h_emi": 82.41,  "h_ffa": 87.31,  "h_gso": 98.00,  "h_ara": 110.00, "h_bsi": 123.47,
   "h_aRa1": 110.00, "h_bSi1": 123.47,
@@ -606,13 +609,22 @@ function playNoteSound(cardId, noteKey) {
   } catch (e) {}
 }
 
-/* 複数連打に対応した効果音再生 */
+/* 複数連打・フォールバック対応の効果音再生 */
 function playAudioCloned(audioId) {
   const orig = document.getElementById(audioId);
   if (orig) {
-    const clone = orig.cloneNode(true);
-    clone.currentTime = 0;
-    clone.play().catch(()=>{});
+    try {
+      const clone = orig.cloneNode(true);
+      clone.currentTime = 0;
+      const playPromise = clone.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.warn(`[Audio Error] ${audioId} の再生に失敗しました:`, e);
+        });
+      }
+    } catch (e) {
+      console.warn(`[Audio Error] ${audioId} の処理中にエラーが発生しました:`, e);
+    }
   }
 }
 
@@ -893,6 +905,14 @@ function showRandomTrainingQuestion() {
   showCurrentCard();
 }
 
+/* 鍵盤タッチ遅延対策: pointerdown イベントハンドラ */
+function handleKeyPress(key, event) {
+  if (event) {
+    event.preventDefault();
+  }
+  pressKey(key);
+}
+
 function pressKey(key) {
   if (!currentCards.length) return;
   const card = currentCards[currentIndex];
@@ -995,11 +1015,19 @@ function showResultScreen() {
 
   const isPerfect = (accuracy === 100);
 
-  if (accuracy >= 90) {
-    document.getElementById("resultTitleBig").textContent = isPerfect ? "かんぺき！" : "おめでとう！";
-    if (isPerfect) playAudioCloned("tfanAudio");
-    else playAudioCloned("seikaiAudio");
+  /* 音声切り替え指定: 100% -> kanpeki.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  if (accuracy === 100) {
+    document.getElementById("resultTitleBig").textContent = "かんぺき！";
+    playAudioCloned("audioKanpeki");
+  } else if (accuracy >= 90) {
+    document.getElementById("resultTitleBig").textContent = "おめでとう！";
+    playAudioCloned("osiAudio");
+  } else {
+    document.getElementById("resultTitleBig").textContent = "おしかったね！";
+    playAudioCloned("ganbatteAudio");
+  }
 
+  if (accuracy >= 90) {
     if (selectedClef === "do" && isDoTest) {
       updateLockVisuals();
       playAudioCloned("audio6do");
@@ -1024,7 +1052,6 @@ function showResultScreen() {
           if (!tCleared) { playAudioCloned("audioHeon1"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`; }
           else { playAudioCloned("audioHeon2"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`; }
         } else if (selectedClef === "all") {
-          playAudioCloned("audioKanpeki");
           btnWrap.innerHTML += `<button class="select-button special" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
         }
       }
@@ -1035,8 +1062,6 @@ function showResultScreen() {
 
     startConfetti();
   } else {
-    document.getElementById("resultTitleBig").textContent = "おしかったね！";
-    playAudioCloned("osiAudio");
     btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ（がんばれ！）</button>`;
   }
 
@@ -1048,12 +1073,22 @@ function goToNextLevelClef(clef, level) {
   showLevelCover(level);
 }
 
+/* 表彰ファンファーレの回数切り替え処理 (1〜9回目: 表彰ファンファーレ1.mp3, 10回目: 表彰ファンファーレ.mp3) */
 function openAwardModal() {
   const theme = Storage.get(`onpu_award_theme_${activeProfileIndex}`, "cat");
   const box = document.getElementById("awardBoxEl");
   box.className = `modal-box award-box theme-${theme}`;
   document.getElementById("awardStudentName").textContent = `${profiles[activeProfileIndex]} さん`;
-  playAudioCloned("hyoshoFanfareAudio");
+
+  let awardCount = Storage.getNumber(`onpu_award_count_${activeProfileIndex}`, 0) + 1;
+  Storage.set(`onpu_award_count_${activeProfileIndex}`, awardCount);
+
+  if (awardCount >= 10) {
+    playAudioCloned("hyoshoFanfareAudio");
+  } else {
+    playAudioCloned("hyoshoFanfare1Audio");
+  }
+
   toggleModal("awardModal", true);
 }
 
@@ -1201,3 +1236,4 @@ showSelectScreen();
 </script>
 </body>
 </html>
+
