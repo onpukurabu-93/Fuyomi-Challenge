@@ -42,7 +42,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .main-title { text-align: center; color: #5b4636; font-size: 26px; font-weight: 800; margin: 6px 0 2px; }
 .main-subtitle { text-align: center; color: #806c5a; font-size: 13px; margin-bottom: 10px; }
 
-/* じぶんの成績・プロフィールボックス（1箇所のみにスッキリ整理） */
+/* じぶんの成績・プロフィールボックス */
 .profile-box {
   background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; border: 1px solid #f0e6d2;
@@ -104,7 +104,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .level-number { display: block; font-size: 16px; font-weight: 700; }
 .locked-badge { position: absolute; top: 14px; right: 14px; background: #e99595; color: white; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
 
-/* レベル表紙画面（iPad・iPhone共用の雲の中央配置レスポンシブ調整） */
+/* レベル表紙画面 */
 .cover-screen {
   position: relative; width: 100%; height: 100%;
   background-color: #fdf8ed; display: flex; align-items: center; justify-content: center; overflow: hidden;
@@ -244,7 +244,7 @@ body { display: flex; justify-content: center; align-items: center; }
     <div class="main-title">ふよみチャレンジ</div>
     <div class="main-subtitle">おんぷを よんで みよう！</div>
 
-    <!-- プレイヤー表示と選択を1箇所に完全統合 -->
+    <!-- プレイヤー表示と選択 -->
     <div class="profile-box">
       <div class="profile-label">👤 プレイヤー選択</div>
       
@@ -270,7 +270,7 @@ body { display: flex; justify-content: center; align-items: center; }
       <div id="stampMiniBox" class="stamp-mini-box"></div>
     </div>
 
-    <!-- 🏆 ランキング（みんなの成績）ボタン -->
+    <!-- 🏆 ランキングボタン -->
     <button class="select-button ranking-btn" onclick="openRankingScreen()">🏆 みんなの成績・ランキング</button>
 
     <button class="select-button special" onclick="startDoLesson()">🎵 6つの「ド」をおぼえよう！</button>
@@ -448,7 +448,7 @@ body { display: flex; justify-content: center; align-items: center; }
         <!-- タブ1: 生徒名前・区分・PIN登録 -->
         <div id="teacherTab1">
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:4px; text-align:left;">生徒名・区分・4桁PIN設定</div>
-          <div style="font-size:10.5px; color:#e99595; margin-bottom:6px; text-align:left;">※お名前は「ひらがな」のみ（最大8字）</div>
+          <div style="font-size:10.5px; color:#e99595; margin-bottom:6px; text-align:left;">※お名前は「ひらがな・数字」最大8字</div>
           <div id="teacherStudentConfigList"></div>
         </div>
 
@@ -478,16 +478,24 @@ body { display: flex; justify-content: center; align-items: center; }
 </div>
 
 <script>
-/* ストレージ管理 */
+/* ストレージ管理 (一貫したJSONエンコード・デコード処理に修復) */
 const Storage = {
   get: (key, defaultValue = null) => {
     try {
       const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : defaultValue;
+      return data !== null ? JSON.parse(data) : defaultValue;
     } catch { return defaultValue; }
   },
-  set: (key, val) => localStorage.setItem(key, typeof val === 'object' ? JSON.stringify(val) : val),
-  getNumber: (key, defaultValue = 0) => parseInt(localStorage.getItem(key)) || defaultValue
+  set: (key, val) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {}
+  },
+  getNumber: (key, defaultValue = 0) => {
+    const val = Storage.get(key, defaultValue);
+    const parsed = parseInt(val, 10);
+    return isNaN(parsed) ? defaultValue : parsed;
+  }
 };
 
 /* 学年（区分）のリストおよび4月1日自動進級定義 */
@@ -509,13 +517,15 @@ function checkAutoGradePromotion() {
   const currentYear = now.getFullYear();
   const aprilFirst = new Date(currentYear, 3, 1);
   
-  if (now >= aprilFirst && lastPromotedYear < currentYear) {
+  if (lastPromotedYear > 0 && now >= aprilFirst && lastPromotedYear < currentYear) {
     let profs = Storage.get("onpu_profiles", ["せいと1", "せいと2", "せいと3"]);
     profs.forEach((_, idx) => {
       let curCat = Storage.get(`onpu_category_${idx}`, "年少");
       let nextCat = getNextCategory(curCat);
       Storage.set(`onpu_category_${idx}`, nextCat);
     });
+    Storage.set("onpu_last_promoted_year", currentYear);
+  } else if (lastPromotedYear === 0) {
     Storage.set("onpu_last_promoted_year", currentYear);
   }
 }
@@ -565,8 +575,10 @@ function playPokon() {
   } catch (e) {}
 }
 
+/* 音符周波数テーブル (低音の音階データ h_bSi1, h_aRa1 も完全補完) */
 const noteFrequencies = {
   "h_cdo": 65.41,  "h_dre": 73.42,  "h_emi": 82.41,  "h_ffa": 87.31,  "h_gso": 98.00,  "h_ara": 110.00, "h_bsi": 123.47,
+  "h_aRa1": 110.00, "h_bSi1": 123.47,
   "h_c00": 130.81, "h_d": 146.83,   "h_e": 164.81,   "h_f": 174.61,   "h_g": 196.00,   "h_a0": 220.00,  "h_b0": 246.94,
   "h_c1": 261.63,  "h_d1": 293.66,  "h_e1": 329.63,  "h_f1": 349.23,  "t_e": 164.81,   "t_f": 174.61,   "t_g": 196.00,
   "t_a": 220.00,   "t_b": 246.94,   "t_c1": 261.63,  "t_d1": 293.66,  "t_e1": 329.63,  "t_f1": 349.23,  "t_g1": 392.00,
@@ -594,11 +606,13 @@ function playNoteSound(cardId, noteKey) {
   } catch (e) {}
 }
 
+/* 複数連打に対応した効果音再生 */
 function playAudioCloned(audioId) {
   const orig = document.getElementById(audioId);
   if (orig) {
-    orig.currentTime = 0;
-    orig.play().catch(()=>{});
+    const clone = orig.cloneNode(true);
+    clone.currentTime = 0;
+    clone.play().catch(()=>{});
   }
 }
 
@@ -649,7 +663,7 @@ function getDoTestBest(profileIndex) { return Storage.get(`onpu_do_test_best_${p
 
 function calculateStreak(profileIndex) {
   const days = Storage.get(`onpu_days_${profileIndex}`, []);
-  if (!days.length) return 0;
+  if (!Array.isArray(days) || !days.length) return 0;
   days.sort();
   let streak = 0, today = new Date();
   for (let i = 0; i < 30; i++) {
@@ -694,9 +708,10 @@ function updateLockVisuals() {
   document.getElementById("lockAll").style.display = allUnlocked ? "none" : "inline";
 }
 
-/* 1箇所に集約したドロップダウン選択・表示の初期化 */
+/* 初期化とプロフィールの読み込み */
 function initProfiles() {
   checkAutoGradePromotion();
+  profiles = Storage.get("onpu_profiles", ["せいと1", "せいと2", "せいと3"]);
   const select = document.getElementById("profileSelect");
   select.innerHTML = '';
   profiles.forEach((name, idx) => {
@@ -722,11 +737,11 @@ function initProfiles() {
   updateLockVisuals();
 }
 
-/* スタートボタンが押された際の認証・切替 */
+/* スタートボタン切替認証 */
 function confirmProfileSelect() {
   const val = document.getElementById("profileSelect").value;
   if (val === "") return;
-  pendingSelectIndex = parseInt(val);
+  pendingSelectIndex = parseInt(val, 10);
 
   if (pendingSelectIndex === activeProfileIndex) {
     return;
@@ -738,7 +753,7 @@ function confirmProfileSelect() {
 }
 
 function verifyStudentPin() {
-  const inputPin = document.getElementById("studentPinInput").value;
+  const inputPin = document.getElementById("studentPinInput").value.trim();
   const savedPin = String(Storage.get(`onpu_pin_${pendingSelectIndex}`, "0000"));
   
   if (inputPin === savedPin) {
@@ -748,7 +763,7 @@ function verifyStudentPin() {
     initProfiles();
   } else {
     alert("PINコード（パスワード）が違います");
-    initProfiles();
+    document.getElementById("studentPinInput").value = "";
   }
 }
 
@@ -837,7 +852,7 @@ function proceedToCards() {
 }
 
 function showCurrentCard() {
-  if (!currentCards.length) return;
+  if (!currentCards || !currentCards.length) return;
   document.getElementById("noteCardImg").src = currentCards[currentIndex].img;
   document.getElementById("trainingCover").classList.toggle("hidden", !trainingMode);
   document.getElementById("trainingCover").classList.remove("reveal");
@@ -845,8 +860,8 @@ function showCurrentCard() {
   document.getElementById("incorrectX").classList.remove("show");
 }
 
-function nextCard() { if (!trainingMode) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
-function previousCard() { if (!trainingMode) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
+function nextCard() { if (!trainingMode && currentCards.length) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
+function previousCard() { if (!trainingMode && currentCards.length) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
 
 function startTrainingDirect(force20 = false) {
   const isAllCleared = hasLevelCleared(activeProfileIndex, "all", 5);
@@ -951,6 +966,11 @@ function showResultScreen() {
 
   if (accuracy >= 90) {
     const todayStr = new Date().toISOString().split("T")[0];
+    const daysArr = Storage.get(`onpu_days_${activeProfileIndex}`, []);
+    if (Array.isArray(daysArr) && !daysArr.includes(todayStr)) {
+      daysArr.push(todayStr);
+      Storage.set(`onpu_days_${activeProfileIndex}`, daysArr);
+    }
     if (Storage.get(`onpu_last_stamp_date_${activeProfileIndex}`) !== todayStr) {
       Storage.set(`onpu_last_stamp_date_${activeProfileIndex}`, todayStr);
       Storage.set(`onpu_stamps_${activeProfileIndex}`, Storage.getNumber(`onpu_stamps_${activeProfileIndex}`, 0) + 1);
@@ -1051,8 +1071,11 @@ function showParentAuth() {
   document.getElementById("parentPassInput").value = "";
 }
 function verifyParentPass() {
-  if (document.getElementById("parentPassInput").value === Storage.get("onpu_parent_pass", "0123")) {
-    document.getElementById("parentAuthBox").classList.add("hidden"); document.getElementById("parentContentBox").classList.remove("hidden"); renderParentCompareTable();
+  const currentPass = String(Storage.get("onpu_parent_pass", "0123"));
+  if (document.getElementById("parentPassInput").value.trim() === currentPass) {
+    document.getElementById("parentAuthBox").classList.add("hidden"); 
+    document.getElementById("parentContentBox").classList.remove("hidden"); 
+    renderParentCompareTable();
   } else { alert("パスワードが違います"); }
 }
 function changeParentPassword() {
@@ -1067,7 +1090,7 @@ function showTeacherAuth() {
   document.getElementById("teacherPassInput").value = "";
 }
 function verifyTeacherPass() {
-  if (document.getElementById("teacherPassInput").value === "2357go") {
+  if (document.getElementById("teacherPassInput").value.trim() === "2357go") {
     document.getElementById("teacherAuthBox").classList.add("hidden"); document.getElementById("teacherContentBox").classList.remove("hidden"); renderTeacherView();
   } else { alert("パスワードが違います"); }
 }
@@ -1121,7 +1144,7 @@ function renderTeacherView() {
 
 function saveStudentByTeacher(slot) {
   let rawName = document.getElementById(`tName_${slot}`).value.trim();
-  if (!/^[\u3040-\u309Fー]+$/.test(rawName)) return alert("おなまえは「ひらがな」だけで 入力してください！\n（漢字、カタカナ、英数字、絵文字、記号は使えません）");
+  if (!/^[\u3040-\u309Fー0-9a-zA-Z\s]+$/.test(rawName) || !rawName) return alert("正しいお名前を入力してください！");
   const category = document.getElementById(`tCategory_${slot}`).value;
   const newPin = document.getElementById(`tPin_${slot}`).value.trim() || "0000";
   
