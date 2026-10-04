@@ -5,11 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>🎹ふよみチャレンジ</title>
 <style>
-* { box-sizing: border-box; touch-action: manipulation; }
+* {
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: #fdf8ed; overflow: hidden;
+  touch-action: pan-x pan-y;
 }
 body { display: flex; justify-content: center; align-items: center; }
 
@@ -95,17 +104,21 @@ body { display: flex; justify-content: center; align-items: center; }
 .level-number { display: block; font-size: 16px; font-weight: 700; }
 .locked-badge { position: absolute; top: 14px; right: 14px; background: #e99595; color: white; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
 
-/* レベル表紙画面 */
+/* レベル表紙画面（iPad・iPhone共用の雲の中央配置レスポンシブ調整） */
 .cover-screen {
   position: relative; width: 100%; height: 100%;
   background-color: #fdf8ed; display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
+.cover-img-container {
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
 .cover-img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; }
 .cover-level-number {
-  position: absolute; top: 31.5%; left: 50%; transform: translate(-50%, -50%);
-  font-size: 70px; font-weight: 900; color: #5b4636;
+  position: absolute; top: 38.5%; left: 50%; transform: translate(-50%, -50%);
+  font-size: min(18vw, 75px); font-weight: 900; color: #5b4636;
   text-shadow: 4px 4px 0px #fff, -4px -4px 0px #fff, 4px -4px 0px #fff, -4px 4px 0px #fff;
-  z-index: 10; pointer-events: none;
+  z-index: 10; pointer-events: none; line-height: 1;
 }
 
 /* カード画面 */
@@ -215,6 +228,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
 <audio id="seikaiAudio" preload="auto" src="seikai.mp3"></audio>
 <audio id="tfanAudio" preload="auto" src="tfan.mp3"></audio>
+<audio id="hyoshoFanfareAudio" preload="auto" src="表彰ファンファーレ.mp3"></audio>
 <audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
 <audio id="audio6do" preload="auto" src="6do.mp3"></audio>
 <audio id="audioToon1" preload="auto" src="toon1.mp3"></audio>
@@ -307,8 +321,10 @@ body { display: flex; justify-content: center; align-items: center; }
 
   <!-- レベル表紙画面 -->
   <section id="coverScreen" class="cover-screen hidden">
-    <img src="level_start.png" class="cover-img" alt="レベルスタート">
-    <div id="coverLevelNumber" class="cover-level-number">1</div>
+    <div class="cover-img-container">
+      <img src="level_start.png" class="cover-img" alt="レベルスタート">
+      <div id="coverLevelNumber" class="cover-level-number">1</div>
+    </div>
   </section>
 
   <!-- カード画面 -->
@@ -713,7 +729,7 @@ function confirmProfileSelect() {
   pendingSelectIndex = parseInt(val);
 
   if (pendingSelectIndex === activeProfileIndex) {
-    return; // 同じプレイヤー選択時は何もしない
+    return;
   }
 
   document.getElementById("pinModalStudentName").textContent = `${profiles[pendingSelectIndex]} の ログイン`;
@@ -1017,7 +1033,7 @@ function openAwardModal() {
   const box = document.getElementById("awardBoxEl");
   box.className = `modal-box award-box theme-${theme}`;
   document.getElementById("awardStudentName").textContent = `${profiles[activeProfileIndex]} さん`;
-  playAudioCloned("tfanAudio");
+  playAudioCloned("hyoshoFanfareAudio");
   toggleModal("awardModal", true);
 }
 
