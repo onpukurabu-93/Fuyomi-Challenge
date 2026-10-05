@@ -804,6 +804,23 @@ function playAudioCloned(audioId) {
   } catch (e) {}
 }
 
+/* 🔇 鳴っている効果音・ファンファーレをすべて止める（100回目の画面で使う） */
+function stopAllSounds() {
+  Object.keys(activeSources).forEach(id => {
+    const src = activeSources[id];
+    if (src) {
+      try { src.stop(); } catch (e) {}
+      activeSources[id] = null;
+    }
+  });
+  soundIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      try { el.pause(); el.currentTime = 0; } catch (e) {}
+    }
+  });
+}
+
 /* アニメーションを最初からやり直す */
 function restartAnimation(el) {
   el.classList.remove("show");
@@ -1270,15 +1287,23 @@ function showResultScreen() {
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
-  /* 👑 100回れんぞく達成：称号と達成回数を保存して、少ししてから金色の画面を出す */
+  /* 👑 100回れんぞく達成：称号と達成回数を保存して、結果のファンファーレが終わってから金色の画面を出す */
   if (isLegendMoment) {
     Storage.set(`onpu_legend_${activeProfileIndex}`, true);
     Storage.set(`onpu_legend_count_${activeProfileIndex}`, getLegendCount(activeProfileIndex) + 1);
     const legendIdx = activeProfileIndex;
+
+    /* 結果のファンファーレの長さに合わせて待つ（最短1.8秒、最長8秒） */
+    let waitMs = 1800;
+    const fanfareBuf = soundBuffers["tasseiFanfareAudio"];
+    if (fanfareBuf && fanfareBuf.duration) {
+      waitMs = Math.min(Math.max(1800, fanfareBuf.duration * 1000 + 500), 8000);
+    }
+
     legendTimer = setTimeout(() => {
       legendTimer = null;
       showLegendModal(legendIdx);
-    }, 1800);
+    }, waitMs);
   }
 }
 
@@ -1287,11 +1312,13 @@ function goToNextLevelClef(clef, level) {
   showLevelCover(level);
 }
 
-/* 👑 ふよみレジェンド画面（100回れんぞく） */
+/* 👑 ふよみレジェンド画面（100回れんぞく）
+   画面を出した瞬間に、鳴っている音をすべて止めてから、100回目のファンファーレを鳴らす */
 function showLegendModal(idx) {
   document.getElementById("legendStudentName").textContent = `${profiles[idx] || ""} さん`;
-  playAudioCloned("hyoshoFanfareAudio");
   toggleModal("legendModal", true);
+  stopAllSounds();
+  playAudioCloned("hyoshoFanfareAudio");
 }
 
 /* 表彰ファンファーレ切り替え処理 (パーフェクト連続10回以上: 表彰ファンファーレ.mp3, それ以外: 表彰ファンファーレ1.mp3) */
