@@ -67,6 +67,10 @@ body { display: flex; justify-content: center; align-items: center; }
   display: inline-block; background: #ff7043; color: white; font-size: 11px; font-weight: 800;
   padding: 2px 8px; border-radius: 20px; margin-bottom: 4px; box-shadow: 0 2px 4px rgba(255,112,67,0.3);
 }
+.legend-record {
+  display: inline-block; margin: 0 0 4px 4px; font-size: 11px; font-weight: 800; color: #7a4f00;
+  background: #fff3b0; border: 1px solid #ffd700; border-radius: 20px; padding: 2px 8px;
+}
 .stamp-mini-box {
   display: flex; justify-content: center; gap: 4px; margin-top: 4px; padding: 4px;
   background: #fff8e1; border-radius: 10px; border: 1px dashed #ffe082;
@@ -295,6 +299,7 @@ body { display: flex; justify-content: center; align-items: center; }
       </div>
 
       <div id="streakBadge" class="streak-badge">🔥 0日れんぞく！</div>
+      <div id="legendRecord" class="legend-record hidden"></div>
       <div id="stampMiniBox" class="stamp-mini-box"></div>
     </div>
 
@@ -506,6 +511,10 @@ body { display: flex; justify-content: center; align-items: center; }
 
         <!-- タブ3: データリセット＆デバッグ機能 -->
         <div id="teacherTab3" class="hidden">
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🧪 100回目のテスト（使っていない生徒枠で試してね）</div>
+          <button class="modal-btn" style="background:#43a047; font-size:12px; padding:8px; margin-bottom:6px;" onclick="setStreak99ForTest()">🧪 いまのプレイヤーの連続を99回にする</button>
+          <button class="modal-btn" style="background:#2e7d32; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetLegendForTest()">🧪 いまのプレイヤーの 👑と連続をリセット</button>
+
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🔓 テスト用：全鍵解除</div>
           <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllLevelsForDebug()">🔓 すべてのコース・レベルの鍵を一括解除</button>
 
@@ -581,9 +590,15 @@ function toggleModal(modalId, show = true) {
   if (modal) modal.classList.toggle("hidden", !show);
 }
 
-/* 👑 100回れんぞく達成の称号（名前の前につく王冠） */
+/* 👑 100回れんぞく達成の記録（回数）と称号（名前の前につく王冠） */
+function getLegendCount(idx) {
+  const n = Storage.getNumber(`onpu_legend_count_${idx}`, 0);
+  if (n > 0) return n;
+  return Storage.get(`onpu_legend_${idx}`, false) ? 1 : 0;
+}
+
 function legendMark(idx) {
-  return Storage.get(`onpu_legend_${idx}`, false) ? "👑 " : "";
+  return getLegendCount(idx) > 0 ? "👑 " : "";
 }
 
 /* ⏱ 残っているタイマーを管理（連打や画面移動でタイマーが重ならないようにする） */
@@ -906,6 +921,16 @@ function initProfiles() {
   });
   
   document.getElementById("streakBadge").textContent = `🔥 ${calculateStreak(activeProfileIndex)}日れんぞく！`;
+
+  const legendBox = document.getElementById("legendRecord");
+  const legendCount = getLegendCount(activeProfileIndex);
+  if (legendCount > 0) {
+    legendBox.textContent = `👑 100回れんぞく達成 ×${legendCount}`;
+    legendBox.classList.remove("hidden");
+  } else {
+    legendBox.textContent = "";
+    legendBox.classList.add("hidden");
+  }
   
   const lastAcc = Storage.get(`onpu_last_acc_${activeProfileIndex}`, null);
   document.getElementById("myLastScore").textContent = lastAcc !== null ? `${lastAcc}%` : "-- %";
@@ -1245,9 +1270,10 @@ function showResultScreen() {
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
-  /* 👑 100回れんぞく達成：称号を保存して、少ししてから金色の画面を出す */
+  /* 👑 100回れんぞく達成：称号と達成回数を保存して、少ししてから金色の画面を出す */
   if (isLegendMoment) {
     Storage.set(`onpu_legend_${activeProfileIndex}`, true);
+    Storage.set(`onpu_legend_count_${activeProfileIndex}`, getLegendCount(activeProfileIndex) + 1);
     const legendIdx = activeProfileIndex;
     legendTimer = setTimeout(() => {
       legendTimer = null;
@@ -1372,10 +1398,10 @@ function renderTeacherView() {
 
   let legendHtml = `<table class="compare-table"><thead><tr><th>名前</th><th>称号</th><th>見本</th></tr></thead><tbody>`;
   profiles.forEach((name, idx) => {
-    const has = Storage.get(`onpu_legend_${idx}`, false);
+    const cnt = getLegendCount(idx);
     legendHtml += `<tr>
       <td><strong>${name}</strong></td>
-      <td>${has ? "👑 あり" : "なし"}</td>
+      <td>${cnt > 0 ? "👑 ×" + cnt : "なし"}</td>
       <td><button onclick="previewLegendModal(${idx})" style="font-size:10px;padding:2px 4px;">100回目の画面</button></td>
     </tr>`;
   });
@@ -1400,16 +1426,34 @@ function saveStudentByTeacher(slot) {
 function saveAwardTheme(slot, themeVal) { Storage.set(`onpu_award_theme_${slot}`, themeVal); }
 function previewAwardModal(slot) { const old = activeProfileIndex; activeProfileIndex = slot; openAwardModal(); activeProfileIndex = old; }
 function previewLegendModal(slot) { showLegendModal(slot); }
+
+/* 🧪 100回目のテスト用（確認が終わったら消します） */
+function setStreak99ForTest() {
+  Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 99);
+  alert(`${profiles[activeProfileIndex]} さんの連続を 99回 にしました。\nトップ画面にもどって、どのコースでも100%で終わると 100回目の画面が出ます。`);
+  initProfiles();
+}
+function resetLegendForTest() {
+  Storage.set(`onpu_legend_${activeProfileIndex}`, false);
+  Storage.set(`onpu_legend_count_${activeProfileIndex}`, 0);
+  Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 0);
+  Storage.set(`onpu_perf_max_${activeProfileIndex}`, 0);
+  alert(`${profiles[activeProfileIndex]} さんの 👑・100回達成の記録・連続回数を リセットしました。`);
+  initProfiles();
+  renderTeacherView();
+}
+
 function unlockAllLevelsForDebug() { Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true); alert("すべてのコースとレベルの鍵を解除しました！（テスト用）"); initProfiles(); }
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
 
 function renderParentCompareTable() {
-  let html = `<table class="compare-table"><thead><tr><th>名前</th><th>区分</th><th>連続</th><th>6つのド最高点</th></tr></thead><tbody>`;
+  let html = `<table class="compare-table"><thead><tr><th>名前</th><th>区分</th><th>連続</th><th>6つのド最高点</th><th>👑100回達成</th></tr></thead><tbody>`;
   profiles.forEach((n, idx) => {
     const doB = getDoTestBest(idx);
     const cat = Storage.get(`onpu_category_${idx}`, "年少");
-    html += `<tr><td><strong>${legendMark(idx)}${n}</strong></td><td>${cat}</td><td>${calculateStreak(idx)}日</td><td>${doB ? doB.accuracy+'%' : '-'}</td></tr>`;
+    const cnt = getLegendCount(idx);
+    html += `<tr><td><strong>${legendMark(idx)}${n}</strong></td><td>${cat}</td><td>${calculateStreak(idx)}日</td><td>${doB ? doB.accuracy+'%' : '-'}</td><td>${cnt > 0 ? cnt + '回' : '-'}</td></tr>`;
   });
   document.getElementById("parentCompareTable").innerHTML = html + `</tbody></table>`;
 }
