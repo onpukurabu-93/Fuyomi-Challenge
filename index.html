@@ -557,6 +557,11 @@ const Storage = {
   }
 };
 
+/* 🏆 表彰式を自動で出すときの設定
+   true  = 全カードを初めてパーフェクトにしたときだけ、自動で表彰式が出る
+   false = 全カードでパーフェクトを取るたびに、自動で表彰式が出る */
+const AUTO_AWARD_ONLY_FIRST = true;
+
 /* 学年（区分）のリストおよび4月1日自動進級定義 */
 const CATEGORIES = [
   "プレ", "年少", "年中", "年長",
@@ -609,6 +614,7 @@ function legendMark(idx) {
 let nextQuestionTimer = null;
 let coverTimer = null;
 let legendTimer = null;
+let awardTimer = null;
 let sugoiTimer = null;
 let confettiRafId = null;
 
@@ -616,6 +622,7 @@ function clearPendingTimers() {
   if (nextQuestionTimer !== null) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
   if (coverTimer !== null) { clearTimeout(coverTimer); coverTimer = null; }
   if (legendTimer !== null) { clearTimeout(legendTimer); legendTimer = null; }
+  if (awardTimer !== null) { clearTimeout(awardTimer); awardTimer = null; }
   if (sugoiTimer !== null) { clearTimeout(sugoiTimer); sugoiTimer = null; }
 }
 
@@ -817,23 +824,6 @@ function playAudioCloned(audioId) {
     const p = el.play();
     if (p && p.catch) p.catch(() => {});
   } catch (e) {}
-}
-
-/* 🔇 鳴っている効果音・ファンファーレをすべて止める（100回目の画面で使う） */
-function stopAllSounds() {
-  Object.keys(activeSources).forEach(id => {
-    const src = activeSources[id];
-    if (src) {
-      try { src.stop(); } catch (e) {}
-      activeSources[id] = null;
-    }
-  });
-  soundIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      try { el.pause(); el.currentTime = 0; } catch (e) {}
-    }
-  });
 }
 
 /* アニメーションを最初からやり直す */
@@ -1255,29 +1245,33 @@ function showResultScreen() {
   const isPerfect = (accuracy === 100);
 
   /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3 のあとに sugoi.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
-  let fanfareMs = 0;
-  let sugoiMs = 0;
+  /* resultSoundsEndMs = 結果の音がすべて鳴り終わるまでの時間（場面を切り替えるタイミングの基準） */
+  let resultSoundsEndMs = 0;
   if (accuracy === 100) {
     document.getElementById("resultTitleBig").textContent = "かんぺき！";
     playAudioCloned("tasseiFanfareAudio");
 
     /* ファンファーレが鳴り終わってから「すごい」を鳴らす */
-    fanfareMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
-    sugoiMs = getSoundDurationMs("sugoiAudio");
+    const fanfareMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+    const sugoiMs = getSoundDurationMs("sugoiAudio") || 1500;
     sugoiTimer = setTimeout(() => {
       sugoiTimer = null;
       playAudioCloned("sugoiAudio");
     }, fanfareMs + 200);
+    resultSoundsEndMs = fanfareMs + 200 + sugoiMs + 600;
   } else if (accuracy >= 90) {
     document.getElementById("resultTitleBig").textContent = "もうすこし！";
     playAudioCloned("osiAudio");
   } else {
-    document.getElementById("resultTitleBig").textContent = "おしかったね！";
+    document.getElementById("resultTitleBig").textContent = "がんばれ！";
     playAudioCloned("ganbatteAudio");
   }
 
   /* 👑 パーフェクト連続がちょうど100回になった瞬間 */
   const isLegendMoment = (accuracy === 100 && currentStreak === 100);
+
+  /* 🏆 全カード レベル5 の20問パーフェクトのとき、表彰式を自動で出す */
+  let autoAward = false;
 
   if (accuracy >= 90) {
     if (selectedClef === "do" && isDoTest) {
@@ -1304,6 +1298,7 @@ function showResultScreen() {
           if (!tCleared) { playAudioCloned("audioHeon1"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`; }
           else { playAudioCloned("audioHeon2"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`; }
         } else if (selectedClef === "all") {
+          autoAward = true;
           btnWrap.innerHTML += `<button class="select-button special" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
         }
       }
@@ -1314,26 +1309,44 @@ function showResultScreen() {
 
     startConfetti(isLegendMoment ? 150 : 50);
   } else {
-    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ（がんばれ！）</button>`;
+    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もう一度チャレンジ！</button>`;
   }
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
-  /* 👑 100回れんぞく達成：称号と達成回数を保存して、
-     ファンファーレと「すごい」が鳴り終わってから金色の画面を出す */
+  /* 🎬 場面の切り替えは、鳴っている音が終わってから、順番に行う
+     結果の音 → 表彰式（自動） → 表彰式の音 → 金色の画面（100回目） */
+  let nextSceneMs = resultSoundsEndMs;
+
+  if (autoAward) {
+    const awardIdx = activeProfileIndex;
+    const alreadySeen = Storage.get(`onpu_award_auto_${awardIdx}`, false);
+    if (!AUTO_AWARD_ONLY_FIRST || !alreadySeen) {
+      const awardSoundId = (currentStreak >= 10) ? "hyoshoFanfareAudio" : "hyoshoFanfare1Audio";
+      const awardSoundMs = getSoundDurationMs(awardSoundId) || 4000;
+      const awardStartMs = Math.max(1200, nextSceneMs);
+
+      awardTimer = setTimeout(() => {
+        awardTimer = null;
+        Storage.set(`onpu_award_auto_${awardIdx}`, true);
+        openAwardModal(awardIdx);
+      }, awardStartMs);
+
+      nextSceneMs = awardStartMs + awardSoundMs + 800;
+    }
+  }
+
+  /* 👑 100回れんぞく達成：称号と達成回数を保存して、前の音が終わってから金色の画面を出す */
   if (isLegendMoment) {
     Storage.set(`onpu_legend_${activeProfileIndex}`, true);
     Storage.set(`onpu_legend_count_${activeProfileIndex}`, getLegendCount(activeProfileIndex) + 1);
     const legendIdx = activeProfileIndex;
-
-    /* ファンファーレ → 少し待つ → すごい → 少し待つ → 金色の画面（最短1.8秒、最長12秒） */
-    let waitMs = fanfareMs + 200 + sugoiMs + 600;
-    waitMs = Math.min(Math.max(1800, waitMs), 12000);
+    const legendStartMs = Math.max(1800, nextSceneMs);
 
     legendTimer = setTimeout(() => {
       legendTimer = null;
       showLegendModal(legendIdx);
-    }, waitMs);
+    }, legendStartMs);
   }
 }
 
@@ -1343,22 +1356,21 @@ function goToNextLevelClef(clef, level) {
 }
 
 /* 👑 ふよみレジェンド画面（100回れんぞく）
-   画面を出した瞬間に、鳴っている音をすべて止めてから、100回目のファンファーレを鳴らす */
+   前の音が終わってから呼ばれるので、音を止めずにそのままファンファーレを鳴らす */
 function showLegendModal(idx) {
   document.getElementById("legendStudentName").textContent = `${profiles[idx] || ""} さん`;
   toggleModal("legendModal", true);
-  stopAllSounds();
   playAudioCloned("hyoshoFanfareAudio");
 }
 
 /* 表彰ファンファーレ切り替え処理 (パーフェクト連続10回以上: 表彰ファンファーレ.mp3, それ以外: 表彰ファンファーレ1.mp3) */
-function openAwardModal() {
-  const theme = Storage.get(`onpu_award_theme_${activeProfileIndex}`, "cat");
+function openAwardModal(idx = activeProfileIndex) {
+  const theme = Storage.get(`onpu_award_theme_${idx}`, "cat");
   const box = document.getElementById("awardBoxEl");
   box.className = `modal-box award-box theme-${theme}`;
-  document.getElementById("awardStudentName").textContent = `${profiles[activeProfileIndex]} さん`;
+  document.getElementById("awardStudentName").textContent = `${profiles[idx]} さん`;
 
-  const perfStreak = Storage.getNumber(`onpu_perf_streak_${activeProfileIndex}`, 0);
+  const perfStreak = Storage.getNumber(`onpu_perf_streak_${idx}`, 0);
 
   if (perfStreak >= 10) {
     playAudioCloned("hyoshoFanfareAudio");
@@ -1481,7 +1493,7 @@ function saveStudentByTeacher(slot) {
 }
 
 function saveAwardTheme(slot, themeVal) { Storage.set(`onpu_award_theme_${slot}`, themeVal); }
-function previewAwardModal(slot) { const old = activeProfileIndex; activeProfileIndex = slot; openAwardModal(); activeProfileIndex = old; }
+function previewAwardModal(slot) { openAwardModal(slot); }
 function previewLegendModal(slot) { showLegendModal(slot); }
 
 /* 🧪 100回目のテスト用（確認が終わったら消します） */
@@ -1495,7 +1507,8 @@ function resetLegendForTest() {
   Storage.set(`onpu_legend_count_${activeProfileIndex}`, 0);
   Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 0);
   Storage.set(`onpu_perf_max_${activeProfileIndex}`, 0);
-  alert(`${profiles[activeProfileIndex]} さんの 👑・100回達成の記録・連続回数を リセットしました。`);
+  Storage.set(`onpu_award_auto_${activeProfileIndex}`, false);
+  alert(`${profiles[activeProfileIndex]} さんの 👑・100回達成の記録・連続回数・自動表彰式の記録を リセットしました。`);
   initProfiles();
   renderTeacherView();
 }
