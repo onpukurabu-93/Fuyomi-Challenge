@@ -268,6 +268,7 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="audioHeon2" preload="auto" src="heon2.mp3"></audio>
 <audio id="audioKanpeki" preload="auto" src="kanpeki.mp3"></audio>
 <audio id="tasseiFanfareAudio" preload="auto" src="Tassei-fanfare.mp3"></audio>
+<audio id="sugoiAudio" preload="auto" src="sugoi.mp3"></audio>
 
 <div class="app-container" id="appContainer">
 
@@ -330,15 +331,18 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="header-title">みんなのランキング</div>
       <div class="header-spacer"></div>
     </div>
-    <div style="font-size:12px; color:#806c5a; text-align:center; margin-bottom:10px;">今週の連続パーフェクト（100%）記録！</div>
+    <div style="font-size:12px; color:#806c5a; text-align:center; margin-bottom:10px;">これまでの パーフェクト（100%）の記録！</div>
     
-    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">🎼 今週のト音記号マスター</div>
+    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">🎼 ト音記号マスター</div>
     <div id="rankingTrebleList" style="margin-bottom:12px;"></div>
 
-    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">𝄢 今週のヘ音記号マスター</div>
+    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">𝄢 ヘ音記号マスター</div>
     <div id="rankingBassList" style="margin-bottom:12px;"></div>
 
-    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">🔥 ぜんたいの最高パーフェクト記録</div>
+    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">🃏 全カードマスター</div>
+    <div id="rankingFullList" style="margin-bottom:12px;"></div>
+
+    <div style="font-weight:bold; color:#5b4636; font-size:14px; margin-bottom:4px;">🔥 れんぞくの最高記録（どのコースでも）</div>
     <div id="rankingAllList"></div>
   </section>
 
@@ -605,12 +609,14 @@ function legendMark(idx) {
 let nextQuestionTimer = null;
 let coverTimer = null;
 let legendTimer = null;
+let sugoiTimer = null;
 let confettiRafId = null;
 
 function clearPendingTimers() {
   if (nextQuestionTimer !== null) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
   if (coverTimer !== null) { clearTimeout(coverTimer); coverTimer = null; }
   if (legendTimer !== null) { clearTimeout(legendTimer); legendTimer = null; }
+  if (sugoiTimer !== null) { clearTimeout(sugoiTimer); sugoiTimer = null; }
 }
 
 function stopConfetti() {
@@ -667,7 +673,7 @@ document.addEventListener('pointerdown', initAudioContext, {once:true});
 const soundIds = [
   "seikaiAudio", "tfanAudio", "hyoshoFanfare1Audio", "hyoshoFanfareAudio",
   "osiAudio", "ganbatteAudio", "audio6do", "audioToon1", "audioToon2",
-  "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio"
+  "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio", "sugoiAudio"
 ];
 const soundBuffers = {};
 const activeSources = {};
@@ -690,6 +696,15 @@ function loadAllSounds() {
         .catch(() => {});
     } catch (e) {}
   });
+}
+
+/* 音の長さ（ミリ秒）を調べる。分からないときは 0 を返す */
+function getSoundDurationMs(audioId) {
+  const buf = soundBuffers[audioId];
+  if (buf && buf.duration) return buf.duration * 1000;
+  const el = document.getElementById(audioId);
+  if (el && isFinite(el.duration) && el.duration > 0) return el.duration * 1000;
+  return 0;
 }
 
 /* 間違い音（連続で鳴りすぎないよう間隔を制限） */
@@ -989,31 +1004,36 @@ function verifyStudentPin() {
   }
 }
 
+/* 🏆 ランキングの表を作る */
+function buildRankTable(list, headerLabel) {
+  let html = `<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>${headerLabel}</th></tr></thead><tbody>`;
+  list.forEach((item, i) => {
+    html += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`;
+  });
+  return html + '</tbody></table>';
+}
+
 function openRankingScreen() {
   navigateTo("rankingScreen");
-  let tHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>今週の連続100%</th></tr></thead><tbody>';
-  let bHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>今週の連続100%</th></tr></thead><tbody>';
-  let aHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>最高連続100%</th></tr></thead><tbody>';
 
-  let listT = [], listB = [], listA = [];
+  let listT = [], listB = [], listF = [], listA = [];
   profiles.forEach((name, idx) => {
     const shownName = legendMark(idx) + name;
     listT.push({ name: shownName, val: Storage.getNumber(`onpu_perf_treble_${idx}`, 0) });
     listB.push({ name: shownName, val: Storage.getNumber(`onpu_perf_bass_${idx}`, 0) });
+    listF.push({ name: shownName, val: Storage.getNumber(`onpu_perf_all_${idx}`, 0) });
     listA.push({ name: shownName, val: Storage.getNumber(`onpu_perf_max_${idx}`, 0) });
   });
 
   listT.sort((a,b) => b.val - a.val);
   listB.sort((a,b) => b.val - a.val);
+  listF.sort((a,b) => b.val - a.val);
   listA.sort((a,b) => b.val - a.val);
 
-  listT.forEach((item, i) => { tHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
-  listB.forEach((item, i) => { bHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
-  listA.forEach((item, i) => { aHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
-
-  document.getElementById("rankingTrebleList").innerHTML = tHtml + '</tbody></table>';
-  document.getElementById("rankingBassList").innerHTML = bHtml + '</tbody></table>';
-  document.getElementById("rankingAllList").innerHTML = aHtml + '</tbody></table>';
+  document.getElementById("rankingTrebleList").innerHTML = buildRankTable(listT, "100%の回数");
+  document.getElementById("rankingBassList").innerHTML = buildRankTable(listB, "100%の回数");
+  document.getElementById("rankingFullList").innerHTML = buildRankTable(listF, "100%の回数");
+  document.getElementById("rankingAllList").innerHTML = buildRankTable(listA, "最高れんぞく");
 }
 
 function startDoLesson() {
@@ -1052,7 +1072,7 @@ function createLevelButtons() {
     }
     if (isLocked) button.classList.add("locked");
     button.innerHTML = `<span class="level-number">レベル ${level}</span>` + (isLocked ? `<span class="locked-badge">🔒 ロック</span>` : "");
-    button.onclick = () => isLocked ? alert("前のレベルの20問テストで90%以上をとると解放されるよ！") : showLevelCover(level);
+    button.onclick = () => isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level);
     list.appendChild(button);
   }
 }
@@ -1194,6 +1214,8 @@ function showResultScreen() {
       Storage.set(`onpu_perf_treble_${activeProfileIndex}`, Storage.getNumber(`onpu_perf_treble_${activeProfileIndex}`, 0) + 1);
     } else if (selectedClef === "bass") {
       Storage.set(`onpu_perf_bass_${activeProfileIndex}`, Storage.getNumber(`onpu_perf_bass_${activeProfileIndex}`, 0) + 1);
+    } else if (selectedClef === "all") {
+      Storage.set(`onpu_perf_all_${activeProfileIndex}`, Storage.getNumber(`onpu_perf_all_${activeProfileIndex}`, 0) + 1);
     }
     const maxVal = Storage.getNumber(`onpu_perf_max_${activeProfileIndex}`, 0);
     if (currentStreak > maxVal) Storage.set(`onpu_perf_max_${activeProfileIndex}`, currentStreak);
@@ -1232,12 +1254,22 @@ function showResultScreen() {
 
   const isPerfect = (accuracy === 100);
 
-  /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3 のあとに sugoi.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  let fanfareMs = 0;
+  let sugoiMs = 0;
   if (accuracy === 100) {
     document.getElementById("resultTitleBig").textContent = "かんぺき！";
     playAudioCloned("tasseiFanfareAudio");
+
+    /* ファンファーレが鳴り終わってから「すごい」を鳴らす */
+    fanfareMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+    sugoiMs = getSoundDurationMs("sugoiAudio");
+    sugoiTimer = setTimeout(() => {
+      sugoiTimer = null;
+      playAudioCloned("sugoiAudio");
+    }, fanfareMs + 200);
   } else if (accuracy >= 90) {
-    document.getElementById("resultTitleBig").textContent = "おめでとう！";
+    document.getElementById("resultTitleBig").textContent = "もうすこし！";
     playAudioCloned("osiAudio");
   } else {
     document.getElementById("resultTitleBig").textContent = "おしかったね！";
@@ -1253,11 +1285,11 @@ function showResultScreen() {
       playAudioCloned("audio6do");
       btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`;
     } else if (targetValue === 10 && isPerfect) {
-      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">🚀 レベル${selectedLevel} の20問テストへ！</button>`;
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">🚀 レベル${selectedLevel} の20問トレーニングへ！</button>`;
       btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start10QuestionTraining()">もういちど 10問にチャレンジ</button>`;
     } else if (targetValue === 10 && !isPerfect) {
       btnWrap.innerHTML += `<button class="select-button accent" onclick="start10QuestionTraining()">もう一度 10問チャレンジ（100%をめざそう！）</button>`;
-      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問テストにすすむ</button>`;
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問トレーニングにすすむ</button>`;
     } else if (targetValue >= 20 && isPerfect) {
       if (selectedLevel < 5) {
         btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
@@ -1287,18 +1319,16 @@ function showResultScreen() {
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
-  /* 👑 100回れんぞく達成：称号と達成回数を保存して、結果のファンファーレが終わってから金色の画面を出す */
+  /* 👑 100回れんぞく達成：称号と達成回数を保存して、
+     ファンファーレと「すごい」が鳴り終わってから金色の画面を出す */
   if (isLegendMoment) {
     Storage.set(`onpu_legend_${activeProfileIndex}`, true);
     Storage.set(`onpu_legend_count_${activeProfileIndex}`, getLegendCount(activeProfileIndex) + 1);
     const legendIdx = activeProfileIndex;
 
-    /* 結果のファンファーレの長さに合わせて待つ（最短1.8秒、最長8秒） */
-    let waitMs = 1800;
-    const fanfareBuf = soundBuffers["tasseiFanfareAudio"];
-    if (fanfareBuf && fanfareBuf.duration) {
-      waitMs = Math.min(Math.max(1800, fanfareBuf.duration * 1000 + 500), 8000);
-    }
+    /* ファンファーレ → 少し待つ → すごい → 少し待つ → 金色の画面（最短1.8秒、最長12秒） */
+    let waitMs = fanfareMs + 200 + sugoiMs + 600;
+    waitMs = Math.min(Math.max(1800, waitMs), 12000);
 
     legendTimer = setTimeout(() => {
       legendTimer = null;
