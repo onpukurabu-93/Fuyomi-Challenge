@@ -90,6 +90,7 @@ body { display: flex; justify-content: center; align-items: center; }
 .select-button.ranking-btn { background: #ffd54f; color: #5b4636; border: 2px solid #ffb300; font-size: 18px; }
 .select-button.accent { background: #ff7043; color: white; font-size: 20px; padding: 14px; }
 .select-button.challenge { background: #b28bb9; color: white; font-size: 17px; }
+.select-button:disabled { opacity: 0.4; filter: grayscale(60%); cursor: not-allowed; }
 
 .select-button.locked {
   opacity: 0.35; filter: grayscale(40%); cursor: not-allowed; box-shadow: none;
@@ -615,7 +616,8 @@ let nextQuestionTimer = null;
 let coverTimer = null;
 let legendTimer = null;
 let awardTimer = null;
-let sugoiTimer = null;
+let awardBtnTimer = null;
+let fanfareTimer = null;
 let confettiRafId = null;
 
 function clearPendingTimers() {
@@ -623,7 +625,8 @@ function clearPendingTimers() {
   if (coverTimer !== null) { clearTimeout(coverTimer); coverTimer = null; }
   if (legendTimer !== null) { clearTimeout(legendTimer); legendTimer = null; }
   if (awardTimer !== null) { clearTimeout(awardTimer); awardTimer = null; }
-  if (sugoiTimer !== null) { clearTimeout(sugoiTimer); sugoiTimer = null; }
+  if (awardBtnTimer !== null) { clearTimeout(awardBtnTimer); awardBtnTimer = null; }
+  if (fanfareTimer !== null) { clearTimeout(fanfareTimer); fanfareTimer = null; }
 }
 
 function stopConfetti() {
@@ -647,7 +650,12 @@ let audioCtx = null;
 let masterGain = null;
 let audioInitialized = false;
 
+/* 音の機能が「止まっている・中断されている・閉じている」ときは、作り直すか再開する */
 function getAudioContext() {
+  if (audioCtx && audioCtx.state === 'closed') {
+    audioCtx = null;
+    masterGain = null;
+  }
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const comp = audioCtx.createDynamicsCompressor();
@@ -656,7 +664,7 @@ function getAudioContext() {
     masterGain.connect(comp);
     comp.connect(audioCtx.destination);
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state !== 'running') {
     try {
       const p = audioCtx.resume();
       if (p && p.catch) p.catch(() => {});
@@ -675,6 +683,13 @@ function initAudioContext() {
 document.addEventListener('touchstart', initAudioContext, {once:true});
 document.addEventListener('mousedown', initAudioContext, {once:true});
 document.addEventListener('pointerdown', initAudioContext, {once:true});
+
+/* 画面にもどってきたときも、音の機能を再開する */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && audioInitialized) {
+    try { getAudioContext(); } catch (e) {}
+  }
+});
 
 /* 効果音を最初に1回だけ読み込んで使い回す（連打しても重くならない） */
 const soundIds = [
@@ -1130,11 +1145,13 @@ function showRandomTrainingQuestion() {
   showCurrentCard();
 }
 
-/* 鍵盤タッチ遅延対策: pointerdown イベントハンドラ */
+/* 鍵盤タッチ遅延対策: pointerdown イベントハンドラ
+   押すたびに、音の機能が止まっていないか確認して、止まっていたら再開する */
 function handleKeyPress(key, event) {
   if (event) {
     event.preventDefault();
   }
+  try { getAudioContext(); } catch (e) {}
   pressKey(key);
 }
 
@@ -1244,21 +1261,21 @@ function showResultScreen() {
 
   const isPerfect = (accuracy === 100);
 
-  /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3 のあとに sugoi.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  /* 音声切り替え指定: 100% -> sugoi.mp3 のあとに Tassei-fanfare.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
   /* resultSoundsEndMs = 結果の音がすべて鳴り終わるまでの時間（場面を切り替えるタイミングの基準） */
   let resultSoundsEndMs = 0;
   if (accuracy === 100) {
     document.getElementById("resultTitleBig").textContent = "かんぺき！";
-    playAudioCloned("tasseiFanfareAudio");
 
-    /* ファンファーレが鳴り終わってから「すごい」を鳴らす */
-    const fanfareMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+    /* 先に「すごい」を鳴らし、鳴り終わってからファンファーレを鳴らす */
     const sugoiMs = getSoundDurationMs("sugoiAudio") || 1500;
-    sugoiTimer = setTimeout(() => {
-      sugoiTimer = null;
-      playAudioCloned("sugoiAudio");
-    }, fanfareMs + 200);
-    resultSoundsEndMs = fanfareMs + 200 + sugoiMs + 600;
+    const fanfareMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+    playAudioCloned("sugoiAudio");
+    fanfareTimer = setTimeout(() => {
+      fanfareTimer = null;
+      playAudioCloned("tasseiFanfareAudio");
+    }, sugoiMs + 200);
+    resultSoundsEndMs = sugoiMs + 200 + fanfareMs + 600;
   } else if (accuracy >= 90) {
     document.getElementById("resultTitleBig").textContent = "もうすこし！";
     playAudioCloned("osiAudio");
@@ -1299,7 +1316,8 @@ function showResultScreen() {
           else { playAudioCloned("audioHeon2"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`; }
         } else if (selectedClef === "all") {
           autoAward = true;
-          btnWrap.innerHTML += `<button class="select-button special" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
+          /* 結果の音が鳴り終わるまでは押せない（あとで押せるようにする） */
+          btnWrap.innerHTML += `<button id="awardBtn" class="select-button special" disabled onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
         }
       }
       btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
@@ -1313,6 +1331,15 @@ function showResultScreen() {
   }
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
+
+  /* 🏆 表彰式ボタンは、結果の音（すごい→ファンファーレ）が鳴り終わってから押せるようにする */
+  if (autoAward) {
+    awardBtnTimer = setTimeout(() => {
+      awardBtnTimer = null;
+      const btn = document.getElementById("awardBtn");
+      if (btn) btn.disabled = false;
+    }, Math.max(1200, resultSoundsEndMs));
+  }
 
   /* 🎬 場面の切り替えは、鳴っている音が終わってから、順番に行う
      結果の音 → 表彰式（自動） → 表彰式の音 → 金色の画面（100回目） */
