@@ -218,6 +218,30 @@ body { display: flex; justify-content: center; align-items: center; }
 .award-desc { font-size: 12px; color: #806c5a; line-height: 1.4; margin-bottom: 12px; }
 .award-box.theme-game .award-desc { color: #b0bec5; }
 
+/* 👑 100回れんぞく ふよみレジェンド */
+.legend-bg { background: rgba(30,20,0,0.65); }
+.legend-box {
+  background: linear-gradient(135deg, #fff8dc 0%, #ffd700 50%, #fff3b0 100%);
+  border: 5px double #b8860b; border-radius: 22px; padding: 22px 16px; text-align: center;
+  box-shadow: 0 0 30px rgba(255,215,0,0.85), 0 4px 15px rgba(0,0,0,0.3);
+}
+.legend-crown { font-size: 72px; line-height: 1; margin-bottom: 4px; animation: legendPop 0.6s ease-out; }
+@keyframes legendPop {
+  0% { transform: scale(0.2); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.legend-title { font-size: 26px; font-weight: 900; color: #7a4f00; margin-bottom: 6px; text-shadow: 1px 1px 0 #fff; }
+.legend-name {
+  font-size: 20px; font-weight: 800; color: #5b4636; border-bottom: 3px solid #b8860b;
+  display: inline-block; padding: 0 14px 2px; margin-bottom: 10px;
+}
+.legend-count { font-size: 16px; font-weight: 800; color: #d84315; margin-bottom: 10px; }
+.legend-comment {
+  font-size: 13px; color: #5b4636; line-height: 1.6; margin-bottom: 14px;
+  background: rgba(255,255,255,0.65); border-radius: 12px; padding: 10px;
+}
+
 .compare-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 10.5px; }
 .compare-table th, .compare-table td { border: 1px solid #eadcc8; padding: 4px 2px; text-align: center; color: #5b4636; }
 .compare-table th { background: #fdf8ed; font-weight: 700; }
@@ -405,6 +429,22 @@ body { display: flex; justify-content: center; align-items: center; }
   </div>
 </div>
 
+<!-- 👑 100回れんぞく ふよみレジェンド モーダル -->
+<div id="legendModal" class="modal-bg legend-bg hidden">
+  <div class="modal-box legend-box">
+    <div class="legend-crown">👑</div>
+    <div class="legend-title">ふよみレジェンド</div>
+    <div class="legend-name" id="legendStudentName">〇〇 さん</div>
+    <div class="legend-count">パーフェクト 100回 れんぞく！</div>
+    <div class="legend-comment">
+      すごい！ すごい！ 100回も れんぞくで パーフェクトなんて、まさに でんせつです！<br>
+      せんせいも びっくりしました！<br>
+      レッスンで せんせいに この がめんを みせてね。とくべつな ごほうびが あるよ！
+    </div>
+    <button class="modal-btn" style="background:#b8860b;" onclick="toggleModal('legendModal', false)">とじる</button>
+  </div>
+</div>
+
 <!-- 🔒 管理モーダル（保護者・先生） -->
 <div id="managementModal" class="modal-bg hidden">
   <div class="modal-box">
@@ -460,6 +500,8 @@ body { display: flex; justify-content: center; align-items: center; }
         <div id="teacherTab2" class="hidden">
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">表彰式デザイン事前設定・見本</div>
           <div id="teacherAwardThemeList"></div>
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin:12px 0 6px; text-align:left;">👑 100回れんぞく 画面の見本</div>
+          <div id="teacherLegendPreviewList"></div>
         </div>
 
         <!-- タブ3: データリセット＆デバッグ機能 -->
@@ -539,14 +581,21 @@ function toggleModal(modalId, show = true) {
   if (modal) modal.classList.toggle("hidden", !show);
 }
 
+/* 👑 100回れんぞく達成の称号（名前の前につく王冠） */
+function legendMark(idx) {
+  return Storage.get(`onpu_legend_${idx}`, false) ? "👑 " : "";
+}
+
 /* ⏱ 残っているタイマーを管理（連打や画面移動でタイマーが重ならないようにする） */
 let nextQuestionTimer = null;
 let coverTimer = null;
+let legendTimer = null;
 let confettiRafId = null;
 
 function clearPendingTimers() {
   if (nextQuestionTimer !== null) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; }
   if (coverTimer !== null) { clearTimeout(coverTimer); coverTimer = null; }
+  if (legendTimer !== null) { clearTimeout(legendTimer); legendTimer = null; }
 }
 
 function stopConfetti() {
@@ -850,7 +899,7 @@ function initProfiles() {
       const category = Storage.get(`onpu_category_${idx}`, "年少");
       const opt = document.createElement("option");
       opt.value = idx;
-      opt.textContent = `${name} (${category})`;
+      opt.textContent = `${legendMark(idx)}${name} (${category})`;
       if (idx === activeProfileIndex) opt.selected = true;
       select.appendChild(opt);
     }
@@ -906,9 +955,10 @@ function openRankingScreen() {
 
   let listT = [], listB = [], listA = [];
   profiles.forEach((name, idx) => {
-    listT.push({ name, val: Storage.getNumber(`onpu_perf_treble_${idx}`, 0) });
-    listB.push({ name, val: Storage.getNumber(`onpu_perf_bass_${idx}`, 0) });
-    listA.push({ name, val: Storage.getNumber(`onpu_perf_max_${idx}`, 0) });
+    const shownName = legendMark(idx) + name;
+    listT.push({ name: shownName, val: Storage.getNumber(`onpu_perf_treble_${idx}`, 0) });
+    listB.push({ name: shownName, val: Storage.getNumber(`onpu_perf_bass_${idx}`, 0) });
+    listA.push({ name: shownName, val: Storage.getNumber(`onpu_perf_max_${idx}`, 0) });
   });
 
   listT.sort((a,b) => b.val - a.val);
@@ -1152,6 +1202,9 @@ function showResultScreen() {
     playAudioCloned("ganbatteAudio");
   }
 
+  /* 👑 パーフェクト連続がちょうど100回になった瞬間 */
+  const isLegendMoment = (accuracy === 100 && currentStreak === 100);
+
   if (accuracy >= 90) {
     if (selectedClef === "do" && isDoTest) {
       updateLockVisuals();
@@ -1185,12 +1238,22 @@ function showResultScreen() {
       btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もう一度 20問にチャレンジ（100%をめざそう！）</button>`;
     }
 
-    startConfetti();
+    startConfetti(isLegendMoment ? 150 : 50);
   } else {
     btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ（がんばれ！）</button>`;
   }
 
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
+
+  /* 👑 100回れんぞく達成：称号を保存して、少ししてから金色の画面を出す */
+  if (isLegendMoment) {
+    Storage.set(`onpu_legend_${activeProfileIndex}`, true);
+    const legendIdx = activeProfileIndex;
+    legendTimer = setTimeout(() => {
+      legendTimer = null;
+      showLegendModal(legendIdx);
+    }, 1800);
+  }
 }
 
 function goToNextLevelClef(clef, level) {
@@ -1198,17 +1261,23 @@ function goToNextLevelClef(clef, level) {
   showLevelCover(level);
 }
 
-/* 表彰ファンファーレの回数切り替え処理 (1〜9回目: 表彰ファンファーレ1.mp3, 10回目: 表彰ファンファーレ.mp3) */
+/* 👑 ふよみレジェンド画面（100回れんぞく） */
+function showLegendModal(idx) {
+  document.getElementById("legendStudentName").textContent = `${profiles[idx] || ""} さん`;
+  playAudioCloned("hyoshoFanfareAudio");
+  toggleModal("legendModal", true);
+}
+
+/* 表彰ファンファーレ切り替え処理 (パーフェクト連続10回以上: 表彰ファンファーレ.mp3, それ以外: 表彰ファンファーレ1.mp3) */
 function openAwardModal() {
   const theme = Storage.get(`onpu_award_theme_${activeProfileIndex}`, "cat");
   const box = document.getElementById("awardBoxEl");
   box.className = `modal-box award-box theme-${theme}`;
   document.getElementById("awardStudentName").textContent = `${profiles[activeProfileIndex]} さん`;
 
-  let awardCount = Storage.getNumber(`onpu_award_count_${activeProfileIndex}`, 0) + 1;
-  Storage.set(`onpu_award_count_${activeProfileIndex}`, awardCount);
+  const perfStreak = Storage.getNumber(`onpu_perf_streak_${activeProfileIndex}`, 0);
 
-  if (awardCount >= 10) {
+  if (perfStreak >= 10) {
     playAudioCloned("hyoshoFanfareAudio");
   } else {
     playAudioCloned("hyoshoFanfare1Audio");
@@ -1300,6 +1369,17 @@ function renderTeacherView() {
     </tr>`;
   });
   document.getElementById("teacherAwardThemeList").innerHTML = themeHtml + `</tbody></table>`;
+
+  let legendHtml = `<table class="compare-table"><thead><tr><th>名前</th><th>称号</th><th>見本</th></tr></thead><tbody>`;
+  profiles.forEach((name, idx) => {
+    const has = Storage.get(`onpu_legend_${idx}`, false);
+    legendHtml += `<tr>
+      <td><strong>${name}</strong></td>
+      <td>${has ? "👑 あり" : "なし"}</td>
+      <td><button onclick="previewLegendModal(${idx})" style="font-size:10px;padding:2px 4px;">100回目の画面</button></td>
+    </tr>`;
+  });
+  document.getElementById("teacherLegendPreviewList").innerHTML = legendHtml + `</tbody></table>`;
 }
 
 function saveStudentByTeacher(slot) {
@@ -1319,6 +1399,7 @@ function saveStudentByTeacher(slot) {
 
 function saveAwardTheme(slot, themeVal) { Storage.set(`onpu_award_theme_${slot}`, themeVal); }
 function previewAwardModal(slot) { const old = activeProfileIndex; activeProfileIndex = slot; openAwardModal(); activeProfileIndex = old; }
+function previewLegendModal(slot) { showLegendModal(slot); }
 function unlockAllLevelsForDebug() { Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true); alert("すべてのコースとレベルの鍵を解除しました！（テスト用）"); initProfiles(); }
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
@@ -1328,7 +1409,7 @@ function renderParentCompareTable() {
   profiles.forEach((n, idx) => {
     const doB = getDoTestBest(idx);
     const cat = Storage.get(`onpu_category_${idx}`, "年少");
-    html += `<tr><td><strong>${n}</strong></td><td>${cat}</td><td>${calculateStreak(idx)}日</td><td>${doB ? doB.accuracy+'%' : '-'}</td></tr>`;
+    html += `<tr><td><strong>${legendMark(idx)}${n}</strong></td><td>${cat}</td><td>${calculateStreak(idx)}日</td><td>${doB ? doB.accuracy+'%' : '-'}</td></tr>`;
   });
   document.getElementById("parentCompareTable").innerHTML = html + `</tbody></table>`;
 }
@@ -1341,19 +1422,21 @@ function handleCardBack() {
 }
 
 /* 🎉 紙吹雪（前のアニメーションを止めてから始める） */
-function startConfetti() {
+function startConfetti(count = 50) {
   stopConfetti();
   const canvas = document.getElementById("confettiCanvas"); const ctx = canvas.getContext("2d");
   canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
-  const pieces = Array.from({length: 50}, () => ({
+  const colors = ["#e99595", "#e6b26a", "#78a9c8", "#b28bb9", "#ffd700"];
+  const pieces = Array.from({length: count}, () => ({
     x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
-    size: Math.random() * 8 + 4, color: ["#e99595", "#e6b26a", "#78a9c8", "#b28bb9"][Math.floor(Math.random() * 4)], speed: Math.random() * 3 + 2
+    size: Math.random() * 8 + 4, color: colors[Math.floor(Math.random() * colors.length)], speed: Math.random() * 3 + 2
   }));
+  const maxFrames = count > 50 ? 240 : 120;
   let timer = 0;
   function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     pieces.forEach(p => { p.y += p.speed; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); });
-    if (timer++ < 120) {
+    if (timer++ < maxFrames) {
       confettiRafId = requestAnimationFrame(update);
     } else {
       confettiRafId = null;
