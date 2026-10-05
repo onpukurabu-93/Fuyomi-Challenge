@@ -770,4 +770,601 @@ const bassCards = {
 };
 bassCards[5] = [ ...bassCards[1], ...bassCards[2], ...bassCards[3], ...bassCards[4] ];
 
-const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [
+const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [ ...trebleCards[5] ], 5: [ ...trebleCards[5], ...bassCards[5] ] };
+
+/* 状態管理 */
+let profiles = Storage.get("onpu_profiles", ["せいと1", "せいと2", "せいと3"]);
+let activeProfileIndex = Storage.getNumber("onpu_active_profile", 0);
+let pendingSelectIndex = null;
+
+let selectedClef = null, selectedLevel = null, currentCards = [];
+let currentIndex = 0, trainingMode = false, trainingLocked = false, lastTrainingIndex = -1;
+let targetValue = 10;
+let trainingCorrectCount = 0, trainingMistakes = 0, trainingStartTime = 0;
+
+function hasLevelCleared(profileIndex, clef, level) {
+  if (Storage.get(`onpu_debug_unlocked_${profileIndex}`)) return true;
+  const oldBest = Storage.get(`onpu_count_best_${profileIndex}_${clef}_${level}`);
+  if (oldBest && oldBest.count >= 20 && oldBest.accuracy >= 90) return true;
+  const best20 = Storage.get(`onpu_best_20_${profileIndex}_${clef}_${level}`);
+  return !!(best20 && best20.accuracy >= 90);
+}
+
+function getDoTestBest(profileIndex) { return Storage.get(`onpu_do_test_best_${profileIndex}`); }
+
+function calculateStreak(profileIndex) {
+  const days = Storage.get(`onpu_days_${profileIndex}`, []);
+  if (!Array.isArray(days) || !days.length) return 0;
+  days.sort();
+  let streak = 0, today = new Date();
+  for (let i = 0; i < 30; i++) {
+    let dStr = new Date(today.getTime() - i * 86400000).toISOString().split("T")[0];
+    if (days.includes(dStr)) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+function renderStampMini(profileIndex) {
+  const stamps = Storage.getNumber(`onpu_stamps_${profileIndex}`, 0);
+  const container = document.getElementById("stampMiniBox");
+  container.innerHTML = "";
+  for (let i = 1; i <= 10; i++) {
+    const dot = document.createElement("div");
+    dot.className = `stamp-dot ${i <= (stamps % 10 || (stamps > 0 ? 10 : 0)) ? 'active' : ''}`;
+    dot.textContent = i <= (stamps % 10 || (stamps > 0 ? 10 : 0)) ? "💮" : i;
+    container.appendChild(dot);
+  }
+}
+
+function updateLockVisuals() {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
+  const doBest = getDoTestBest(activeProfileIndex);
+  const clefUnlocked = isDebugUnlocked || !!(doBest && doBest.accuracy >= 90);
+  const trebleCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "treble", 5);
+  const bassCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "bass", 5);
+  const allUnlocked = isDebugUnlocked || (clefUnlocked && trebleCleared && bassCleared);
+
+  const btnT = document.getElementById("btnTreble");
+  const btnB = document.getElementById("btnBass");
+  const btnA = document.getElementById("btnAll");
+
+  btnT.classList.toggle("locked", !clefUnlocked);
+  document.getElementById("lockTreble").style.display = clefUnlocked ? "none" : "inline";
+
+  btnB.classList.toggle("locked", !clefUnlocked);
+  document.getElementById("lockBass").style.display = clefUnlocked ? "none" : "inline";
+
+  btnA.classList.toggle("locked", !allUnlocked);
+  document.getElementById("lockAll").style.display = allUnlocked ? "none" : "inline";
+}
+
+/* 初期化とプロフィールの読み込み */
+function initProfiles() {
+  checkAutoGradePromotion();
+  profiles = Storage.get("onpu_profiles", ["せいと1", "せいと2", "せいと3"]);
+  const select = document.getElementById("profileSelect");
+  select.innerHTML = '';
+  profiles.forEach((name, idx) => {
+    if (name) {
+      const category = Storage.get(`onpu_category_${idx}`, "年少");
+      const opt = document.createElement("option");
+      opt.value = idx;
+      opt.textContent = `${name} (${category})`;
+      if (idx === activeProfileIndex) opt.selected = true;
+      select.appendChild(opt);
+    }
+  });
+  
+  document.getElementById("streakBadge").textContent = `🔥 ${calculateStreak(activeProfileIndex)}日れんぞく！`;
+  
+  const lastAcc = Storage.get(`onpu_last_acc_${activeProfileIndex}`, null);
+  document.getElementById("myLastScore").textContent = lastAcc !== null ? `${lastAcc}%` : "-- %";
+  
+  const perfStreak = Storage.getNumber(`onpu_perf_streak_${activeProfileIndex}`, 0);
+  document.getElementById("myPerfStreak").textContent = `${perfStreak} 回`;
+
+  renderStampMini(activeProfileIndex);
+  updateLockVisuals();
+}
+
+/* スタートボタン切替認証 */
+function confirmProfileSelect() {
+  const val = document.getElementById("profileSelect").value;
+  if (val === "") return;
+  pendingSelectIndex = parseInt(val, 10);
+
+  if (pendingSelectIndex === activeProfileIndex) {
+    return;
+  }
+
+  document.getElementById("pinModalStudentName").textContent = `${profiles[pendingSelectIndex]} の ログイン`;
+  document.getElementById("studentPinInput").value = "";
+  toggleModal("studentPinModal", true);
+}
+
+function verifyStudentPin() {
+  const inputPin = document.getElementById("studentPinInput").value.trim();
+  const savedPin = String(Storage.get(`onpu_pin_${pendingSelectIndex}`, "0000"));
+  
+  if (inputPin === savedPin) {
+    activeProfileIndex = pendingSelectIndex;
+    Storage.set("onpu_active_profile", activeProfileIndex);
+    toggleModal("studentPinModal", false);
+    initProfiles();
+  } else {
+    alert("PINコード（パスワード）が違います");
+    document.getElementById("studentPinInput").value = "";
+  }
+}
+
+function openRankingScreen() {
+  navigateTo("rankingScreen");
+  let tHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>今週の連続100%</th></tr></thead><tbody>';
+  let bHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>今週の連続100%</th></tr></thead><tbody>';
+  let aHtml = '<table class="compare-table"><thead><tr><th>順位</th><th>おなまえ</th><th>最高連続100%</th></tr></thead><tbody>';
+
+  let listT = [], listB = [], listA = [];
+  profiles.forEach((name, idx) => {
+    listT.push({ name, val: Storage.getNumber(`onpu_perf_treble_${idx}`, 0) });
+    listB.push({ name, val: Storage.getNumber(`onpu_perf_bass_${idx}`, 0) });
+    listA.push({ name, val: Storage.getNumber(`onpu_perf_max_${idx}`, 0) });
+  });
+
+  listT.sort((a,b) => b.val - a.val);
+  listB.sort((a,b) => b.val - a.val);
+  listA.sort((a,b) => b.val - a.val);
+
+  listT.forEach((item, i) => { tHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
+  listB.forEach((item, i) => { bHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
+  listA.forEach((item, i) => { aHtml += `<tr><td>${i+1}位</td><td><strong>${item.name}</strong></td><td>🔥 ${item.val}回</td></tr>`; });
+
+  document.getElementById("rankingTrebleList").innerHTML = tHtml + '</tbody></table>';
+  document.getElementById("rankingBassList").innerHTML = bHtml + '</tbody></table>';
+  document.getElementById("rankingAllList").innerHTML = aHtml + '</tbody></table>';
+}
+
+function startDoLesson() {
+  selectedClef = "do"; selectedLevel = 0; currentCards = doCards; currentIndex = 0; trainingMode = false;
+  navigateTo("cardScreen");
+  document.getElementById("levelBadge").textContent = "6つのド";
+  document.getElementById("cardScreenTitle").textContent = "おんぷカード";
+  document.getElementById("qCountBadge").classList.add("hidden");
+  showCurrentCard();
+}
+
+function selectClef(clef) {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
+  const doBest = getDoTestBest(activeProfileIndex);
+  const clefUnlocked = isDebugUnlocked || !!(doBest && doBest.accuracy >= 90);
+  const trebleCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "treble", 5);
+  const bassCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "bass", 5);
+  const allUnlocked = isDebugUnlocked || (clefUnlocked && trebleCleared && bassCleared);
+
+  if ((clef === 'treble' || clef === 'bass') && !clefUnlocked) return alert("まずは「6つの『ド』」でトレーニング（20問）をやろう！");
+  if (clef === 'all' && !allUnlocked) return alert("ト音記号とヘ音記号をすべてクリアすると遊べるよ！");
+  
+  selectedClef = clef; showLevelScreen();
+}
+
+function createLevelButtons() {
+  const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
+  const list = document.getElementById("levelList");
+  list.innerHTML = "";
+  for (let level = 1; level <= 5; level++) {
+    const button = document.createElement("button");
+    button.className = "level-button";
+    let isLocked = false;
+    if (level > 1 && !isDebugUnlocked) {
+      if (!hasLevelCleared(activeProfileIndex, selectedClef, level - 1)) isLocked = true;
+    }
+    if (isLocked) button.classList.add("locked");
+    button.innerHTML = `<span class="level-number">レベル ${level}</span>` + (isLocked ? `<span class="locked-badge">🔒 ロック</span>` : "");
+    button.onclick = () => isLocked ? alert("前のレベルの20問テストで90%以上をとると解放されるよ！") : showLevelCover(level);
+    list.appendChild(button);
+  }
+}
+
+function showLevelCover(level) {
+  selectedLevel = level;
+  navigateTo("coverScreen");
+  document.getElementById("coverLevelNumber").textContent = level;
+  coverTimer = setTimeout(() => {
+    coverTimer = null;
+    if (!document.getElementById("coverScreen").classList.contains("hidden")) proceedToCards();
+  }, 1200);
+}
+
+function proceedToCards() {
+  currentCards = (selectedClef === "treble") ? trebleCards[selectedLevel] : (selectedClef === "bass") ? bassCards[selectedLevel] : allCards[selectedLevel];
+  currentIndex = 0; trainingMode = false;
+  navigateTo("cardScreen");
+  document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}`;
+  document.getElementById("cardScreenTitle").textContent = "おんぷカード";
+  document.getElementById("qCountBadge").classList.add("hidden");
+  showCurrentCard();
+}
+
+function showCurrentCard() {
+  if (!currentCards || !currentCards.length) return;
+  document.getElementById("noteCardImg").src = currentCards[currentIndex].img;
+  document.getElementById("trainingCover").classList.toggle("hidden", !trainingMode);
+  document.getElementById("trainingCover").classList.remove("reveal");
+  document.getElementById("correctCircle").classList.remove("show");
+  document.getElementById("incorrectX").classList.remove("show");
+}
+
+function nextCard() { if (!trainingMode && currentCards.length) { currentIndex = (currentIndex + 1) % currentCards.length; showCurrentCard(); } }
+function previousCard() { if (!trainingMode && currentCards.length) { currentIndex = (currentIndex - 1 + currentCards.length) % currentCards.length; showCurrentCard(); } }
+
+function startTrainingDirect(force20 = false) {
+  const isAllCleared = hasLevelCleared(activeProfileIndex, "all", 5);
+  if (selectedClef === "do" || isAllCleared) targetValue = 20;
+  else targetValue = force20 ? 20 : 10;
+  startTrainingWithConfig();
+}
+
+function startTrainingWithConfig() {
+  clearPendingTimers();
+  trainingMode = true; trainingCorrectCount = 0; trainingMistakes = 0; trainingStartTime = Date.now(); lastTrainingIndex = -1;
+  document.getElementById("qCountBadge").classList.remove("hidden");
+  showRandomTrainingQuestion();
+}
+
+function restartTrainingDirect() { navigateTo("cardScreen"); startTrainingDirect(targetValue === 20); }
+function start20QuestionTraining() { navigateTo("cardScreen"); startTrainingDirect(true); }
+function start10QuestionTraining() { navigateTo("cardScreen"); startTrainingDirect(false); }
+
+function showRandomTrainingQuestion() {
+  if (trainingCorrectCount >= targetValue) { showResultScreen(); return; }
+  const remaining = targetValue - trainingCorrectCount;
+  document.getElementById("qCountBadge").textContent = `あと ${remaining} 問`;
+
+  let nextIdx;
+  if (currentCards.length > 1) {
+    do { nextIdx = Math.floor(Math.random() * currentCards.length); } while (nextIdx === lastTrainingIndex);
+  } else { nextIdx = 0; }
+  lastTrainingIndex = nextIdx; currentIndex = nextIdx; trainingLocked = false;
+  showCurrentCard();
+}
+
+/* 鍵盤タッチ遅延対策: pointerdown イベントハンドラ */
+function handleKeyPress(key, event) {
+  if (event) {
+    event.preventDefault();
+  }
+  pressKey(key);
+}
+
+function pressKey(key) {
+  if (!currentCards.length) return;
+  const card = currentCards[currentIndex];
+
+  if (trainingMode) {
+    if (trainingLocked) return;
+    if (key !== card.key) {
+      trainingMistakes++;
+      playPokon();
+      restartAnimation(document.getElementById("incorrectX"));
+      return;
+    }
+    trainingLocked = true; trainingCorrectCount++;
+    document.getElementById("trainingCover").classList.add("reveal");
+    playNoteSound(card.id, key);
+
+    restartAnimation(document.getElementById("correctCircle"));
+    playAudioCloned("seikaiAudio");
+
+    if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+    nextQuestionTimer = setTimeout(() => {
+      nextQuestionTimer = null;
+      if (trainingMode) showRandomTrainingQuestion();
+    }, 250);
+    return;
+  }
+  if (key === card.key) playNoteSound(card.id, key);
+}
+
+function saveCountBest(profileIndex, clef, level, accuracy, duration) {
+  const key = targetValue === 20 ? `onpu_best_20_${profileIndex}_${clef}_${level}` : `onpu_best_10_${profileIndex}_${clef}_${level}`;
+  const oldBest = Storage.get(key);
+  
+  if (!oldBest || accuracy > oldBest.accuracy || (accuracy === oldBest.accuracy && duration < (oldBest.time ?? Infinity))) {
+    Storage.set(key, { accuracy, time: duration, count: targetValue });
+  }
+  if (targetValue === 20) {
+    Storage.set(`onpu_count_best_${profileIndex}_${clef}_${level}`, { accuracy, time: duration, count: 20 });
+  }
+}
+
+function saveDoTestBest(accuracy, duration) {
+  const key = `onpu_do_test_best_${activeProfileIndex}`;
+  const oldBest = Storage.get(key);
+  if (!oldBest || accuracy > oldBest.accuracy || (accuracy === oldBest.accuracy && duration < (oldBest.time ?? Infinity))) {
+    Storage.set(key, { accuracy, time: duration, mode: "count", count: 20 });
+  }
+}
+
+function showResultScreen() {
+  trainingMode = false;
+  document.getElementById("qCountBadge").classList.add("hidden");
+  const duration = Math.round((Date.now() - trainingStartTime) / 1000);
+  const totalAttempts = trainingCorrectCount + trainingMistakes;
+  const accuracy = totalAttempts > 0 ? Math.round((trainingCorrectCount / totalAttempts) * 100) : 0;
+
+  Storage.set(`onpu_last_acc_${activeProfileIndex}`, accuracy);
+
+  let currentStreak = Storage.getNumber(`onpu_perf_streak_${activeProfileIndex}`, 0);
+  if (accuracy === 100) {
+    currentStreak++;
+    Storage.set(`onpu_perf_streak_${activeProfileIndex}`, currentStreak);
+    if (selectedClef === "treble") {
+      Storage.set(`onpu_perf_treble_${activeProfileIndex}`, Storage.getNumber(`onpu_perf_treble_${activeProfileIndex}`, 0) + 1);
+    } else if (selectedClef === "bass") {
+      Storage.set(`onpu_perf_bass_${activeProfileIndex}`, Storage.getNumber(`onpu_perf_bass_${activeProfileIndex}`, 0) + 1);
+    }
+    const maxVal = Storage.getNumber(`onpu_perf_max_${activeProfileIndex}`, 0);
+    if (currentStreak > maxVal) Storage.set(`onpu_perf_max_${activeProfileIndex}`, currentStreak);
+  } else {
+    Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 0);
+  }
+
+  if (accuracy >= 90) {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const daysArr = Storage.get(`onpu_days_${activeProfileIndex}`, []);
+    if (Array.isArray(daysArr) && !daysArr.includes(todayStr)) {
+      daysArr.push(todayStr);
+      Storage.set(`onpu_days_${activeProfileIndex}`, daysArr);
+    }
+    if (Storage.get(`onpu_last_stamp_date_${activeProfileIndex}`) !== todayStr) {
+      Storage.set(`onpu_last_stamp_date_${activeProfileIndex}`, todayStr);
+      Storage.set(`onpu_stamps_${activeProfileIndex}`, Storage.getNumber(`onpu_stamps_${activeProfileIndex}`, 0) + 1);
+    }
+  }
+
+  const isDoTest = (selectedClef === "do" && targetValue === 20);
+  if (isDoTest) saveDoTestBest(accuracy, duration);
+  if (selectedClef !== "do") saveCountBest(activeProfileIndex, selectedClef, selectedLevel, accuracy, duration);
+
+  navigateTo("resultScreen");
+
+  document.getElementById("resultScore").textContent = `${targetValue}問中 ${trainingCorrectCount}問せいかい (${accuracy}%)`;
+  document.getElementById("resultTime").textContent = `タイム: ${duration}秒`;
+  
+  const streakMsg = document.getElementById("resultStreakMsg");
+  if (accuracy === 100) streakMsg.textContent = `🔥 パーフェクト ${currentStreak} 回れんぞく！`;
+  else streakMsg.textContent = "";
+
+  const btnWrap = document.getElementById("resultButtonsWrap");
+  btnWrap.innerHTML = "";
+
+  const isPerfect = (accuracy === 100);
+
+  /* 音声切り替え指定: 100% -> Tassei-fanfare.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  if (accuracy === 100) {
+    document.getElementById("resultTitleBig").textContent = "かんぺき！";
+    playAudioCloned("tasseiFanfareAudio");
+  } else if (accuracy >= 90) {
+    document.getElementById("resultTitleBig").textContent = "おめでとう！";
+    playAudioCloned("osiAudio");
+  } else {
+    document.getElementById("resultTitleBig").textContent = "おしかったね！";
+    playAudioCloned("ganbatteAudio");
+  }
+
+  if (accuracy >= 90) {
+    if (selectedClef === "do" && isDoTest) {
+      updateLockVisuals();
+      playAudioCloned("audio6do");
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`;
+    } else if (targetValue === 10 && isPerfect) {
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">🚀 レベル${selectedLevel} の20問テストへ！</button>`;
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start10QuestionTraining()">もういちど 10問にチャレンジ</button>`;
+    } else if (targetValue === 10 && !isPerfect) {
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start10QuestionTraining()">もう一度 10問チャレンジ（100%をめざそう！）</button>`;
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問テストにすすむ</button>`;
+    } else if (targetValue >= 20 && isPerfect) {
+      if (selectedLevel < 5) {
+        btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
+      } else {
+        const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
+        const bCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
+
+        if (selectedClef === "treble") {
+          if (!bCleared) { playAudioCloned("audioToon1"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('bass', 1)">🚀 ヘ音記号 レベル1へ！</button>`; }
+          else { playAudioCloned("audioToon2"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`; }
+        } else if (selectedClef === "bass") {
+          if (!tCleared) { playAudioCloned("audioHeon1"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('treble', 1)">🚀 ト音記号 レベル1へ！</button>`; }
+          else { playAudioCloned("audioHeon2"); btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('all', 1)">🚀 全カード レベル1へ！</button>`; }
+        } else if (selectedClef === "all") {
+          btnWrap.innerHTML += `<button class="select-button special" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
+        }
+      }
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
+    } else if (targetValue >= 20 && !isPerfect) {
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もう一度 20問にチャレンジ（100%をめざそう！）</button>`;
+    }
+
+    startConfetti();
+  } else {
+    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ（がんばれ！）</button>`;
+  }
+
+  btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
+}
+
+function goToNextLevelClef(clef, level) {
+  selectedClef = clef; selectedLevel = level;
+  showLevelCover(level);
+}
+
+/* 表彰ファンファーレの回数切り替え処理 (1〜9回目: 表彰ファンファーレ1.mp3, 10回目: 表彰ファンファーレ.mp3) */
+function openAwardModal() {
+  const theme = Storage.get(`onpu_award_theme_${activeProfileIndex}`, "cat");
+  const box = document.getElementById("awardBoxEl");
+  box.className = `modal-box award-box theme-${theme}`;
+  document.getElementById("awardStudentName").textContent = `${profiles[activeProfileIndex]} さん`;
+
+  let awardCount = Storage.getNumber(`onpu_award_count_${activeProfileIndex}`, 0) + 1;
+  Storage.set(`onpu_award_count_${activeProfileIndex}`, awardCount);
+
+  if (awardCount >= 10) {
+    playAudioCloned("hyoshoFanfareAudio");
+  } else {
+    playAudioCloned("hyoshoFanfare1Audio");
+  }
+
+  toggleModal("awardModal", true);
+}
+
+function openManagementModal() { resetMgSection(); toggleModal("managementModal", true); }
+function resetMgSection() {
+  document.getElementById("mgSelectSection").classList.remove("hidden");
+  document.getElementById("parentSection").classList.add("hidden");
+  document.getElementById("teacherSection").classList.add("hidden");
+}
+function showParentAuth() {
+  document.getElementById("mgSelectSection").classList.add("hidden");
+  document.getElementById("parentSection").classList.remove("hidden");
+  document.getElementById("parentAuthBox").classList.remove("hidden");
+  document.getElementById("parentContentBox").classList.add("hidden");
+  document.getElementById("parentPassInput").value = "";
+}
+function verifyParentPass() {
+  const currentPass = String(Storage.get("onpu_parent_pass", "0123"));
+  if (document.getElementById("parentPassInput").value.trim() === currentPass) {
+    document.getElementById("parentAuthBox").classList.add("hidden"); 
+    document.getElementById("parentContentBox").classList.remove("hidden"); 
+    renderParentCompareTable();
+  } else { alert("パスワードが違います"); }
+}
+function changeParentPassword() {
+  const newPass = document.getElementById("parentNewPassInput").value.trim();
+  if (!newPass) return alert("パスワードを入力してください");
+  Storage.set("onpu_parent_pass", newPass); alert("保護者パスワードを変更しました！");
+}
+
+function showTeacherAuth() {
+  document.getElementById("mgSelectSection").classList.add("hidden"); document.getElementById("teacherSection").classList.remove("hidden");
+  document.getElementById("teacherAuthBox").classList.remove("hidden"); document.getElementById("teacherContentBox").classList.add("hidden");
+  document.getElementById("teacherPassInput").value = "";
+}
+function verifyTeacherPass() {
+  if (document.getElementById("teacherPassInput").value.trim() === "2357go") {
+    document.getElementById("teacherAuthBox").classList.add("hidden"); document.getElementById("teacherContentBox").classList.remove("hidden"); renderTeacherView();
+  } else { alert("パスワードが違います"); }
+}
+
+function switchTeacherTab(tabNum) {
+  [1, 2, 3].forEach(n => {
+    document.getElementById(`teacherTab${n}`).classList.toggle("hidden", n !== tabNum);
+    document.getElementById(`tTab${n}`).classList.toggle("active", n === tabNum);
+  });
+}
+
+function renderTeacherView() {
+  let listHtml = `<table class="compare-table"><thead><tr><th>枠</th><th>名前 (ひらがな)</th><th>区分</th><th>PIN</th><th>保存</th></tr></thead><tbody>`;
+  for (let i = 0; i < 3; i++) {
+    const category = Storage.get(`onpu_category_${i}`, "年少");
+    
+    let catOptions = CATEGORIES.map(cat => 
+      `<option value="${cat}" ${category===cat?'selected':''}>${cat}</option>`
+    ).join("");
+
+    listHtml += `<tr>
+      <td>${i+1}</td>
+      <td><input type="text" id="tName_${i}" value="${profiles[i]||""}" maxlength="8" style="width:60px;text-align:center;"></td>
+      <td>
+        <select id="tCategory_${i}" style="font-size:10px;">
+          ${catOptions}
+        </select>
+      </td>
+      <td><input type="text" id="tPin_${i}" value="${Storage.get(`onpu_pin_${i}`, "0000")}" maxlength="4" style="width:36px;text-align:center;"></td>
+      <td><button onclick="saveStudentByTeacher(${i})" style="font-size:10px;padding:2px 4px;">保存</button></td>
+    </tr>`;
+  }
+  document.getElementById("teacherStudentConfigList").innerHTML = listHtml + `</tbody></table>`;
+  
+  let themeHtml = `<table class="compare-table"><thead><tr><th>名前</th><th>デザイン</th><th>見本</th></tr></thead><tbody>`;
+  profiles.forEach((name, idx) => {
+    const cT = Storage.get(`onpu_award_theme_${idx}`, "cat");
+    themeHtml += `<tr>
+      <td><strong>${name}</strong></td>
+      <td>
+        <select onchange="saveAwardTheme(${idx}, this.value)" style="font-size:10px;">
+          <option value="cat" ${cT==='cat'?'selected':''}>🐱 ねこ</option><option value="cool" ${cT==='cool'?'selected':''}>⚡ クール</option>
+          <option value="game" ${cT==='game'?'selected':''}>🎮 ゲーム</option><option value="pop" ${cT==='pop'?'selected':''}>🌈 ポップ</option>
+        </select>
+      </td>
+      <td><button onclick="previewAwardModal(${idx})" style="font-size:10px;padding:2px 4px;">見本</button></td>
+    </tr>`;
+  });
+  document.getElementById("teacherAwardThemeList").innerHTML = themeHtml + `</tbody></table>`;
+}
+
+function saveStudentByTeacher(slot) {
+  let rawName = document.getElementById(`tName_${slot}`).value.trim();
+  if (!/^[\u3040-\u309Fー0-9a-zA-Z\s]+$/.test(rawName) || !rawName) return alert("正しいお名前を入力してください！");
+  const category = document.getElementById(`tCategory_${slot}`).value;
+  const newPin = document.getElementById(`tPin_${slot}`).value.trim() || "0000";
+  
+  profiles[slot] = rawName;
+  Storage.set("onpu_profiles", profiles);
+  Storage.set(`onpu_category_${slot}`, category);
+  Storage.set(`onpu_pin_${slot}`, newPin);
+  
+  initProfiles();
+  alert(`スロット${slot+1} を [${rawName}（${category}）] （PIN: ${newPin}）で保存しました！`);
+}
+
+function saveAwardTheme(slot, themeVal) { Storage.set(`onpu_award_theme_${slot}`, themeVal); }
+function previewAwardModal(slot) { const old = activeProfileIndex; activeProfileIndex = slot; openAwardModal(); activeProfileIndex = old; }
+function unlockAllLevelsForDebug() { Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true); alert("すべてのコースとレベルの鍵を解除しました！（テスト用）"); initProfiles(); }
+function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
+function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
+
+function renderParentCompareTable() {
+  let html = `<table class="compare-table"><thead><tr><th>名前</th><th>区分</th><th>連続</th><th>6つのド最高点</th></tr></thead><tbody>`;
+  profiles.forEach((n, idx) => {
+    const doB = getDoTestBest(idx);
+    const cat = Storage.get(`onpu_category_${idx}`, "年少");
+    html += `<tr><td><strong>${n}</strong></td><td>${cat}</td><td>${calculateStreak(idx)}日</td><td>${doB ? doB.accuracy+'%' : '-'}</td></tr>`;
+  });
+  document.getElementById("parentCompareTable").innerHTML = html + `</tbody></table>`;
+}
+
+function showSelectScreen() { navigateTo("selectScreen"); initProfiles(); }
+function showLevelScreen() { navigateTo("levelScreen"); createLevelButtons(); }
+function handleCardBack() {
+  updateLockVisuals();
+  selectedClef === "do" ? showSelectScreen() : showLevelScreen();
+}
+
+/* 🎉 紙吹雪（前のアニメーションを止めてから始める） */
+function startConfetti() {
+  stopConfetti();
+  const canvas = document.getElementById("confettiCanvas"); const ctx = canvas.getContext("2d");
+  canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+  const pieces = Array.from({length: 50}, () => ({
+    x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+    size: Math.random() * 8 + 4, color: ["#e99595", "#e6b26a", "#78a9c8", "#b28bb9"][Math.floor(Math.random() * 4)], speed: Math.random() * 3 + 2
+  }));
+  let timer = 0;
+  function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => { p.y += p.speed; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); });
+    if (timer++ < 120) {
+      confettiRafId = requestAnimationFrame(update);
+    } else {
+      confettiRafId = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  confettiRafId = requestAnimationFrame(update);
+}
+
+/* 初期立ち上げ */
+showSelectScreen();
+</script>
+</body>
+</html>
