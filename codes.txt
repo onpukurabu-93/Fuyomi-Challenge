@@ -1,1 +1,44 @@
-<script src="app-extras.js"></script>
+# お試し用
+neko347
+neko528
+neko762
+neko935
+inu264
+inu483
+inu819
+inu376
+usagi592
+usagi237
+usagi684
+usagi951
+kuma428
+kuma765
+kuma293
+kuma586
+panda374
+panda829
+panda546
+panda617
+# 正式用
+tori285
+tori943
+tori576
+tori432
+zou758
+zou324
+zou695
+zou493
+risu267
+risu845
+risu392
+risu679
+saru534
+saru286
+saru973
+saru465
+buta842
+buta357
+buta629
+buta294
+
+
