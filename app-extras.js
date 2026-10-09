@@ -1,4 +1,7 @@
 (function () {
+  /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
+  var MASTER_DELAY_MS = 4000;
+
   var MAP_KEY = "onpu_code_slots";
   var cancelable = false;
   var pending = null;
@@ -39,6 +42,12 @@
     return "";
   }
 
+  function registeredCount() {
+    var n = 0;
+    for (var i = 0; i < profiles.length; i++) { if (isRegistered(i)) n++; }
+    return n;
+  }
+
   /* ===== あいことば・なまえの画面 ===== */
   var inputStyle = "width:100%;padding:12px;font-size:18px;border:2px solid #eadcc8;border-radius:12px;text-align:center;background:#fff;color:#5b4636;box-sizing:border-box;-webkit-user-select:text;user-select:text;";
   var btnStyle = "width:100%;margin-top:10px;padding:14px;font-size:18px;font-weight:800;border:none;border-radius:14px;color:#fff;";
@@ -48,7 +57,7 @@
   box.innerHTML =
     '<div style="width:100%;max-width:340px;text-align:center;color:#5b4636;">' +
     '<div style="font-size:26px;font-weight:800;margin-bottom:8px;">🎹 ふよみチャレンジ</div>' +
-    '<div id="gateMsg" style="font-size:14px;color:#806c5a;min-height:42px;margin-bottom:10px;line-height:1.5;">かくにん中…</div>' +
+    '<div id="gateMsg" style="font-size:14px;color:#806c5a;min-height:42px;margin-bottom:10px;line-height:1.5;white-space:pre-line;">かくにん中…</div>' +
 
     '<div id="gateCodeForm" style="display:none;">' +
     '<input id="gateInput" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="あいことば" style="' + inputStyle + '">' +
@@ -174,11 +183,17 @@
     show("nick");
   });
 
-  /* 確認OK → とうろく */
+  /* 確認OK → とうろく（枠は3つまで） */
   document.getElementById("gateOk").addEventListener("click", function () {
     if (!pending || !pending.name) return;
     var slot = 0;
-    while (isRegistered(slot)) slot++;
+    while (slot < 3 && isRegistered(slot)) slot++;
+    if (slot >= 3) {
+      pending = null;
+      cancelable = false;
+      showCode("この たんまつは、3人まで とうろくできるよ。せんせいに きいてね", true);
+      return;
+    }
     while (profiles.length <= slot) profiles.push("");
     profiles[slot] = pending.name;
     Storage.set("onpu_profiles", profiles);
@@ -195,6 +210,22 @@
 
   /* ===== 画面まわりの書きかえ ===== */
 
+  /* 2人以上のときだけ、プレイヤー選択とスタートを出す */
+  function updateSwitcherVisibility() {
+    try {
+      var wrap = document.querySelector(".profile-select-wrap");
+      var label = document.querySelector(".profile-label");
+      var multi = registeredCount() >= 2;
+      if (wrap) wrap.style.display = multi ? "flex" : "none";
+      if (label) label.style.display = multi ? "block" : "none";
+      var regBtn = document.querySelector(".reg-open-btn");
+      if (regBtn) {
+        regBtn.textContent = "➕ プレイヤーを ふやす";
+        regBtn.style.cssText = "background:transparent;border:none;color:#b0a090;font-size:11px;font-weight:600;cursor:pointer;width:100%;margin-bottom:4px;padding:2px;text-decoration:underline;";
+      }
+    } catch (e) {}
+  }
+
   /* 名前の横の学年を出さない */
   var origInit = window.initProfiles;
   window.initProfiles = function () {
@@ -206,18 +237,15 @@
         if (!isNaN(i) && profiles[i]) o.textContent = legendMark(i) + profiles[i];
       });
     } catch (e) {}
+    updateSwitcherVisibility();
   };
 
-  /* 名前の登録ボタン → べつのあいことばで はじめる */
+  /* 「プレイヤーを ふやす」 → あいことばの画面 */
   window.openRegistration = function () {
     cancelable = true;
     codeInput.value = "";
-    showCode("あたらしい あいことばを いれてね", false);
+    showCode("ふえる プレイヤーの あいことばを いれてね", false);
   };
-  try {
-    var regBtn = document.querySelector(".reg-open-btn");
-    if (regBtn) regBtn.textContent = "➕ べつの あいことばで はじめる";
-  } catch (e) {}
 
   /* プレイヤーを切りかえたとき、そのあいことばが まだ使えるか確かめる */
   var origSwitch = window.switchProfile;
@@ -227,7 +255,7 @@
     if (c) tryCode(c, false);
   };
 
-  /* ===== 音の順番：すごい！ → ファンファーレ → toon / heon ===== */
+  /* ===== 音の順番：すごい！ → ファンファーレ → （4秒後に）toon / heon / 6do ===== */
   var origPlay = window.playAudioCloned;
   var lastSugoiAt = 0;
   var seqEndAt = 0;
@@ -240,9 +268,12 @@
     if (DELAYED[id] && Date.now() - lastSugoiAt < 800) {
       var sMs = getSoundDurationMs("sugoiAudio") || 1500;
       var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
-      var delay = sMs + 200 + fMs + 300;
+      /* ファンファーレの開始 = sugoiの長さ + 200ms。そこから MASTER_DELAY_MS 後に鳴らす */
+      var delay = sMs + 200 + MASTER_DELAY_MS;
       var dur = getSoundDurationMs(id) || 2500;
-      seqEndAt = Date.now() + delay + dur + 300;
+      var fanfareEnd = sMs + 200 + fMs;
+      var masterEnd = delay + dur;
+      seqEndAt = Date.now() + Math.max(fanfareEnd, masterEnd) + 400;
       delayedTimers.push(setTimeout(function () { origPlay(id); }, delay));
       return;
     }
