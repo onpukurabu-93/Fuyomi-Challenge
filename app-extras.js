@@ -491,6 +491,26 @@
     }
   };
 
+  /* ===== 保護者ページの表（スタンプつき・区分なし） ===== */
+  window.renderParentCompareTable = function () {
+    var html = '<table class="compare-table"><thead><tr><th>名前</th><th>連続</th><th>スタンプ</th><th>6つのド最高点</th><th>👑</th></tr></thead><tbody>';
+    var any = false;
+    profiles.forEach(function (n, idx) {
+      if (!isRegistered(idx)) return;
+      any = true;
+      var doB = getDoTestBest(idx);
+      var cnt = getLegendCount(idx);
+      var st = stampState(idx);
+      html += '<tr><td><strong>' + esc(legendMark(idx) + n) + '</strong></td>' +
+        '<td>' + calculateStreak(idx) + '日</td>' +
+        '<td>' + st.cardNo + 'まいめ<br>（' + st.inCard + 'こ）</td>' +
+        '<td>' + (doB ? doB.accuracy + '%' : '-') + '</td>' +
+        '<td>' + (cnt > 0 ? cnt + '回' : '-') + '</td></tr>';
+    });
+    if (!any) html += '<tr><td colspan="5">まだ だれも とうろくしていません</td></tr>';
+    document.getElementById("parentCompareTable").innerHTML = html + '</tbody></table>';
+  };
+
   /* ===== 先生ページ ===== */
   var origRenderTeacher = window.renderTeacherView;
   window.renderTeacherView = function () {
@@ -587,6 +607,12 @@
       new Image().src = "level_start.png";
     } catch (e) {}
   }, 800);
+
+  /* ===== ランキングボタンを隠す（画面のコードは残してあります） ===== */
+  try {
+    var rk = document.querySelector(".ranking-btn");
+    if (rk) rk.style.display = "none";
+  } catch (e) {}
 
   /* ===== 音声のクレジット表記（トップ画面の一番下） ===== */
   try {
