@@ -659,6 +659,14 @@
     if (rk) rk.style.display = "none";
   } catch (e) {}
 
+  /* ===== 管理ページの文字（🔒を📊に） ===== */
+  try {
+    var mgBtn = document.querySelector(".select-button.challenge");
+    if (mgBtn) mgBtn.textContent = "📊 保護者・先生ページ";
+    var mgTitle = document.querySelector("#managementModal .modal-title");
+    if (mgTitle) mgTitle.textContent = "📊 管理ページ";
+  } catch (e) {}
+
   /* ===== 音声のクレジット表記（トップ画面の一番下） ===== */
   try {
     var sel0 = document.getElementById("selectScreen");
@@ -671,6 +679,69 @@
     }
   } catch (e) {}
 
+  /* ===== 音が止まらないための対策 ===== */
+  (function () {
+    function makeSilentWav() {
+      var rate = 8000, n = 800;
+      var buf = new ArrayBuffer(44 + n);
+      var v = new DataView(buf);
+      function w(o, t) { for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
+      w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, rate, true); v.setUint32(28, rate, true);
+      v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+      w(36, "data"); v.setUint32(40, n, true);
+      for (var i = 0; i < n; i++) v.setUint8(44 + i, 128);
+      return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+    }
+
+    var silent = null;
+    try {
+      silent = document.createElement("audio");
+      silent.setAttribute("playsinline", "");
+      silent.loop = true;
+      silent.volume = 0.01;
+      silent.src = makeSilentWav();
+    } catch (e) { silent = null; }
+
+    function wake() {
+      try { if (silent && silent.paused) { var p = silent.play(); if (p && p.catch) p.catch(function () {}); } } catch (e) {}
+      try {
+        if (!audioInitialized) initAudioContext();
+        var ctx = getAudioContext();
+        if (ctx && ctx.state !== "running") {
+          var r = ctx.resume();
+          if (r && r.catch) r.catch(function () {});
+        }
+        if (ctx) {
+          var b = ctx.createBuffer(1, 1, 22050);
+          var s = ctx.createBufferSource();
+          s.buffer = b; s.connect(ctx.destination); s.start(0);
+        }
+      } catch (e) {}
+    }
+    ["touchend", "click", "pointerup"].forEach(function (ev) {
+      document.addEventListener(ev, wake, true);
+    });
+
+    var hint = document.createElement("div");
+    hint.style.cssText = "position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10002;background:rgba(60,40,20,0.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:14px;display:none;text-align:center;max-width:90%;";
+    hint.textContent = "おとが でないときは、いちど とじて ひらいてね";
+    document.body.appendChild(hint);
+    var lastHint = 0;
+    document.addEventListener("pointerup", function () {
+      setTimeout(function () {
+        try {
+          if (audioInitialized && audioCtx && audioCtx.state !== "running" && Date.now() - lastHint > 60000) {
+            lastHint = Date.now();
+            hint.style.display = "block";
+            setTimeout(function () { hint.style.display = "none"; }, 4000);
+          }
+        } catch (e) {}
+      }, 800);
+    }, true);
+  })();
+
   /* ===== はじまり ===== */
   toggleModal("registerModal", false);
   initProfiles();
@@ -681,68 +752,4 @@
   } else {
     showCode("あいことばを いれてね", false);
   }
-})();
-(function () {
-  /* 指を離したときにも、音の機能を目覚めさせる。
-     iPhoneの消音スイッチでも鳴るように、無音の音を流しておく */
-  function makeSilentWav() {
-    var rate = 8000, n = 800;
-    var buf = new ArrayBuffer(44 + n);
-    var v = new DataView(buf);
-    function w(o, t) { for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
-    w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-    v.setUint32(24, rate, true); v.setUint32(28, rate, true);
-    v.setUint16(32, 1, true); v.setUint16(34, 8, true);
-    w(36, "data"); v.setUint32(40, n, true);
-    for (var i = 0; i < n; i++) v.setUint8(44 + i, 128);
-    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
-  }
-
-  var silent = null;
-  try {
-    silent = document.createElement("audio");
-    silent.setAttribute("playsinline", "");
-    silent.loop = true;
-    silent.volume = 0.01;
-    silent.src = makeSilentWav();
-  } catch (e) { silent = null; }
-
-  function unlock() {
-    try { if (silent && silent.paused) { var p = silent.play(); if (p && p.catch) p.catch(function () {}); } } catch (e) {}
-    try {
-      if (!audioInitialized) initAudioContext();
-      var ctx = getAudioContext();
-      if (ctx && ctx.state !== "running") {
-        var r = ctx.resume();
-        if (r && r.catch) r.catch(function () {});
-      }
-      if (ctx) {
-        var b = ctx.createBuffer(1, 1, 22050);
-        var s = ctx.createBufferSource();
-        s.buffer = b; s.connect(ctx.destination); s.start(0);
-      }
-    } catch (e) {}
-  }
-  ["touchend", "click", "pointerup"].forEach(function (ev) {
-    document.addEventListener(ev, unlock, true);
-  });
-
-  /* それでも音の機能が止まっているときは、小さく案内を出す */
-  var hint = document.createElement("div");
-  hint.style.cssText = "position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10002;background:rgba(60,40,20,0.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:14px;display:none;text-align:center;max-width:90%;";
-  hint.textContent = "おとが でないときは、いちど とじて ひらいてね";
-  document.body.appendChild(hint);
-  var lastHint = 0;
-  document.addEventListener("pointerup", function () {
-    setTimeout(function () {
-      try {
-        if (audioInitialized && audioCtx && audioCtx.state !== "running" && Date.now() - lastHint > 60000) {
-          lastHint = Date.now();
-          hint.style.display = "block";
-          setTimeout(function () { hint.style.display = "none"; }, 4000);
-        }
-      } catch (e) {}
-    }, 800);
-  }, true);
 })();
