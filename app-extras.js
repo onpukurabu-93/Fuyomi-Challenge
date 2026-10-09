@@ -1,6 +1,10 @@
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
+  /* ★ 完成コードが、一覧に見えている日数 */
+  var CODE_DAYS = 3;
+  /* ★ 1まいのスタンプの数 */
+  var STAMPS_PER_CARD = 5;
 
   var MAP_KEY = "onpu_code_slots";
   var cancelable = false;
@@ -46,6 +50,10 @@
     var n = 0;
     for (var i = 0; i < profiles.length; i++) { if (isRegistered(i)) n++; }
     return n;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   /* ===== あいことば・なまえの画面 ===== */
@@ -208,9 +216,166 @@
     openApp();
   });
 
+  /* ===== スタンプとカード ===== */
+  var CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+  function localDateStr(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
+  }
+  function stampTotal(idx) { return Storage.getNumber("fy_stamps_" + idx, 0); }
+  function stampState(idx) {
+    var t = stampTotal(idx);
+    return { total: t, cardNo: Math.floor(t / STAMPS_PER_CARD) + 1, inCard: t % STAMPS_PER_CARD };
+  }
+  function getCards(idx) {
+    var a = Storage.get("fy_cards_" + idx, []);
+    return Array.isArray(a) ? a : [];
+  }
+  function makeCode() {
+    var s = "";
+    for (var i = 0; i < 4; i++) s += CODE_CHARS.charAt(Math.floor(Math.random() * CODE_CHARS.length));
+    return s;
+  }
+
+  /* スタンプを1こ ふやす（1日1こまで）。しゅうりょう: "none"=もうもらった / "stamp" / "card" */
+  function awardStamp(idx) {
+    var today = localDateStr(new Date());
+    if (Storage.get("fy_stamp_date_" + idx, "") === today) return { status: "none" };
+    Storage.set("fy_stamp_date_" + idx, today);
+    var total = stampTotal(idx) + 1;
+    Storage.set("fy_stamps_" + idx, total);
+    if (total % STAMPS_PER_CARD === 0) {
+      var rec = { n: total / STAMPS_PER_CARD, t: Date.now(), name: profiles[idx] || "", code: makeCode() };
+      var list = getCards(idx);
+      list.push(rec);
+      Storage.set("fy_cards_" + idx, list);
+      return { status: "card", rec: rec };
+    }
+    return { status: "stamp" };
+  }
+
+  function cardHtml(rec) {
+    var d = new Date(rec.t);
+    return '<div style="border:3px double #ffb300;border-radius:16px;background:#fffdf0;padding:12px;margin-bottom:10px;text-align:center;">' +
+      '<div style="font-size:13px;color:#806c5a;">ふよみチャレンジ スタンプカード</div>' +
+      '<div style="font-size:20px;font-weight:900;color:#5b4636;margin:2px 0;">' + esc(rec.name) + ' さん</div>' +
+      '<div style="font-size:16px;font-weight:800;color:#ff5722;">' + rec.n + ' まいめ かんせい！</div>' +
+      '<div style="font-size:13px;color:#5b4636;margin:2px 0;">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>' +
+      '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:#5b4636;background:#fff;border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
+      '</div>';
+  }
+
+  /* 大きな画面（かんせい画面・コード一覧） */
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:10001;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+  ov.innerHTML = '<div style="width:100%;max-width:360px;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;padding:16px;box-sizing:border-box;text-align:center;color:#5b4636;">' +
+    '<div id="fyOvBody"></div>' +
+    '<button id="fyOvClose" style="width:100%;margin-top:6px;padding:12px;font-size:16px;font-weight:800;border:none;border-radius:12px;background:#78a9c8;color:#fff;">とじる</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+  document.getElementById("fyOvClose").addEventListener("click", function () { ov.style.display = "none"; });
+
+  function openOverlay(html) {
+    document.getElementById("fyOvBody").innerHTML = html;
+    ov.style.display = "flex";
+  }
+
+  function showCompleteModal(rec) {
+    openOverlay(
+      '<div style="font-size:44px;">🎉</div>' +
+      '<div style="font-size:20px;font-weight:900;margin-bottom:8px;">カードが できたよ！</div>' +
+      cardHtml(rec) +
+      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + CODE_DAYS + '日いないに、この がめんを スクショして<br>せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>'
+    );
+  }
+
+  window.showCardCodes = function () {
+    var idx = activeProfileIndex;
+    var st = stampState(idx);
+    var now = Date.now();
+    var limit = CODE_DAYS * 86400000;
+    var all = getCards(idx);
+    var visible = all.filter(function (r) { return now - r.t < limit; });
+    var html = '<div style="font-size:18px;font-weight:900;margin-bottom:8px;">📮 カードの コード</div>';
+    if (visible.length) {
+      visible.slice().reverse().forEach(function (r) { html += cardHtml(r); });
+      html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">スクショして せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
+    } else if (all.length) {
+      html += '<div style="font-size:14px;line-height:1.6;margin-bottom:10px;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
+    } else {
+      html += '<div style="font-size:14px;line-height:1.6;margin-bottom:10px;">まだ カードは できていないよ。<br>あと ' + (STAMPS_PER_CARD - st.inCard) + 'こ！</div>';
+    }
+    html += '<div style="font-size:13px;font-weight:800;color:#ff5722;margin-bottom:8px;">いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>';
+    openOverlay(html);
+  };
+
+  /* トップ画面のスタンプ表示 */
+  window.renderStampMini = function (idx) {
+    var container = document.getElementById("stampMiniBox");
+    if (!container) return;
+    var st = stampState(idx);
+    container.style.flexDirection = "column";
+    container.style.alignItems = "center";
+    var dots = "";
+    for (var i = 1; i <= STAMPS_PER_CARD; i++) {
+      var on = i <= st.inCard;
+      dots += '<div class="stamp-dot' + (on ? ' active' : '') + '" style="width:26px;height:26px;font-size:13px;">' + (on ? "💮" : i) + '</div>';
+    }
+    container.innerHTML =
+      '<div style="font-size:13px;font-weight:800;color:#5b4636;margin-bottom:4px;">🏅 いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>' +
+      '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:6px;">' + dots + '</div>' +
+      '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:12px;font-weight:800;border-radius:10px;padding:6px 12px;cursor:pointer;">📮 カードの コードを みる</button>';
+    var b = document.getElementById("fyCodeBtn");
+    if (b) b.addEventListener("click", window.showCardCodes);
+  };
+
+  /* 結果画面：100%（20問いじょう）のとき、スタンプを ふやす */
+  var origShowResult = window.showResultScreen;
+  var cardTimer = null;
+  window.showResultScreen = function () {
+    var correct = trainingCorrectCount, mistakes = trainingMistakes;
+    var total = correct + mistakes;
+    var acc = total > 0 ? Math.round((correct / total) * 100) : 0;
+    var idx = activeProfileIndex;
+    var is20 = (targetValue >= 20);
+
+    if (cardTimer !== null) { clearTimeout(cardTimer); cardTimer = null; }
+    origShowResult.apply(this, arguments);
+
+    try {
+      var line = document.getElementById("fyStampMsg");
+      if (!line) {
+        line = document.createElement("div");
+        line.id = "fyStampMsg";
+        line.style.cssText = "font-size:14px;font-weight:800;color:#e65100;margin-top:4px;";
+        var anchor = document.getElementById("resultStreakMsg");
+        anchor.parentNode.insertBefore(line, anchor.nextSibling);
+      }
+      line.textContent = "";
+
+      if (acc === 100 && is20) {
+        var r = awardStamp(idx);
+        var st = stampState(idx);
+        if (r.status === "none") {
+          line.textContent = "🏅 きょうの スタンプは もう もらったよ";
+        } else if (r.status === "stamp") {
+          line.textContent = "🏅 スタンプ ゲット！ いま " + st.cardNo + "まいめ（" + st.inCard + "こ）";
+        } else {
+          line.textContent = "🏅 スタンプが " + STAMPS_PER_CARD + "こ そろったよ！";
+          var rec = r.rec;
+          var sMs = getSoundDurationMs("sugoiAudio") || 1500;
+          var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+          var wait = sMs + 200 + fMs + 1200;
+          cardTimer = setTimeout(function () { cardTimer = null; showCompleteModal(rec); }, wait);
+        }
+      }
+    } catch (e) {}
+  };
+
   /* ===== 画面まわりの書きかえ ===== */
 
-  /* 2人以上のときだけ、プレイヤー選択とスタートを出す */
+  /* 1人のときは名前を表示、2人以上のときだけ プレイヤー選択とスタートを出す */
   function updateSwitcherVisibility() {
     try {
       var wrap = document.querySelector(".profile-select-wrap");
@@ -218,6 +383,23 @@
       var multi = registeredCount() >= 2;
       if (wrap) wrap.style.display = multi ? "flex" : "none";
       if (label) label.style.display = multi ? "block" : "none";
+
+      var solo = document.getElementById("fySoloName");
+      if (!solo && wrap) {
+        solo = document.createElement("div");
+        solo.id = "fySoloName";
+        solo.style.cssText = "font-size:20px;font-weight:900;color:#5b4636;margin:2px 0 8px;word-break:break-all;";
+        wrap.parentNode.insertBefore(solo, wrap);
+      }
+      if (solo) {
+        if (multi || !isRegistered(activeProfileIndex)) {
+          solo.style.display = "none";
+        } else {
+          solo.style.display = "block";
+          solo.textContent = "👤 " + legendMark(activeProfileIndex) + profiles[activeProfileIndex] + " さん";
+        }
+      }
+
       var regBtn = document.querySelector(".reg-open-btn");
       if (regBtn) {
         regBtn.textContent = "➕ プレイヤーを ふやす";
@@ -268,7 +450,6 @@
     if (DELAYED[id] && Date.now() - lastSugoiAt < 800) {
       var sMs = getSoundDurationMs("sugoiAudio") || 1500;
       var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
-      /* ファンファーレの開始 = sugoiの長さ + 200ms。そこから MASTER_DELAY_MS 後に鳴らす */
       var delay = sMs + 200 + MASTER_DELAY_MS;
       var dur = getSoundDurationMs(id) || 2500;
       var fanfareEnd = sMs + 200 + fMs;
@@ -310,7 +491,7 @@
     }
   };
 
-  /* ===== 先生ページ：教室ネームの直し ===== */
+  /* ===== 先生ページ ===== */
   var origRenderTeacher = window.renderTeacherView;
   window.renderTeacherView = function () {
     origRenderTeacher();
@@ -321,12 +502,42 @@
         if (!isRegistered(i)) return;
         any = true;
         html += '<tr><td>' + (i + 1) + '</td><td>' + (codeOfSlot(i) || "-") + '</td>' +
-          '<td><input type="text" id="tName_' + i + '" value="' + String(n || "").replace(/"/g, "&quot;") + '" maxlength="8" style="width:80px;text-align:center;"></td>' +
+          '<td><input type="text" id="tName_' + i + '" value="' + esc(n) + '" maxlength="8" style="width:80px;text-align:center;"></td>' +
           '<td><button onclick="saveStudentByTeacher(' + i + ')" style="font-size:10px;padding:2px 4px;">保存</button></td></tr>';
       });
       if (!any) html += '<tr><td colspan="4">まだ だれも とうろくしていません</td></tr>';
       document.getElementById("teacherStudentConfigList").innerHTML = html + '</tbody></table>';
     } catch (e) {}
+
+    /* スタンプのテスト用ボタン（先生ページの「管理・リセット」） */
+    try {
+      var tab3 = document.getElementById("teacherTab3");
+      if (tab3 && !document.getElementById("fyStampTest")) {
+        var d = document.createElement("div");
+        d.id = "fyStampTest";
+        d.innerHTML =
+          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 スタンプのテスト</div>' +
+          '<button class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;" onclick="fyStampSetFour()">🧪 いまのプレイヤーを スタンプ4こ・きょうもらえる 状態にする</button>' +
+          '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyStampReset()">🧪 いまのプレイヤーの スタンプとコードを リセット</button>';
+        tab3.insertBefore(d, tab3.firstChild);
+      }
+    } catch (e) {}
+  };
+
+  window.fyStampSetFour = function () {
+    var i = activeProfileIndex;
+    Storage.set("fy_stamps_" + i, STAMPS_PER_CARD - 1);
+    Storage.set("fy_stamp_date_" + i, "");
+    initProfiles();
+    alert("スタンプを " + (STAMPS_PER_CARD - 1) + "こ にしました。20問で100%をとると、カードが かんせいします。");
+  };
+  window.fyStampReset = function () {
+    var i = activeProfileIndex;
+    Storage.set("fy_stamps_" + i, 0);
+    Storage.set("fy_stamp_date_" + i, "");
+    Storage.set("fy_cards_" + i, []);
+    initProfiles();
+    alert("スタンプとコードを リセットしました。");
   };
 
   window.saveStudentByTeacher = function (slot) {
@@ -376,6 +587,18 @@
       new Image().src = "level_start.png";
     } catch (e) {}
   }, 800);
+
+  /* ===== 音声のクレジット表記（トップ画面の一番下） ===== */
+  try {
+    var sel0 = document.getElementById("selectScreen");
+    if (sel0 && !document.getElementById("fyCredit")) {
+      var cr = document.createElement("div");
+      cr.id = "fyCredit";
+      cr.style.cssText = "text-align:center;font-size:10px;color:#b0a090;margin:12px 0 8px;line-height:1.5;";
+      cr.textContent = "音声：VOICEVOX:ずんだもん";
+      sel0.appendChild(cr);
+    }
+  } catch (e) {}
 
   /* ===== はじまり ===== */
   toggleModal("registerModal", false);
