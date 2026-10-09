@@ -491,24 +491,42 @@
     }
   };
 
-  /* ===== 保護者ページの表（スタンプつき・区分なし） ===== */
+  /* ===== 保護者ページ：1人ずつ、レベルごとの最高点（20問）を表示 ===== */
+  function bestAcc(idx, clef, lv) {
+    var b = Storage.get("onpu_best_20_" + idx + "_" + clef + "_" + lv);
+    if (!b) {
+      var ob = Storage.get("onpu_count_best_" + idx + "_" + clef + "_" + lv);
+      if (ob && ob.count >= 20) b = ob;
+    }
+    return b && typeof b.accuracy === "number" ? b.accuracy + "%" : "-";
+  }
+
   window.renderParentCompareTable = function () {
-    var html = '<table class="compare-table"><thead><tr><th>名前</th><th>連続</th><th>スタンプ</th><th>6つのド最高点</th><th>👑</th></tr></thead><tbody>';
+    var html = "";
     var any = false;
     profiles.forEach(function (n, idx) {
       if (!isRegistered(idx)) return;
       any = true;
+      var st = stampState(idx);
       var doB = getDoTestBest(idx);
       var cnt = getLegendCount(idx);
-      var st = stampState(idx);
-      html += '<tr><td><strong>' + esc(legendMark(idx) + n) + '</strong></td>' +
-        '<td>' + calculateStreak(idx) + '日</td>' +
-        '<td>' + st.cardNo + 'まいめ<br>（' + st.inCard + 'こ）</td>' +
-        '<td>' + (doB ? doB.accuracy + '%' : '-') + '</td>' +
-        '<td>' + (cnt > 0 ? cnt + '回' : '-') + '</td></tr>';
+      html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:8px;margin-bottom:10px;background:#fff;text-align:left;">';
+      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(legendMark(idx) + n) + '</div>';
+      html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
+        '🔥 れんぞく ' + calculateStreak(idx) + '日<br>' +
+        '🏅 スタンプ ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）<br>' +
+        '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
+        '👑 100回れんぞく ' + (cnt > 0 ? cnt + '回' : '-') + '</div>';
+      html += '<table class="compare-table"><thead><tr><th>レベル</th><th>ト音記号</th><th>ヘ音記号</th><th>全カード</th></tr></thead><tbody>';
+      for (var lv = 1; lv <= 5; lv++) {
+        html += '<tr><td>Lv.' + lv + '</td><td>' + bestAcc(idx, "treble", lv) + '</td><td>' + bestAcc(idx, "bass", lv) + '</td><td>' + bestAcc(idx, "all", lv) + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      html += '<div style="font-size:10px;color:#806c5a;margin-top:2px;">※20問テストの 最高点です</div>';
+      html += '</div>';
     });
-    if (!any) html += '<tr><td colspan="5">まだ だれも とうろくしていません</td></tr>';
-    document.getElementById("parentCompareTable").innerHTML = html + '</tbody></table>';
+    if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ だれも とうろくしていません</div>';
+    document.getElementById("parentCompareTable").innerHTML = html;
   };
 
   /* ===== 先生ページ ===== */
@@ -527,6 +545,12 @@
       });
       if (!any) html += '<tr><td colspan="4">まだ だれも とうろくしていません</td></tr>';
       document.getElementById("teacherStudentConfigList").innerHTML = html + '</tbody></table>';
+    } catch (e) {}
+
+    /* 「表彰カード」タブは使わないので隠す */
+    try {
+      var t2 = document.getElementById("tTab2");
+      if (t2) t2.style.display = "none";
     } catch (e) {}
 
     /* スタンプのテスト用ボタン（先生ページの「管理・リセット」） */
