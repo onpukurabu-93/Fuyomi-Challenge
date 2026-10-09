@@ -491,7 +491,7 @@
     }
   };
 
-  /* ===== 保護者ページ：1人ずつ、レベルごとの最高点（20問）を表示 ===== */
+  /* ===== 保護者ページ：パスワードなし。1人ずつ、レベルごとの最高点（20問）を表示 ===== */
   function bestAcc(idx, clef, lv) {
     var b = Storage.get("onpu_best_20_" + idx + "_" + clef + "_" + lv);
     if (!b) {
@@ -527,6 +527,27 @@
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ だれも とうろくしていません</div>';
     document.getElementById("parentCompareTable").innerHTML = html;
+  };
+
+  /* 「保護者専用ページ」を押すと、パスワードなしで成績が開く */
+  window.showParentAuth = function () {
+    document.getElementById("mgSelectSection").classList.add("hidden");
+    document.getElementById("parentSection").classList.remove("hidden");
+    document.getElementById("parentAuthBox").classList.add("hidden");
+    document.getElementById("parentContentBox").classList.remove("hidden");
+    renderParentCompareTable();
+    try {
+      /* パスワード変更の欄をなくす */
+      var box2 = document.getElementById("parentContentBox");
+      var hr = box2.querySelector("hr");
+      var cutting = false;
+      Array.prototype.slice.call(box2.children).forEach(function (el) {
+        if (el === hr) cutting = true;
+        if (cutting && !(el.tagName === "BUTTON" && el.className.indexOf("cancel") !== -1)) {
+          el.style.display = "none";
+        }
+      });
+    } catch (e) {}
   };
 
   /* ===== 先生ページ ===== */
