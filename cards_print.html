@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>認定カード（印刷用）</title>
+<style>
+  @page { size: 100mm 148mm; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #e8eef5; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 14px; font-family: 'Hiragino Maru Gothic ProN','Rounded Mplus 1c','Meiryo',sans-serif; color: #355; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
+  .tabs button { font-size: 14px; font-weight: bold; padding: 9px 12px; border: 2px solid #9cc; border-radius: 10px; background: #fff; color: #355; }
+  .tabs button.on { background: #2b8ad8; border-color: #2b8ad8; color: #fff; }
+  .card { width: min(92vw, 420px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); border-radius: 18px; overflow: hidden; background: #fff; }
+  .card svg { display: block; width: 100%; height: auto; }
+  .controls { margin-top: 14px; text-align: center; font-size: 14px; max-width: 440px; }
+  .controls input, .controls textarea { font-size: 16px; padding: 8px; margin: 4px; border: 2px solid #9cc; border-radius: 8px; width: 170px; text-align: center; font-family: inherit; }
+  .controls textarea { width: 340px; height: 110px; text-align: left; }
+  .controls button { font-size: 15px; font-weight: bold; padding: 10px 16px; margin: 6px; border: none; border-radius: 10px; background: #2b8ad8; color: #fff; }
+  .note { font-size: 12px; color: #678; margin-top: 6px; line-height: 1.6; }
+  @media print {
+    html, body { background: #fff; }
+    body { padding: 0; display: block; }
+    .card { width: 100mm; box-shadow: none; border-radius: 0; }
+    .tabs, .controls, .guide { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tabs" id="tabs"></div>
+<div class="tabs" id="sides"></div>
+<div class="card" id="cardBox"></div>
+
+<div class="controls">
+  <div id="rowFront">
+    <input id="inName" placeholder="なまえ（空欄なら手書き）" maxlength="12">
+    <input id="inDate" placeholder="ひづけ（空欄なら手書き）" maxlength="14">
+    <div><button id="btnToday">きょうの日付を入れる</button></div>
+  </div>
+  <div id="rowCount">
+    <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> 回れんぞく（レジェンドの数字）
+  </div>
+  <div id="rowMsg">
+    <div>うらの メッセージ（1行ずつ改行）</div>
+    <textarea id="inMsg"></textarea>
+    <div><button id="btnMsgReset">メッセージをもとにもどす</button></div>
+  </div>
+  <button onclick="window.print()">いまの面を印刷する（ハガキ）</button>
+  <div class="note">
+    入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
+    印刷のとき、用紙を「ハガキ」、倍率を「100%（実際のサイズ）」にしてください。<br>
+    うら面は、おもて面を刷ったあと、「うら」に切り替えて、もう一度印刷します。
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   シリーズ（枠の色）
+   ふよみ … 青の枠。リズムなど、ほかのアプリを作るときは、ここに足します。
+   例：rhythm: { name: "リズム", edge1: "#ffb98a", edge2: "#ffd9bd" }
+   ========================================================= */
+var SERIES = {
+  fuyomi: { name: "ふよみ", edge1: "#8fd3f7", edge2: "#b9e4fb", tag: "#4fb3ec" }
+};
+
+/* 最上級（レジェンド）は、どのアプリも同じ：紺に金の渋い色 */
+var TOP = {
+  edge1: "#16213f", edge2: "#2b3d6b",
+  paper1: "#f4ebd0", paper2: "#e8d9ad",
+  line1: "#c9a23a", line2: "#a98427",
+  tag: "#2b3d6b", ink: "#2a2140",
+  crown1: "#e7c25a", crown2: "#b98a1e", crown3: "#7a5410"
+};
+
+/* 種類（リボンの色で区別）。series でシリーズを選ぶ */
+var TYPES = [
+  { id: "treble", label: "ト音記号", series: "fuyomi", title: "ト音記号マスター", rib1: "#5cc0f2", rib2: "#2a8fd6", ribD: "#1a6fb0", ribLine: "#1f7fc4", ink: "#2b4a7a", emblem: "ト音記号の絵", top: false,
+    msg: ["ト音記号の 音を", "見つけられるように", "なってきたね。", "がんばる気持ちが", "すてきです。", "これからも", "いっしょにがんばろう！"] },
+  { id: "bass", label: "ヘ音記号", series: "fuyomi", title: "ヘ音記号マスター", rib1: "#5ccf8a", rib2: "#2fa862", ribD: "#1f8049", ribLine: "#1f8a4c", ink: "#1f5a3a", emblem: "ヘ音記号の絵", top: false,
+    msg: ["ヘ音記号の 音を", "見つけられるように", "なってきたね。", "がんばる気持ちが", "すてきです。", "これからも", "いっしょにがんばろう！"] },
+  { id: "master", label: "ふよみマスター", series: "fuyomi", title: "ふよみマスター", rib1: "#f58aab", rib2: "#e0527f", ribD: "#b83560", ribLine: "#c23d68", ink: "#7a2b4a", emblem: "楽譜の絵", top: false,
+    msg: ["ト音記号も", "ヘ音記号も", "すらすら よめるように", "なりました！", "すばらしい", "ふよみマスターです。", "これからも いっしょに！"] },
+  { id: "legend", label: "ふよみレジェンド", series: "fuyomi", title: "ふよみレジェンド", rib1: "#a77bdc", rib2: "#7a49b8", ribD: "#57308f", ribLine: "#3f2370", ink: "#2a2140", emblem: "", top: true,
+    msg: ["パーフェクトを", "{n}回 れんぞくで", "たっせいしました！", "まさに でんせつです。", "これからも", "いっしょにがんばろう！"] }
+];
+
+var cur = 0, side = "front";
+var custom = {};   /* うらメッセージの書きかえ（画面を閉じると消える） */
+
+var nameEl = document.getElementById("inName");
+var dateEl = document.getElementById("inDate");
+var countEl = document.getElementById("inCount");
+var msgEl = document.getElementById("inMsg");
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function cnt() { var n = parseInt(countEl.value, 10); return isNaN(n) ? 100 : n; }
+
+function palette(t) {
+  var s = SERIES[t.series];
+  if (t.top) return { edge1: TOP.edge1, edge2: TOP.edge2, p1: TOP.paper1, p2: TOP.paper2, l1: TOP.line1, l2: TOP.line2, tag: TOP.tag, ink: TOP.ink, c1: TOP.crown1, c2: TOP.crown2, c3: TOP.crown3, drop1: "#c9a23a", drop2: "#7f8fb8", glow: "#e7c25a", glowO: 0.45, text: "#3a2a14" };
+  return { edge1: s.edge1, edge2: s.edge2, p1: "#fffbea", p2: "#fff3cf", l1: "#f0bf3c", l2: "#f6d77a", tag: s.tag, ink: t.ink, c1: "#ffe680", c2: "#f6b92b", c3: "#c98a10", drop1: "#f6b92b", drop2: "#6cc3f0", glow: "#fff7c4", glowO: 0.9, text: "#5a3a22" };
+}
+
+function starAt(x, y, sc, fill) {
+  return '<path d="M0,-30 L8.8,-12.1 L28.5,-9.3 L14.3,4.6 L17.6,24.3 L0,15 L-17.6,24.3 L-14.3,4.6 L-28.5,-9.3 L-8.8,-12.1 Z" fill="' + fill + '" transform="translate(' + x + ' ' + y + ') scale(' + sc + ')"/>';
+}
+
+function frame(t, P, bottomDrops) {
+  return '' +
+  '<defs>' +
+    '<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + P.c1 + '"/><stop offset="0.55" stop-color="' + P.c2 + '"/><stop offset="1" stop-color="' + P.c3 + '"/></linearGradient>' +
+    '<linearGradient id="rib" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + t.rib1 + '"/><stop offset="1" stop-color="' + t.rib2 + '"/></linearGradient>' +
+    '<linearGradient id="ribD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + t.rib2 + '"/><stop offset="1" stop-color="' + t.ribD + '"/></linearGradient>' +
+    '<linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + P.p1 + '"/><stop offset="1" stop-color="' + P.p2 + '"/></linearGradient>' +
+    '<radialGradient id="glow" cx="0.5" cy="0.4" r="0.6"><stop offset="0" stop-color="' + P.glow + '" stop-opacity="' + P.glowO + '"/><stop offset="1" stop-color="' + P.glow + '" stop-opacity="0"/></radialGradient>' +
+  '</defs>' +
+  '<rect x="0" y="0" width="1000" height="1480" rx="70" fill="' + P.edge1 + '"/>' +
+  '<rect x="26" y="26" width="948" height="1428" rx="52" fill="' + P.edge2 + '"/>' +
+  '<rect x="48" y="48" width="904" height="1384" rx="40" fill="url(#paper)"/>' +
+  '<rect x="86" y="86" width="828" height="1308" rx="26" fill="none" stroke="' + P.l1 + '" stroke-width="5"/>' +
+  '<rect x="98" y="98" width="804" height="1284" rx="20" fill="none" stroke="' + P.l2 + '" stroke-width="2"/>' +
+  '<ellipse cx="500" cy="520" rx="380" ry="420" fill="url(#glow)"/>' +
+  '<g fill="' + P.drop1 + '">' +
+    '<ellipse cx="140" cy="150" rx="12" ry="22" transform="rotate(-30 140 150)"/><ellipse cx="170" cy="130" rx="9" ry="16" transform="rotate(-10 170 130)"/>' +
+    '<ellipse cx="860" cy="150" rx="12" ry="22" transform="rotate(30 860 150)"/><ellipse cx="830" cy="130" rx="9" ry="16" transform="rotate(10 830 130)"/>' +
+    (bottomDrops ? '<ellipse cx="140" cy="1330" rx="12" ry="22" transform="rotate(30 140 1330)"/><ellipse cx="860" cy="1330" rx="12" ry="22" transform="rotate(-30 860 1330)"/>' : '') +
+  '</g>' +
+  '<g fill="' + P.drop2 + '">' +
+    '<ellipse cx="118" cy="176" rx="8" ry="14" transform="rotate(-50 118 176)"/><ellipse cx="882" cy="176" rx="8" ry="14" transform="rotate(50 882 176)"/>' +
+    (bottomDrops ? '<ellipse cx="118" cy="1304" rx="8" ry="14" transform="rotate(50 118 1304)"/><ellipse cx="882" cy="1304" rx="8" ry="14" transform="rotate(-50 882 1304)"/>' : '') +
+  '</g>';
+}
+
+function crown(cx, cy, sc, P) {
+  return '<g transform="translate(' + cx + ' ' + cy + ') scale(' + sc + ')">' +
+    '<path d="M-120,70 L-130,-20 L-65,25 L0,-60 L65,25 L130,-20 L120,70 Z" fill="url(#gold)" stroke="' + P.c3 + '" stroke-width="5" stroke-linejoin="round"/>' +
+    '<rect x="-120" y="56" width="240" height="34" rx="12" fill="url(#gold)" stroke="' + P.c3 + '" stroke-width="5"/>' +
+    '<circle cx="-130" cy="-24" r="16" fill="' + P.c1 + '" stroke="' + P.c3 + '" stroke-width="4"/>' +
+    '<circle cx="0" cy="-64" r="18" fill="' + P.c1 + '" stroke="' + P.c3 + '" stroke-width="4"/>' +
+    '<circle cx="130" cy="-24" r="16" fill="' + P.c1 + '" stroke="' + P.c3 + '" stroke-width="4"/>' +
+    '<path d="M0,10 L12,32 L0,52 L-12,32 Z" fill="#fff3a8" stroke="' + P.c3 + '" stroke-width="3"/>' +
+    '<circle cx="-60" cy="68" r="8" fill="#ff8aa8"/><circle cx="60" cy="68" r="8" fill="#6cc3f0"/>' +
+  '</g>';
+}
+
+function front(t) {
+  var P = palette(t);
+  var name = esc(nameEl.value), date = esc(dateEl.value);
+  var emblem = "";
+  if (t.top) {
+    /* レジェンド：回数の数字 */
+    emblem = '<text x="500" y="540" text-anchor="middle" font-size="220" font-weight="900" fill="' + P.c3 + '" stroke="' + P.c1 + '" stroke-width="4" paint-order="stroke">' + cnt() + '</text>' +
+             '<text x="500" y="615" text-anchor="middle" font-size="46" font-weight="800" fill="' + P.text + '">回 れんぞく パーフェクト</text>';
+  } else {
+    /* ほかの3種：絵を入れるあき（画面にだけ点線を出す） */
+    emblem = '<g class="guide"><rect x="330" y="350" width="340" height="300" rx="30" fill="none" stroke="#9aa" stroke-width="3" stroke-dasharray="14 10"/>' +
+             '<text x="500" y="495" text-anchor="middle" font-size="32" fill="#9aa">' + t.emblem + '</text><text x="500" y="540" text-anchor="middle" font-size="32" fill="#9aa">を入れる場所</text></g>';
+  }
+  var tl = t.title.length * 70;
+  return '<svg viewBox="0 0 1000 1480" xmlns="http://www.w3.org/2000/svg">' + frame(t, P, false) +
+  crown(500, 215, 1.15, P) +
+  emblem +
+  '<text x="500" y="722" text-anchor="middle" font-size="56" font-weight="700" fill="' + P.text + '">音楽教室</text>' +
+  '<text x="500" y="820" text-anchor="middle" font-size="100" font-weight="900" fill="' + P.text + '">おんぷくらぶ</text>' +
+  '<polygon points="110,885 225,885 255,975 140,975 178,930" fill="url(#ribD)"/>' +
+  '<polygon points="890,885 775,885 745,975 860,975 822,930" fill="url(#ribD)"/>' +
+  '<path d="M190,860 Q500,835 810,860 L820,975 Q500,950 180,975 Z" fill="url(#rib)" stroke="#fff" stroke-width="5"/>' +
+  '<text x="500" y="938" text-anchor="middle" font-size="66" font-weight="900" fill="#fff" stroke="' + t.ribLine + '" stroke-width="3" paint-order="stroke" textLength="' + tl + '" lengthAdjust="spacingAndGlyphs">' + t.title + '</text>' +
+  '<rect x="340" y="1008" width="320" height="76" rx="38" fill="' + P.tag + '" stroke="#fff" stroke-width="5"/>' +
+  '<rect x="352" y="1018" width="296" height="56" rx="28" fill="none" stroke="' + (t.top ? P.l1 : "#fff") + '" stroke-width="3" stroke-dasharray="10 8"/>' +
+  '<text x="500" y="1063" text-anchor="middle" font-size="46" font-weight="800" fill="#fff">' + SERIES[t.series].name + '</text>' +
+  '<rect x="140" y="1120" width="720" height="250" rx="26" fill="#fffdf2" stroke="' + P.l1 + '" stroke-width="4"/>' +
+  starAt(190, 1205, 0.9, P.c2) +
+  '<text x="228" y="1219" font-size="40" font-weight="800" fill="' + P.text + '">なまえ</text>' +
+  '<line x1="370" y1="1225" x2="820" y2="1225" stroke="#8a6a4c" stroke-width="3"/>' +
+  starAt(190, 1305, 0.9, P.c2) +
+  '<text x="228" y="1319" font-size="40" font-weight="800" fill="' + P.text + '">ひづけ</text>' +
+  '<line x1="370" y1="1325" x2="820" y2="1325" stroke="#8a6a4c" stroke-width="3"/>' +
+  '<text x="595" y="1215" text-anchor="middle" font-size="46" font-weight="800" fill="' + P.ink + '">' + name + '</text>' +
+  '<text x="595" y="1315" text-anchor="middle" font-size="40" font-weight="700" fill="' + P.ink + '">' + date + '</text>' +
+  '</svg>';
+}
+
+function back(t) {
+  var P = palette(t);
+  var text = (custom[t.id] != null) ? custom[t.id] : t.msg.join("\n");
+  var lines = text.replace(/\{n\}/g, String(cnt())).split("\n");
+  var maxLen = 1;
+  lines.forEach(function (l) { if (l.length > maxLen) maxLen = l.length; });
+  var fs = Math.min(62, Math.floor(740 / maxLen));
+  var gap = fs * 1.55;
+  var startY = 700 - ((lines.length - 1) * gap) / 2;
+  var body = "";
+  lines.forEach(function (l, i) {
+    body += '<text x="500" y="' + (startY + i * gap) + '" text-anchor="middle" font-size="' + fs + '" font-weight="800" fill="' + P.text + '">' + esc(l) + '</text>';
+  });
+  return '<svg viewBox="0 0 1000 1480" xmlns="http://www.w3.org/2000/svg">' + frame(t, P, true) +
+  crown(500, 215, 1.15, P) +
+  body +
+  starAt(430, 1080, 1.0, P.c2) + starAt(500, 1080, 1.2, P.c2) + starAt(570, 1080, 1.0, P.c2) +
+  '<text x="500" y="1190" text-anchor="middle" font-size="46" font-weight="800" fill="' + P.text + '">あなたの がんばりを</text>' +
+  '<text x="500" y="1255" text-anchor="middle" font-size="46" font-weight="800" fill="' + P.text + '">おうえんしています</text>' +
+  '<text x="500" y="1340" text-anchor="middle" font-size="34" font-weight="700" fill="' + P.text + '">音楽教室 おんぷくらぶ</text>' +
+  '</svg>';
+}
+
+function render() {
+  var t = TYPES[cur];
+  document.getElementById("cardBox").innerHTML = (side === "front") ? front(t) : back(t);
+
+  var tabs = document.getElementById("tabs"); tabs.innerHTML = "";
+  TYPES.forEach(function (x, i) {
+    var b = document.createElement("button");
+    b.textContent = x.label; if (i === cur) b.className = "on";
+    b.addEventListener("click", function () { cur = i; syncMsg(); render(); });
+    tabs.appendChild(b);
+  });
+  var sides = document.getElementById("sides"); sides.innerHTML = "";
+  [["front", "おもて"], ["back", "うら"]].forEach(function (s) {
+    var b = document.createElement("button");
+    b.textContent = s[1]; if (side === s[0]) b.className = "on";
+    b.addEventListener("click", function () { side = s[0]; render(); });
+    sides.appendChild(b);
+  });
+
+  document.getElementById("rowFront").style.display = (side === "front") ? "block" : "none";
+  document.getElementById("rowMsg").style.display = (side === "back") ? "block" : "none";
+  document.getElementById("rowCount").style.display = t.top ? "block" : "none";
+}
+
+function syncMsg() {
+  var t = TYPES[cur];
+  msgEl.value = (custom[t.id] != null) ? custom[t.id] : t.msg.join("\n");
+}
+
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日";
+}
+
+nameEl.addEventListener("input", render);
+dateEl.addEventListener("input", render);
+countEl.addEventListener("input", render);
+msgEl.addEventListener("input", function () { custom[TYPES[cur].id] = msgEl.value; render(); });
+document.getElementById("btnToday").addEventListener("click", function () { dateEl.value = todayStr(); render(); });
+document.getElementById("btnMsgReset").addEventListener("click", function () { delete custom[TYPES[cur].id]; syncMsg(); render(); });
+
+syncMsg();
+render();
+</script>
+</body>
+</html>
