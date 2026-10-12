@@ -6,7 +6,7 @@
 <title>認定カード（名刺サイズ・印刷用）</title>
 <style>
   /* ハガキ（よこ向き）148×100mm に、おもてとうらを並べる */
-  @page { size: 148mm 100mm; margin: 0; }
+  @page { size: 100mm 148mm; margin: 0; }
   :root { --sheet: min(96vw, 700px); }
   html, body { margin: 0; padding: 0; background: #e8eef5; }
   body { display: flex; flex-direction: column; align-items: center; padding: 14px 0; font-family: 'Hiragino Maru Gothic ProN','Rounded Mplus 1c','Meiryo',sans-serif; color: #355; }
@@ -33,7 +33,10 @@
     :root { --sheet: 148mm; }
     html, body { background: #fff; }
     body { padding: 0; display: block; }
-    .sheet { box-shadow: none; }
+    html, body { width: 100mm; height: 148mm; overflow: hidden; }
+    body { position: relative; }
+    /* ハガキをたてに入れるプリンター用：よこ長の配置を90度回して、たて向きの紙に入れる */
+    .sheet { position: absolute; left: 0; top: 0; box-shadow: none; transform-origin: 0 0; transform: translateX(100mm) rotate(90deg); }
     .tabs, .controls { display: none; }
   }
 </style>
@@ -59,7 +62,7 @@
   <button onclick="window.print()">印刷する（ハガキ）</button>
   <div class="note">
     入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
-    印刷のとき、用紙を「ハガキ」、向きを「よこ」、倍率を「100%（実際のサイズ）」にしてください。<br>
+    印刷のとき、用紙を「ハガキ」、向きは「たて」、倍率を「100%（実際のサイズ）」にしてください。<br>プリンターには、ハガキをたて向きに入れます。印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。<br>
     左がおもて、右がうらです。灰色の目印のところで、カードを切り分けます。（54×77mm）
   </div>
 </div>
