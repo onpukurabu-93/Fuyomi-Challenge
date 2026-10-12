@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>認定カード（名刺サイズ・印刷用）</title>
+<style>
+  /* ハガキ（よこ向き）148×100mm に、おもてとうらを並べる */
+  @page { size: 148mm 100mm; margin: 0; }
+  :root { --sheet: min(96vw, 700px); }
+  html, body { margin: 0; padding: 0; background: #e8eef5; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 14px 0; font-family: 'Hiragino Maru Gothic ProN','Rounded Mplus 1c','Meiryo',sans-serif; color: #355; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; padding: 0 8px; }
+  .tabs button { font-size: 14px; font-weight: bold; padding: 9px 12px; border: 2px solid #9cc; border-radius: 10px; background: #fff; color: #355; }
+  .tabs button.on { background: #2b8ad8; border-color: #2b8ad8; color: #fff; }
+
+  .sheet { position: relative; width: var(--sheet); height: calc(var(--sheet) * 100 / 148); background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.2); overflow: hidden; }
+  .card { position: absolute; top: 11.5%; width: 36.486%; height: 77%; }
+  .card.f { left: 9.459%; }
+  .card.b { left: 54.054%; }
+  .card img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+  .ov { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-weight: 800; text-align: center; line-height: 1; }
+
+  /* 切るための目印 */
+  .mark { position: absolute; background: #b9b9b9; }
+
+  .controls { margin-top: 14px; text-align: center; font-size: 14px; max-width: 460px; padding: 0 8px; }
+  .controls input { font-size: 16px; padding: 8px; margin: 4px; border: 2px solid #9cc; border-radius: 8px; width: 170px; text-align: center; font-family: inherit; }
+  .controls button { font-size: 15px; font-weight: bold; padding: 10px 16px; margin: 6px; border: none; border-radius: 10px; background: #2b8ad8; color: #fff; }
+  .note { font-size: 12px; color: #678; margin-top: 6px; line-height: 1.7; }
+
+  @media print {
+    :root { --sheet: 148mm; }
+    html, body { background: #fff; }
+    body { padding: 0; display: block; }
+    .sheet { box-shadow: none; }
+    .tabs, .controls { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="sheet" id="sheet">
+  <div class="card f" id="cardF"><img id="imgF" alt=""></div>
+  <div class="card b" id="cardB"><img id="imgB" alt=""></div>
+</div>
+
+<div class="controls">
+  <div>
+    <input id="inName" placeholder="なまえ（空欄なら手書き）" maxlength="10">
+    <input id="inDate" placeholder="ひづけ（空欄なら手書き）" maxlength="14">
+    <div><button id="btnToday">きょうの日付を入れる</button></div>
+  </div>
+  <div id="rowCount">
+    <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
+  </div>
+  <button onclick="window.print()">印刷する（ハガキ）</button>
+  <div class="note">
+    入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
+    印刷のとき、用紙を「ハガキ」、向きを「よこ」、倍率を「100%（実際のサイズ）」にしてください。<br>
+    左がおもて、右がうらです。灰色の目印のところで、カードを切り分けます。（54×77mm）
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   カードの種類
+   img   … 画像のファイル名の目印（card_◯◯_front.png / card_◯◯_back.png）
+   name  … 名前を書く線の位置（カードの高さを 1 としたとき）
+   date  … 日付を書く線の位置
+   cloud … 回数を入れるまるい枠の中心(x,y)と幅(w)。回数のあるカードだけ
+   ========================================================= */
+var TYPES = [
+  { id: "treble",     label: "ト音記号",         img: "treble",     name: 0.800, date: 0.860 },
+  { id: "bass",       label: "ヘ音記号",         img: "bass",       name: 0.804, date: 0.864 },
+  { id: "master",     label: "ふよみマスター",   img: "master",     name: 0.777, date: 0.836 },
+  { id: "legend",     label: "レジェンド（100〜900）", img: "legend", name: 0.735, date: 0.816, cloud: { x: 0.507, y: 0.395, w: 0.44 }, color: "#7a4f00" },
+  { id: "legend1000", label: "レジェンド（1000）", img: "legend1000", name: 0.780, date: 0.836, cloud: { x: 0.496, y: 0.310, w: 0.56 }, color: "#7a4f00" }
+];
+
+var NAME_X = 0.605;   /* 名前・日付の横の中心（カードの幅を 1 としたとき） */
+var CARD_W = "calc(var(--sheet) * 0.36486)";   /* カード1枚の幅 */
+
+var cur = 0;
+var nameEl = document.getElementById("inName");
+var dateEl = document.getElementById("inDate");
+var countEl = document.getElementById("inCount");
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function cnt() { var n = parseInt(countEl.value, 10); return isNaN(n) ? 100 : n; }
+
+function overlay(cls, x, y, fsRatio, color, html) {
+  var d = document.createElement("div");
+  d.className = "ov";
+  d.style.left = (x * 100) + "%";
+  d.style.top = (y * 100) + "%";
+  d.style.fontSize = "calc(" + CARD_W + " * " + fsRatio + ")";
+  d.style.color = color;
+  d.innerHTML = html;
+  return d;
+}
+
+function addMarks(sheet) {
+  /* 4すみ×2枚。カードの角の外側に、短い線を入れる */
+  sheet.querySelectorAll(".mark").forEach(function (m) { m.remove(); });
+  var L = 1.5, G = 1.0, T = 0.2;                 /* mm */
+  var SW = 148, SH = 100;
+  [[14, 11.5], [80, 11.5]].forEach(function (p) {
+    var x0 = p[0], y0 = p[1], x1 = x0 + 54, y1 = y0 + 77;
+    [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (c) {
+      var hx = c[2] < 0 ? c[0] - G - L : c[0] + G;
+      var vy = c[3] < 0 ? c[1] - G - L : c[1] + G;
+      [[hx, c[1] - T / 2, L, T], [c[0] - T / 2, vy, T, L]].forEach(function (r) {
+        var m = document.createElement("div");
+        m.className = "mark";
+        m.style.left = (r[0] / SW * 100) + "%";
+        m.style.top = (r[1] / SH * 100) + "%";
+        m.style.width = (r[2] / SW * 100) + "%";
+        m.style.height = (r[3] / SH * 100) + "%";
+        sheet.appendChild(m);
+      });
+    });
+  });
+}
+
+function render() {
+  var t = TYPES[cur];
+  document.getElementById("imgF").src = "card_" + t.img + "_front.png";
+  document.getElementById("imgB").src = "card_" + t.img + "_back.png";
+
+  var cardF = document.getElementById("cardF");
+  cardF.querySelectorAll(".ov").forEach(function (o) { o.remove(); });
+
+  var name = nameEl.value, date = dateEl.value;
+  if (name) {
+    var n = name.length;
+    var fs = n <= 7 ? 0.062 : (0.062 * 7 / n);
+    cardF.appendChild(overlay("name", NAME_X, t.name - 0.006, fs, "#2b3a6a", esc(name)));
+  }
+  if (date) {
+    var m = date.length;
+    var fs2 = m <= 11 ? 0.046 : (0.046 * 11 / m);
+    cardF.appendChild(overlay("date", NAME_X, t.date - 0.006, fs2, "#2b3a6a", esc(date)));
+  }
+  if (t.cloud) {
+    var digits = String(cnt()).length;
+    var cw = t.cloud.w;                              /* 枠の幅（カード幅に対する割合） */
+    var fsn = Math.min(0.30, cw * 0.88 / (digits * 0.62));
+    var box = overlay("count", t.cloud.x, t.cloud.y + fsn * 0.42, fsn, t.color, cnt());
+    box.style.fontWeight = "900";
+    cardF.appendChild(box);
+  }
+
+  var tabs = document.getElementById("tabs"); tabs.innerHTML = "";
+  TYPES.forEach(function (x, i) {
+    var b = document.createElement("button");
+    b.textContent = x.label; if (i === cur) b.className = "on";
+    b.addEventListener("click", function () { cur = i; render(); });
+    tabs.appendChild(b);
+  });
+  document.getElementById("rowCount").style.display = t.cloud ? "block" : "none";
+}
+
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日";
+}
+
+nameEl.addEventListener("input", render);
+dateEl.addEventListener("input", render);
+countEl.addEventListener("input", render);
+document.getElementById("btnToday").addEventListener("click", function () { dateEl.value = todayStr(); render(); });
+
+addMarks(document.getElementById("sheet"));
+render();
+</script>
+</body>
+</html>
