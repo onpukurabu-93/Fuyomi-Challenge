@@ -6,7 +6,6 @@
 <title>認定カード（名刺サイズ・印刷用）</title>
 <style>
   /* 画面では、ハガキ（よこ向き）148×100mm に、おもてとうらを並べて見せる。印刷は、ページの中で画像1枚（たて向きハガキ）にして刷る */
-  @page { size: 100mm 148mm; margin: 0; }
   :root { --sheet: min(96vw, 700px); }
   html, body { margin: 0; padding: 0; background: #e8eef5; }
   body { display: flex; flex-direction: column; align-items: center; padding: 14px 0; font-family: 'Hiragino Maru Gothic ProN','Rounded Mplus 1c','Meiryo',sans-serif; color: #355; }
@@ -34,12 +33,13 @@
   #shotBox img { width: min(90vw, 360px); border: 1px solid #ccc; }
 
   @media print {
-    html, body { margin: 0; padding: 0; width: 100mm; height: 148mm; background: #fff; overflow: hidden; }
+    html, body { margin: 0; padding: 0; width: var(--pw, 100mm); height: var(--ph, 148mm); background: #fff; overflow: hidden; }
     body > *:not(#printArea) { display: none !important; }
-    #printArea { display: block; width: 100mm; height: 148mm; }
-    #printArea img { display: block; width: 100mm; height: 148mm; }
+    #printArea { display: block; width: var(--pw, 100mm); height: var(--ph, 148mm); }
+    #printArea img { display: block; width: var(--pw, 100mm); height: var(--ph, 148mm); }
   }
 </style>
+<style id="pageStyle"></style>
 </head>
 <body>
 
@@ -62,7 +62,7 @@
     <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
   </div>
   <div>
-    <input id="inScale" type="number" min="80" max="130" step="1" value="100" style="width:90px"> ％ （カードの大きさ。印刷にだけ反映）
+    <input id="inScale" type="number" min="80" max="200" step="1" value="135" style="width:90px"> ％ （印刷の拡大率）
   </div>
   <button id="btnPrint">印刷する（ハガキ）</button>
   <button id="btnShot">画像として見る（長押しで保存）</button>
@@ -71,7 +71,7 @@
     入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
     「印刷する」を押すと、ハガキ1枚ぶんの画像を作って、印刷の画面を開きます。用紙は「ハガキ」、向きは「たて」にしてください。<br>
     印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。左がおもて、右がうらです。（54×77mm）<br>
-    大きさが合わないときは、「カードの大きさ」の％を変えて、もう一度刷ります。
+    カードの幅が54mmにならないときは、「印刷の拡大率」を変えて、もう一度刷ります。たとえば、刷ったカードが48mmなら、いまの数字に 54÷48 をかけます。
   </div>
 </div>
 
@@ -188,24 +188,28 @@ document.getElementById("btnToday").addEventListener("click", function () { date
    ハガキ1枚ぶんの画像を作る（たて向き 100×148mm、300dpi）
    よこ向きの配置（148×100mm）を、90度回して、たて向きの紙に入れる
    ========================================================= */
+function getP() {
+  var v = parseFloat(document.getElementById("inScale").value);
+  if (isNaN(v) || v < 50) v = 100;
+  return v / 100;
+}
+
 function buildHagaki() {
+  var P = getP();
   var DPI = 300, pxmm = DPI / 25.4;
-  var W = Math.round(100 * pxmm), H = Math.round(148 * pxmm);
+  var W = Math.round(100 * P * pxmm), H = Math.round(148 * P * pxmm);
   var cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   var ctx = cv.getContext("2d");
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
 
   var t = TYPES[cur];
-  var sc = parseFloat(document.getElementById("inScale").value);
-  if (isNaN(sc) || sc < 50) sc = 100;
-  sc = sc / 100;
-  var cw = 54 * sc, ch = 77 * sc;
+  var cw = 54, ch = 77;
 
   ctx.save();
-  ctx.translate(100 * pxmm, 0);
+  ctx.translate(100 * P * pxmm, 0);
   ctx.rotate(Math.PI / 2);
-  ctx.scale(pxmm, pxmm);                       /* ここから先は mm の単位。よこ 148 × たて 100 */
+  ctx.scale(pxmm * P, pxmm * P);               /* ここから先は、拡大率をかけた mm の単位。よこ 148 × たて 100 */
 
   var cards = [
     { img: document.getElementById("imgF"), cx: 41,  front: true },
@@ -267,6 +271,11 @@ function makeImage() {
 document.getElementById("btnPrint").addEventListener("click", function () {
   var url = makeImage();
   if (!url) return;
+  var P = getP();
+  var pw = (100 * P).toFixed(2) + "mm", ph = (148 * P).toFixed(2) + "mm";
+  document.documentElement.style.setProperty("--pw", pw);
+  document.documentElement.style.setProperty("--ph", ph);
+  document.getElementById("pageStyle").textContent = "@page { size: " + pw + " " + ph + "; margin: 0; }";
   var pi = document.getElementById("printImg");
   pi.onload = function () { pi.onload = null; window.print(); };
   pi.src = "";
