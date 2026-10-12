@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>認定カード（名刺サイズ・印刷用）</title>
 <style>
-  /* ハガキ（よこ向き）148×100mm に、おもてとうらを並べる */
+  /* 画面では、ハガキ（よこ向き）148×100mm に、おもてとうらを並べて見せる。印刷は、ページの中で画像1枚（たて向きハガキ）にして刷る */
   @page { size: 100mm 148mm; margin: 0; }
   :root { --sheet: min(96vw, 700px); }
   html, body { margin: 0; padding: 0; background: #e8eef5; }
@@ -29,15 +29,15 @@
   .controls button { font-size: 15px; font-weight: bold; padding: 10px 16px; margin: 6px; border: none; border-radius: 10px; background: #2b8ad8; color: #fff; }
   .note { font-size: 12px; color: #678; margin-top: 6px; line-height: 1.7; }
 
+  #printArea { display: none; }
+  #shotBox { margin-top: 10px; display: none; }
+  #shotBox img { width: min(90vw, 360px); border: 1px solid #ccc; }
+
   @media print {
-    :root { --sheet: 148mm; }
-    html, body { background: #fff; }
-    body { padding: 0; display: block; }
-    html, body { width: 100mm; height: 148mm; overflow: hidden; }
-    body { position: relative; }
-    /* ハガキをたてに入れるプリンター用：よこ長の配置を90度回して、たて向きの紙に入れる */
-    .sheet { position: absolute; left: -24mm; top: 24mm; box-shadow: none; transform-origin: 50% 50%; transform: rotate(90deg) scale(var(--ps, 1)); }
-    .tabs, .controls { display: none; }
+    html, body { margin: 0; padding: 0; width: 100mm; height: 148mm; background: #fff; overflow: hidden; }
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block; width: 100mm; height: 148mm; }
+    #printArea img { display: block; width: 100mm; height: 148mm; }
   }
 </style>
 </head>
@@ -50,6 +50,8 @@
   <div class="card b" id="cardB"><img id="imgB" alt=""></div>
 </div>
 
+<div id="printArea"><img id="printImg" alt=""></div>
+
 <div class="controls">
   <div>
     <input id="inName" placeholder="なまえ（空欄なら手書き）" maxlength="10">
@@ -60,14 +62,16 @@
     <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
   </div>
   <div>
-    <input id="inScale" type="number" min="50" max="200" step="1" value="100" style="width:90px"> ％ （印刷の拡大率）
+    <input id="inScale" type="number" min="80" max="130" step="1" value="100" style="width:90px"> ％ （カードの大きさ。印刷にだけ反映）
   </div>
-  <button onclick="window.print()">印刷する（ハガキ）</button>
+  <button id="btnPrint">印刷する（ハガキ）</button>
+  <button id="btnShot">画像として見る（長押しで保存）</button>
+  <div id="shotBox"><img id="shotImg" alt=""></div>
   <div class="note">
     入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
-    印刷のとき、用紙を「ハガキ」、向きは「たて」、倍率を「100%（実際のサイズ）」にしてください。<br>プリンターには、ハガキをたて向きに入れます。印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。<br>
-    左がおもて、右がうらです。灰色の目印のところで、カードを切り分けます。（54×77mm）<br>
-    印刷したカードが小さいときは、拡大率を上げます。たとえば、40mm幅になったときは、54÷40で「135」を入れます。
+    「印刷する」を押すと、ハガキ1枚ぶんの画像を作って、印刷の画面を開きます。用紙は「ハガキ」、向きは「たて」にしてください。<br>
+    印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。左がおもて、右がうらです。（54×77mm）<br>
+    大きさが合わないときは、「カードの大きさ」の％を変えて、もう一度刷ります。
   </div>
 </div>
 
@@ -180,13 +184,101 @@ dateEl.addEventListener("input", render);
 countEl.addEventListener("input", render);
 document.getElementById("btnToday").addEventListener("click", function () { dateEl.value = todayStr(); render(); });
 
-document.getElementById("inScale").addEventListener("input", applyScale);
-function applyScale() {
-  var v = parseFloat(document.getElementById("inScale").value);
-  if (isNaN(v) || v < 50) v = 100;
-  document.documentElement.style.setProperty("--ps", String(v / 100));
+/* =========================================================
+   ハガキ1枚ぶんの画像を作る（たて向き 100×148mm、300dpi）
+   よこ向きの配置（148×100mm）を、90度回して、たて向きの紙に入れる
+   ========================================================= */
+function buildHagaki() {
+  var DPI = 300, pxmm = DPI / 25.4;
+  var W = Math.round(100 * pxmm), H = Math.round(148 * pxmm);
+  var cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  var ctx = cv.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+
+  var t = TYPES[cur];
+  var sc = parseFloat(document.getElementById("inScale").value);
+  if (isNaN(sc) || sc < 50) sc = 100;
+  sc = sc / 100;
+  var cw = 54 * sc, ch = 77 * sc;
+
+  ctx.save();
+  ctx.translate(100 * pxmm, 0);
+  ctx.rotate(Math.PI / 2);
+  ctx.scale(pxmm, pxmm);                       /* ここから先は mm の単位。よこ 148 × たて 100 */
+
+  var cards = [
+    { img: document.getElementById("imgF"), cx: 41,  front: true },
+    { img: document.getElementById("imgB"), cx: 107, front: false }
+  ];
+  var FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif';
+
+  cards.forEach(function (c) {
+    var x0 = c.cx - cw / 2, y0 = 50 - ch / 2;
+    ctx.drawImage(c.img, x0, y0, cw, ch);
+
+    /* 切るための目印 */
+    var L = 1.5, G = 1.0, T = 0.2;
+    ctx.fillStyle = "#b9b9b9";
+    [[x0, y0, -1, -1], [x0 + cw, y0, 1, -1], [x0, y0 + ch, -1, 1], [x0 + cw, y0 + ch, 1, 1]].forEach(function (p) {
+      var hx = p[2] < 0 ? p[0] - G - L : p[0] + G;
+      var vy = p[3] < 0 ? p[1] - G - L : p[1] + G;
+      ctx.fillRect(hx, p[1] - T / 2, L, T);
+      ctx.fillRect(p[0] - T / 2, vy, T, L);
+    });
+
+    if (!c.front) return;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillStyle = "#2b3a6a";
+
+    var name = nameEl.value, date = dateEl.value;
+    if (name) {
+      var n = name.length, fs = n <= 7 ? 0.062 : (0.062 * 7 / n);
+      ctx.font = "800 " + (fs * cw) + "px " + FONT;
+      ctx.fillText(name, x0 + NAME_X * cw, y0 + (t.name - 0.006) * ch);
+    }
+    if (date) {
+      var m = date.length, fs2 = m <= 11 ? 0.046 : (0.046 * 11 / m);
+      ctx.font = "800 " + (fs2 * cw) + "px " + FONT;
+      ctx.fillText(date, x0 + NAME_X * cw, y0 + (t.date - 0.006) * ch);
+    }
+    if (t.cloud) {
+      var digits = String(cnt()).length;
+      var fsn = Math.min(0.30, t.cloud.w * 0.88 / (digits * 0.62));
+      ctx.fillStyle = t.color;
+      ctx.font = "900 " + (fsn * cw) + "px " + FONT;
+      ctx.fillText(String(cnt()), x0 + t.cloud.x * cw, y0 + (t.cloud.y + fsn * 0.42) * ch);
+    }
+  });
+
+  ctx.restore();
+  return cv.toDataURL("image/png");
 }
-applyScale();
+
+function makeImage() {
+  var okF = document.getElementById("imgF").complete && document.getElementById("imgF").naturalWidth > 0;
+  var okB = document.getElementById("imgB").complete && document.getElementById("imgB").naturalWidth > 0;
+  if (!okF || !okB) { alert("カードの画像がまだ読み込まれていません。少し待ってから、もう一度押してください。"); return null; }
+  try { return buildHagaki(); }
+  catch (e) { alert("画像を作れませんでした。ページを開き直してください。"); return null; }
+}
+
+document.getElementById("btnPrint").addEventListener("click", function () {
+  var url = makeImage();
+  if (!url) return;
+  var pi = document.getElementById("printImg");
+  pi.onload = function () { pi.onload = null; window.print(); };
+  pi.src = "";
+  pi.src = url;
+});
+
+document.getElementById("btnShot").addEventListener("click", function () {
+  var url = makeImage();
+  if (!url) return;
+  document.getElementById("shotImg").src = url;
+  document.getElementById("shotBox").style.display = "block";
+});
 
 addMarks(document.getElementById("sheet"));
 render();
