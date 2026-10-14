@@ -1,23 +1,29 @@
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
-  /* ★ 完成コードが、一覧に見えている日数 */
+  /* ★ コードが、一覧に見えている日数 */
   var CODE_DAYS = 3;
   /* ★ 1まいのスタンプの数 */
   var STAMPS_PER_CARD = 5;
-  /* ★ 「よく考えて」の声を出す、一発正解率の下限（0.7 = 70%）と、何問めから出すか */
-  var THINK_RATE = 0.7;
+  /* ★ 「よく考えて」の声：何問おわってから出すか、一発せいかいりつの下限（0.7 = 70%） */
   var THINK_AFTER = 5;
+  var THINK_RATE = 0.7;
+  /* ★ コードを計算するときの、ひみつの文字（かえると、むかしのコードは あわなくなります） */
+  var SALT = "fuyomi-2026";
 
   var MAP_KEY = "onpu_code_slots";
   var cancelable = false;
   var pending = null;
 
-  /* 一発正解の数えかた用 */
-  var firstTry = 0;      /* 最初のタップで当てた問題の数 */
-  var missedQs = 0;      /* 1回でも間違えた問題の数 */
-  var qMistake = false;  /* いまの問題で、もう間違えたか */
+  /* 一発せいかいの数えかた用 */
+  var firstTry = 0;
+  var qMistake = false;
   var thinkPlayed = false;
+
+  /* おいわい画面の順番待ち */
+  var celQueue = [];
+  var celebrating = false;
+  var queueScheduled = false;
 
   function norm(s) {
     return String(s || "").normalize("NFKC").trim().toLowerCase().replace(/\s+/g, "");
@@ -45,10 +51,7 @@
       });
   }
 
-  /* 名前のチェック（ひらがな・すうじ・ー、8もじまで） */
-  function cleanName(raw) {
-    return String(raw || "").normalize("NFKC").trim();
-  }
+  function cleanName(raw) { return String(raw || "").normalize("NFKC").trim(); }
   function nameError(s) {
     if (!s || !/^[\u3040-\u309F\u30FC0-9]+$/.test(s)) return "なまえは、ひらがなと すうじだけで いれてね";
     if (s.length > 8) return "なまえは、8もじまでだよ";
@@ -75,18 +78,15 @@
     '<div style="width:100%;max-width:340px;text-align:center;color:#5b4636;">' +
     '<div style="font-size:26px;font-weight:800;margin-bottom:8px;">🎹 ふよみチャレンジ</div>' +
     '<div id="gateMsg" style="font-size:14px;color:#806c5a;min-height:42px;margin-bottom:10px;line-height:1.5;white-space:pre-line;">かくにん中…</div>' +
-
     '<div id="gateCodeForm" style="display:none;">' +
     '<input id="gateInput" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="あいことば" style="' + inputStyle + '">' +
     '<button id="gateBtn" style="' + btnStyle + 'background:#ff7043;">はじめる</button>' +
     '<button id="gateCancel" style="' + btnStyle + 'background:#bdbdbd;font-size:15px;padding:10px;display:none;">やめる</button>' +
     '</div>' +
-
     '<div id="gateNickForm" style="display:none;">' +
     '<input id="gateNick" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="8" placeholder="きょうしつネーム" style="' + inputStyle + '">' +
     '<button id="gateNickBtn" style="' + btnStyle + 'background:#ff7043;">つぎへ</button>' +
     '</div>' +
-
     '<div id="gateConfirmForm" style="display:none;">' +
     '<div id="gateConfirmName" style="font-size:28px;font-weight:900;color:#5b4636;margin:6px 0 4px;word-break:break-all;"></div>' +
     '<button id="gateOk" style="' + btnStyle + 'background:#ff7043;">これで OK！</button>' +
@@ -118,12 +118,8 @@
     cancelBtn.style.display = cancelable ? "block" : "none";
     show("code");
   }
-  function openApp() {
-    cancelable = false;
-    box.style.display = "none";
-  }
+  function openApp() { cancelable = false; box.style.display = "none"; }
 
-  /* 今のプレイヤーを切り替える */
   function switchTo(slot) {
     activeProfileIndex = slot;
     Storage.set("onpu_active_profile", slot);
@@ -171,12 +167,8 @@
   codeInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.isComposing) document.getElementById("gateBtn").click();
   });
-  cancelBtn.addEventListener("click", function () {
-    cancelable = false;
-    box.style.display = "none";
-  });
+  cancelBtn.addEventListener("click", function () { cancelable = false; box.style.display = "none"; });
 
-  /* 教室ネームを入れる → 確認 */
   document.getElementById("gateNickBtn").addEventListener("click", function () {
     var s = cleanName(nickInput.value);
     var err = nameError(s);
@@ -200,7 +192,6 @@
     show("nick");
   });
 
-  /* 確認OK → とうろく（枠は3つまで） */
   document.getElementById("gateOk").addEventListener("click", function () {
     if (!pending || !pending.name) return;
     var slot = 0;
@@ -225,13 +216,57 @@
     openApp();
   });
 
-  /* ===== スタンプとカード ===== */
+  /* =========================================================
+     きろくとコード（スタンプカード・ト音記号マスター・ヘ音記号マスター・ふよみマスター・レジェンド）
+     どれも、同じ形：がめんを出す → スクショ → せんせいに おくる
+     コードは「なまえ・しゅるい・かいすう・ひづけ」から計算します。
+     先生ページの「コードかくにん」で、同じ計算ができます。
+     ========================================================= */
   var CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
   function localDateStr(d) {
     var m = d.getMonth() + 1, day = d.getDate();
     return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
   }
+
+  function codeFor(name, type, n, dateStr) {
+    var s = [name, type, n, dateStr, SALT].join("|");
+    var h = 2166136261 >>> 0;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    var out = "";
+    for (var k = 0; k < 4; k++) {
+      out += CODE_CHARS.charAt(h % CODE_CHARS.length);
+      h = Math.floor(h / CODE_CHARS.length);
+    }
+    return out;
+  }
+
+  var INFO = {
+    stamp:  { icon: "🏅", label: "スタンプカード", bg: "#fffdf0", bd: "#ffb300", tx: "#5b4636", ac: "#ff5722", cbg: "#fff", ctx: "#5b4636" },
+    treble: { icon: "🎼", label: "ト音記号マスター", bg: "#eaf6ff", bd: "#2a8fd6", tx: "#1a4a7a", ac: "#2a8fd6", cbg: "#fff", ctx: "#1a4a7a" },
+    bass:   { icon: "🎼", label: "ヘ音記号マスター", bg: "#eafaf0", bd: "#2fa862", tx: "#1f5a3a", ac: "#2fa862", cbg: "#fff", ctx: "#1f5a3a" },
+    master: { icon: "🎓", label: "ふよみマスター", bg: "#fff0f5", bd: "#e0527f", tx: "#7a2b4a", ac: "#e0527f", cbg: "#fff", ctx: "#7a2b4a" },
+    legend: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
+    legend1000: { icon: "👑", label: "ふよみレジェンド", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
+  };
+  function infoOf(rec) {
+    if (rec.type === "legend" && rec.n >= 1000) return INFO.legend1000;
+    return INFO[rec.type] || INFO.stamp;
+  }
+  function titleOf(rec) {
+    if (rec.type === "stamp") return "スタンプカード " + rec.n + " まいめ";
+    if (rec.type === "legend") return "ふよみレジェンド";
+    return INFO[rec.type].label;
+  }
+  function subOf(rec) {
+    if (rec.type === "stamp") return "かんせい！";
+    if (rec.type === "legend") return "パーフェクト " + rec.n + "回 れんぞく！";
+    return "おめでとう！";
+  }
+
   function stampTotal(idx) { return Storage.getNumber("fy_stamps_" + idx, 0); }
   function stampState(idx) {
     var t = stampTotal(idx);
@@ -239,12 +274,33 @@
   }
   function getCards(idx) {
     var a = Storage.get("fy_cards_" + idx, []);
+    if (!Array.isArray(a)) return [];
+    /* むかしの きろく（しゅるいが ないもの）は スタンプカードとして あつかう */
+    return a.map(function (r) { if (!r.type) r.type = "stamp"; return r; });
+  }
+  function getAch(idx) {
+    var a = Storage.get("fy_ach_" + idx, []);
     return Array.isArray(a) ? a : [];
   }
-  function makeCode() {
-    var s = "";
-    for (var i = 0; i < 4; i++) s += CODE_CHARS.charAt(Math.floor(Math.random() * CODE_CHARS.length));
-    return s;
+  function findAch(idx, type) {
+    var a = getAch(idx);
+    for (var i = 0; i < a.length; i++) { if (a[i].type === type) return a[i]; }
+    return null;
+  }
+  function makeRec(idx, type, n) {
+    var now = new Date();
+    var d = localDateStr(now);
+    var name = profiles[idx] || "";
+    return { type: type, n: n, t: now.getTime(), d: d, name: name, code: codeFor(name, type, n, d) };
+  }
+  /* しゅうごうの きろくを つくる。マスターは1どだけ。れじぇんどは、まいかい */
+  function addAch(idx, type, n) {
+    if (type !== "legend" && findAch(idx, type)) return null;
+    var rec = makeRec(idx, type, n || 0);
+    var a = getAch(idx);
+    a.push(rec);
+    Storage.set("fy_ach_" + idx, a);
+    return rec;
   }
 
   /* スタンプを1こ ふやす（1日1こまで）。しゅうりょう: "none"=もうもらった / "stamp" / "card" */
@@ -255,7 +311,7 @@
     var total = stampTotal(idx) + 1;
     Storage.set("fy_stamps_" + idx, total);
     if (total % STAMPS_PER_CARD === 0) {
-      var rec = { n: total / STAMPS_PER_CARD, t: Date.now(), name: profiles[idx] || "", code: makeCode() };
+      var rec = makeRec(idx, "stamp", total / STAMPS_PER_CARD);
       var list = getCards(idx);
       list.push(rec);
       Storage.set("fy_cards_" + idx, list);
@@ -264,18 +320,26 @@
     return { status: "stamp" };
   }
 
-  function cardHtml(rec) {
+  function dmd(rec) {
+    var p = String(rec.d || "").split("-");
+    if (p.length === 3) return parseInt(p[1], 10) + "/" + parseInt(p[2], 10);
     var d = new Date(rec.t);
-    return '<div style="border:3px double #ffb300;border-radius:16px;background:#fffdf0;padding:12px;margin-bottom:10px;text-align:center;">' +
-      '<div style="font-size:13px;color:#806c5a;">ふよみチャレンジ スタンプカード</div>' +
-      '<div style="font-size:20px;font-weight:900;color:#5b4636;margin:2px 0;">' + esc(rec.name) + ' さん</div>' +
-      '<div style="font-size:16px;font-weight:800;color:#ff5722;">' + rec.n + ' まいめ かんせい！</div>' +
-      '<div style="font-size:13px;color:#5b4636;margin:2px 0;">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>' +
-      '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:#5b4636;background:#fff;border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
+    return (d.getMonth() + 1) + "/" + d.getDate();
+  }
+
+  function cardHtml(rec) {
+    var f = infoOf(rec);
+    return '<div style="border:3px double ' + f.bd + ';border-radius:16px;background:' + f.bg + ';padding:12px;margin-bottom:10px;text-align:center;color:' + f.tx + ';">' +
+      '<div style="font-size:30px;line-height:1.2;">' + f.icon + '</div>' +
+      '<div style="font-size:17px;font-weight:900;margin:2px 0;">' + esc(titleOf(rec)) + '</div>' +
+      '<div style="font-size:15px;font-weight:800;color:' + f.ac + ';">' + esc(subOf(rec)) + '</div>' +
+      '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc(rec.name) + ' さん</div>' +
+      '<div style="font-size:13px;margin:2px 0;">' + dmd(rec) + '</div>' +
+      '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
       '</div>';
   }
 
-  /* 大きな画面（かんせい画面・コード一覧） */
+  /* 大きな画面 */
   var ov = document.createElement("div");
   ov.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:10001;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
   ov.innerHTML = '<div style="width:100%;max-width:360px;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;padding:16px;box-sizing:border-box;text-align:center;color:#5b4636;">' +
@@ -283,39 +347,87 @@
     '<button id="fyOvClose" style="width:100%;margin-top:6px;padding:12px;font-size:16px;font-weight:800;border:none;border-radius:12px;background:#78a9c8;color:#fff;">とじる</button>' +
     '</div>';
   document.body.appendChild(ov);
-  document.getElementById("fyOvClose").addEventListener("click", function () { ov.style.display = "none"; });
+  document.getElementById("fyOvClose").addEventListener("click", function () {
+    ov.style.display = "none";
+    if (celebrating) nextCel();
+  });
 
   function openOverlay(html) {
     document.getElementById("fyOvBody").innerHTML = html;
     ov.style.display = "flex";
   }
 
-  function showCompleteModal(rec) {
-    openOverlay(
-      '<div style="font-size:44px;">🎉</div>' +
-      '<div style="font-size:20px;font-weight:900;margin-bottom:8px;">カードが できたよ！</div>' +
-      cardHtml(rec) +
-      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + CODE_DAYS + '日いないに、この がめんを スクショして<br>せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>'
-    );
+  function sendText() {
+    return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + CODE_DAYS + '日いないに、この がめんを スクショして<br>せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
   }
+
+  /* おいわい画面 */
+  function showCel(rec, viewOnly) {
+    celebrating = !viewOnly;
+    openOverlay(
+      '<div style="font-size:40px;">🎉</div>' +
+      '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>' +
+      cardHtml(rec) + sendText()
+    );
+    if (!viewOnly) {
+      try {
+        if (rec.type === "master") playAudioCloned("hyoshoFanfare1Audio");
+        else if (rec.type === "legend") playAudioCloned("hyoshoFanfareAudio");
+      } catch (e) {}
+    }
+  }
+  function nextCel() {
+    if (celQueue.length) {
+      showCel(celQueue.shift(), false);
+    } else {
+      celebrating = false;
+      queueScheduled = false;
+      /* 結果画面のボタンが、まだ薄いままのときは、ここで色づける */
+      try { closeAwardModal(); } catch (e) {}
+    }
+  }
+
+  /* 自動の表彰式は使わない。ボタンから呼ばれたときだけ、マスターの きろくを見せる */
+  window.openAwardModal = function (idx) {
+    if (idx !== undefined) {
+      if (!queueScheduled && !celebrating) { try { closeAwardModal(); } catch (e) {} }
+      return;
+    }
+    var rec = findAch(activeProfileIndex, "master");
+    if (rec) showCel(rec, true);
+  };
+
+  /* 「きろくと コード」の一覧 */
+  var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"]];
 
   window.showCardCodes = function () {
     var idx = activeProfileIndex;
     var st = stampState(idx);
     var now = Date.now();
     var limit = CODE_DAYS * 86400000;
-    var all = getCards(idx);
+    var all = getCards(idx).concat(getAch(idx));
+    all.sort(function (a, b) { return b.t - a.t; });
     var visible = all.filter(function (r) { return now - r.t < limit; });
-    var html = '<div style="font-size:18px;font-weight:900;margin-bottom:8px;">📮 カードの コード</div>';
+
+    var html = '<div style="font-size:18px;font-weight:900;margin-bottom:8px;">🎖 きろくと コード</div>';
+
+    /* ずっと のこる たっせい */
+    var lines = "";
+    ACH_LINES.forEach(function (a) {
+      var r = findAch(idx, a[0]);
+      lines += '<div style="font-size:14px;margin:3px 0;' + (r ? 'font-weight:800;color:#5b4636;' : 'color:#bbb;') + '">' + a[1] + (r ? ' ✓ ' + dmd(r) : ' …まだ') + '</div>';
+    });
+    var lc = getLegendCount(idx);
+    lines += '<div style="font-size:14px;margin:3px 0;' + (lc > 0 ? 'font-weight:800;color:#5b4636;' : 'color:#bbb;') + '">👑 ふよみレジェンド ' + (lc > 0 ? '✓ ' + lc + '回' : '…まだ') + '</div>';
+    html += '<div style="background:#fdf8ed;border-radius:12px;padding:8px;margin-bottom:10px;">' + lines + '</div>';
+
     if (visible.length) {
-      visible.slice().reverse().forEach(function (r) { html += cardHtml(r); });
+      visible.forEach(function (r) { html += cardHtml(r); });
       html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">スクショして せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
-    } else if (all.length) {
-      html += '<div style="font-size:14px;line-height:1.6;margin-bottom:10px;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     } else {
-      html += '<div style="font-size:14px;line-height:1.6;margin-bottom:10px;">まだ カードは できていないよ。<br>あと ' + (STAMPS_PER_CARD - st.inCard) + 'こ！</div>';
+      html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
-    html += '<div style="font-size:13px;font-weight:800;color:#ff5722;margin-bottom:8px;">いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>';
+    html += '<div style="font-size:13px;font-weight:800;color:#ff5722;margin-bottom:8px;">スタンプ いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>';
     openOverlay(html);
   };
 
@@ -334,65 +446,137 @@
     container.innerHTML =
       '<div style="font-size:13px;font-weight:800;color:#5b4636;margin-bottom:4px;">🏅 いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>' +
       '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:6px;">' + dots + '</div>' +
-      '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:12px;font-weight:800;border-radius:10px;padding:6px 12px;cursor:pointer;">📮 カードの コードを みる</button>';
+      '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:12px;font-weight:800;border-radius:10px;padding:6px 12px;cursor:pointer;">🎖 きろくと コード</button>';
     var b = document.getElementById("fyCodeBtn");
     if (b) b.addEventListener("click", window.showCardCodes);
   };
 
-  /* ===== 結果画面：「一発せいかいりつ」を表示し、100%（20問いじょう）のときスタンプを ふやす =====
+  /* ===== パーフェクトの ほし ===== */
+  function renderStars(idx) {
+    var host = document.getElementById("stampMiniBox");
+    if (!host) return;
+    var el = document.getElementById("fyStars");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "fyStars";
+      el.style.cssText = "margin-top:6px;padding:6px 4px;background:#fffbea;border-radius:10px;border:1px dashed #ffe082;text-align:center;";
+      host.parentNode.insertBefore(el, host.nextSibling);
+    }
+    var s = Storage.getNumber("onpu_perf_streak_" + idx, 0);
+    var small = s % 10, big = Math.floor((s % 100) / 10), hund = Math.floor(s / 100);
+    var bigRow = "", smallRow = "";
+    for (var i = 0; i < 10; i++) {
+      bigRow += '<span style="font-size:22px;line-height:1;color:' + (i < big ? '#ffb300' : '#dcdcdc') + ';">★</span>';
+      smallRow += '<span style="font-size:14px;line-height:1;color:' + (i < small ? '#ff9800' : '#dcdcdc') + ';">★</span>';
+    }
+    el.innerHTML =
+      '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">20もん ぜんぶ いっぱつで せいかい！で ほしが ひかるよ</div>' +
+      '<div style="letter-spacing:1px;">' + bigRow + '</div>' +
+      '<div style="letter-spacing:2px;margin-top:2px;">' + smallRow + '</div>' +
+      (hund > 0 ? '<div style="font-size:13px;font-weight:800;color:#7a4f00;margin-top:2px;">👑 × ' + hund + '</div>' : '');
+  }
+
+  /* ===== 結果画面 =====
      「一発せいかいりつ」＝ 最初のタップで当てた問題の数 ÷ 問題の数。
-     もとの結果画面は「正解数 ÷ （正解数 + まちがい数）」で数えるので、
-     数をそろえてから呼び出して、一発せいかいりつで判定・保存されるようにする */
+     10問は れんしゅう：連続・スタンプ・ほし には 数えない。
+     20問：全部いっぱつで 100% → ほし1こ。ちがうときは、いまの10この中だけ 0に もどる。 */
   var origShowResult = window.showResultScreen;
-  var cardTimer = null;
   window.showResultScreen = function () {
+    var idx = activeProfileIndex;
     var N = targetValue;
+    var is20 = (N >= 20);
     var ft = Math.max(0, Math.min(firstTry, N));
     trainingCorrectCount = ft;
     trainingMistakes = N - ft;
+    var acc = N > 0 ? Math.round((ft / N) * 100) : 0;
 
-    var correct = trainingCorrectCount, mistakes = trainingMistakes;
-    var total = correct + mistakes;
-    var acc = total > 0 ? Math.round((correct / total) * 100) : 0;
-    var idx = activeProfileIndex;
-    var is20 = (targetValue >= 20);
+    var kS = "onpu_perf_streak_" + idx, kM = "onpu_perf_max_" + idx;
+    var kT = "onpu_perf_treble_" + idx, kB = "onpu_perf_bass_" + idx, kA = "onpu_perf_all_" + idx;
+    var s0 = Storage.getNumber(kS, 0), m0 = Storage.getNumber(kM, 0);
+    var cT = Storage.getNumber(kT, 0), cB = Storage.getNumber(kB, 0), cA = Storage.getNumber(kA, 0);
 
-    if (cardTimer !== null) { clearTimeout(cardTimer); cardTimer = null; }
+    var s1 = s0, legendNow = false;
+    if (is20) {
+      if (acc === 100) { s1 = s0 + 1; legendNow = (s1 % 100 === 0); }
+      else { s1 = Math.floor(s0 / 10) * 10; }
+    }
+
+    /* もとの結果画面に、「100回目」の判定を させない */
+    Storage.set(kS, 0);
     origShowResult.apply(this, arguments);
+    Storage.set(kS, s1);
+    Storage.set(kM, Math.max(m0, s1));
+    if (!is20) { Storage.set(kT, cT); Storage.set(kB, cB); Storage.set(kA, cA); }
 
+    /* 表示 */
     try {
       var rs = document.getElementById("resultScore");
       if (rs) rs.textContent = "いっぱつ せいかいりつ " + acc + "%";
-    } catch (e) {}
-
-    try {
-      var line = document.getElementById("fyStampMsg");
-      if (!line) {
-        line = document.createElement("div");
-        line.id = "fyStampMsg";
-        line.style.cssText = "font-size:14px;font-weight:800;color:#e65100;margin-top:4px;";
-        var anchor = document.getElementById("resultStreakMsg");
-        anchor.parentNode.insertBefore(line, anchor.nextSibling);
-      }
-      line.textContent = "";
-
-      if (acc === 100 && is20) {
-        var r = awardStamp(idx);
-        var st = stampState(idx);
-        if (r.status === "none") {
-          line.textContent = "🏅 きょうの スタンプは もう もらったよ";
-        } else if (r.status === "stamp") {
-          line.textContent = "🏅 スタンプ ゲット！ いま " + st.cardNo + "まいめ（" + st.inCard + "こ）";
-        } else {
-          line.textContent = "🏅 スタンプが " + STAMPS_PER_CARD + "こ そろったよ！";
-          var rec = r.rec;
-          var sMs = getSoundDurationMs("sugoiAudio") || 1500;
-          var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
-          var wait = sMs + 200 + fMs + 1200;
-          cardTimer = setTimeout(function () { cardTimer = null; showCompleteModal(rec); }, wait);
-        }
+      var sm = document.getElementById("resultStreakMsg");
+      if (sm) {
+        if (is20 && acc === 100) sm.textContent = "⭐ ぜんぶ いっぱつ せいかい！ ほし " + (s1 % 10) + "こ";
+        else if (is20 && s0 % 10 > 0) sm.textContent = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
+        else sm.textContent = "";
       }
     } catch (e) {}
+
+    var cel = [];
+    var line = document.getElementById("fyStampMsg");
+    if (!line) {
+      line = document.createElement("div");
+      line.id = "fyStampMsg";
+      line.style.cssText = "font-size:14px;font-weight:800;color:#e65100;margin-top:4px;";
+      var anchor = document.getElementById("resultStreakMsg");
+      anchor.parentNode.insertBefore(line, anchor.nextSibling);
+    }
+    line.textContent = "";
+
+    if (acc === 100 && !is20) {
+      line.textContent = "20もんで ぜんぶ いっぱつで せいかいすると スタンプが もらえるよ！";
+    }
+
+    if (acc === 100 && is20) {
+      var r = awardStamp(idx);
+      var st = stampState(idx);
+      if (r.status === "none") {
+        line.textContent = "🏅 きょうの スタンプは もう もらったよ";
+      } else if (r.status === "stamp") {
+        line.textContent = "🏅 スタンプ ゲット！ いま " + st.cardNo + "まいめ（" + st.inCard + "こ）";
+      } else {
+        line.textContent = "🏅 スタンプが " + STAMPS_PER_CARD + "こ そろったよ！";
+        cel.push(r.rec);
+      }
+
+      /* マスター（レベル5を 20問 いっぱつで 100%） */
+      if (selectedLevel === 5) {
+        var mt = null;
+        if (selectedClef === "treble") mt = addAch(idx, "treble", 0);
+        else if (selectedClef === "bass") mt = addAch(idx, "bass", 0);
+        else if (selectedClef === "all") mt = addAch(idx, "master", 0);
+        if (mt) cel.push(mt);
+      }
+
+      /* レジェンド（100回ごと） */
+      if (legendNow) {
+        var lc0 = getLegendCount(idx);
+        Storage.set("onpu_legend_count_" + idx, lc0 + 1);
+        Storage.set("onpu_legend_" + idx, true);
+        cel.push(addAch(idx, "legend", s1));
+      }
+    }
+
+    try { initProfiles(); } catch (e) {}
+
+    if (cel.length) {
+      celQueue = cel;
+      queueScheduled = true;
+      var sMs = getSoundDurationMs("sugoiAudio") || 1500;
+      var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+      var wait = sMs + 200 + fMs + 1200;
+      var extra = seqEndAt - Date.now() + 400;
+      if (extra > wait) wait = extra;
+      delayedTimers.push(setTimeout(function () { nextCel(); }, wait));
+    }
   };
 
   /* ===== 一発せいかいの数え方・「よく考えて」の声 ===== */
@@ -405,40 +589,27 @@
     if (typeof soundIds !== "undefined" && soundIds.indexOf("yokukangaeteAudio") === -1) soundIds.push("yokukangaeteAudio");
   } catch (e) {}
 
-  /* トレーニングを始めるたびに、数えなおす */
   var origStartTraining = window.startTrainingWithConfig;
   window.startTrainingWithConfig = function () {
     firstTry = 0;
-    missedQs = 0;
     qMistake = false;
     thinkPlayed = false;
     return origStartTraining.apply(this, arguments);
   };
 
-  /* 鍵盤を押したとき、最初のタップで当たったか・間違えたかを数える */
   var origPressKey = window.pressKey;
   window.pressKey = function (key) {
     try {
       if (trainingMode && !trainingLocked && currentCards.length) {
         var card = currentCards[currentIndex];
-        if (key === card.key) {
-          if (!qMistake) firstTry++;
-        } else if (!qMistake) {
-          qMistake = true;
-          missedQs++;
-          /* 5問のあと、一発せいかいりつが下がったら、「よく考えて」を1回だけ */
-          var attempted = trainingCorrectCount + 1;
-          if (!thinkPlayed && trainingCorrectCount >= THINK_AFTER && (attempted - missedQs) / attempted < THINK_RATE) {
-            thinkPlayed = true;
-            playAudioCloned("yokukangaeteAudio");
-          }
-        }
+        if (key === card.key) { if (!qMistake) firstTry++; }
+        else { qMistake = true; }
       }
     } catch (e) {}
     return origPressKey.apply(this, arguments);
   };
 
-  /* ===== 鍵：ト音記号は はじめから。ヘ音記号は、ト音記号レベル1のクリアで ===== */
+  /* ===== 鍵：ト音記号は はじめから。ヘ音記号は ト音記号レベル1のクリアで ===== */
   function lockState() {
     var dbg = Storage.get("onpu_debug_unlocked_" + activeProfileIndex);
     var trebleLv1 = dbg || hasLevelCleared(activeProfileIndex, "treble", 1);
@@ -449,8 +620,7 @@
 
   window.updateLockVisuals = function () {
     var L = lockState();
-    var map = [["btnTreble", "lockTreble", L.treble], ["btnBass", "lockBass", L.bass], ["btnAll", "lockAll", L.all]];
-    map.forEach(function (m) {
+    [["btnTreble", "lockTreble", L.treble], ["btnBass", "lockBass", L.bass], ["btnAll", "lockAll", L.all]].forEach(function (m) {
       var b = document.getElementById(m[0]);
       var t = document.getElementById(m[1]);
       if (b) b.classList.toggle("locked", !m[2]);
@@ -467,8 +637,6 @@
   };
 
   /* ===== 画面まわりの書きかえ ===== */
-
-  /* 1人のときは名前を表示、2人以上のときだけ プレイヤー選択とスタートを出す */
   function updateSwitcherVisibility() {
     try {
       var wrap = document.querySelector(".profile-select-wrap");
@@ -501,7 +669,6 @@
     } catch (e) {}
   }
 
-  /* 名前の横の学年を出さない */
   var origInit = window.initProfiles;
   window.initProfiles = function () {
     origInit.apply(this, arguments);
@@ -513,16 +680,15 @@
       });
     } catch (e) {}
     updateSwitcherVisibility();
+    try { renderStars(activeProfileIndex); } catch (e) {}
   };
 
-  /* 「プレイヤーを ふやす」 → あいことばの画面 */
   window.openRegistration = function () {
     cancelable = true;
     codeInput.value = "";
     showCode("ふえる プレイヤーの あいことばを いれてね", false);
   };
 
-  /* プレイヤーを切りかえたとき、そのあいことばが まだ使えるか確かめる */
   var origSwitch = window.switchProfile;
   window.switchProfile = function (idx) {
     origSwitch(idx);
@@ -561,6 +727,7 @@
     delayedTimers = [];
     if (unlockTimer !== null) { clearTimeout(unlockTimer); unlockTimer = null; }
     seqEndAt = 0;
+    if (!celebrating) { queueScheduled = false; celQueue = []; }
   };
 
   var origUnlock = window.unlockResultButtons;
@@ -603,13 +770,17 @@
       var st = stampState(idx);
       var doB = getDoTestBest(idx);
       var cnt = getLegendCount(idx);
+      var sk = Storage.getNumber("onpu_perf_streak_" + idx, 0);
+      var achs = ACH_LINES.map(function (a) { return findAch(idx, a[0]) ? a[1].replace(/^\S+\s/, "") + " ✓" : ""; }).filter(function (x) { return x; }).join("、");
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:8px;margin-bottom:10px;background:#fff;text-align:left;">';
       html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(legendMark(idx) + n) + '</div>';
       html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
         '🔥 れんぞく ' + calculateStreak(idx) + '日<br>' +
         '🏅 スタンプ ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）<br>' +
+        '⭐ パーフェクト れんぞく ' + sk + '回<br>' +
         '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
-        '👑 100回れんぞく ' + (cnt > 0 ? cnt + '回' : '-') + '</div>';
+        '🎖 ' + (achs || 'まだ マスターは なし') + '<br>' +
+        '👑 レジェンド ' + (cnt > 0 ? cnt + '回' : '-') + '</div>';
       html += '<table class="compare-table"><thead><tr><th>レベル</th><th>ト音記号</th><th>ヘ音記号</th><th>全カード</th></tr></thead><tbody>';
       for (var lv = 1; lv <= 5; lv++) {
         html += '<tr><td>Lv.' + lv + '</td><td>' + bestAcc(idx, "treble", lv) + '</td><td>' + bestAcc(idx, "bass", lv) + '</td><td>' + bestAcc(idx, "all", lv) + '</td></tr>';
@@ -622,7 +793,6 @@
     document.getElementById("parentCompareTable").innerHTML = html;
   };
 
-  /* 「保護者専用ページ」を押すと、パスワードなしで成績が開く */
   window.showParentAuth = function () {
     document.getElementById("mgSelectSection").classList.add("hidden");
     document.getElementById("parentSection").classList.remove("hidden");
@@ -630,7 +800,6 @@
     document.getElementById("parentContentBox").classList.remove("hidden");
     renderParentCompareTable();
     try {
-      /* パスワード変更の欄をなくす */
       var box2 = document.getElementById("parentContentBox");
       var hr = box2.querySelector("hr");
       var cutting = false;
@@ -661,25 +830,50 @@
       document.getElementById("teacherStudentConfigList").innerHTML = html + '</tbody></table>';
     } catch (e) {}
 
-    /* 「表彰カード」タブは使わないので隠す */
     try {
       var t2 = document.getElementById("tTab2");
       if (t2) t2.style.display = "none";
     } catch (e) {}
 
-    /* スタンプのテスト用ボタン（先生ページの「管理・リセット」） */
     try {
       var tab3 = document.getElementById("teacherTab3");
       if (tab3 && !document.getElementById("fyStampTest")) {
         var d = document.createElement("div");
         d.id = "fyStampTest";
         d.innerHTML =
-          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 スタンプのテスト</div>' +
+          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🔍 コード かくにん（スクショの コードが 正しいか）</div>' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">教室ネーム・しゅるい・かいすう・ひづけ を 入れると、正しい コードが 出ます。</div>' +
+          '<input id="fcName" class="modal-input" placeholder="教室ネーム（スクショの なまえ）">' +
+          '<select id="fcType" class="modal-input">' +
+            '<option value="stamp">スタンプカード（まいすう）</option>' +
+            '<option value="treble">ト音記号マスター</option>' +
+            '<option value="bass">ヘ音記号マスター</option>' +
+            '<option value="master">ふよみマスター</option>' +
+            '<option value="legend">レジェンド（れんぞく かいすう）</option>' +
+          '</select>' +
+          '<input id="fcN" class="modal-input" type="number" placeholder="まいすう・かいすう（マスターは 空らん）">' +
+          '<input id="fcDate" class="modal-input" type="date">' +
+          '<button class="modal-btn" style="background:#5c6bc0;font-size:12px;padding:8px;" onclick="fyCheckCode()">コードを 出す</button>' +
+          '<div id="fcOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0 12px;color:#3949ab;"></div>' +
+          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 スタンプ・きろくの テスト</div>' +
           '<button class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;" onclick="fyStampSetFour()">🧪 いまのプレイヤーを スタンプ4こ・きょうもらえる 状態にする</button>' +
-          '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyStampReset()">🧪 いまのプレイヤーの スタンプとコードを リセット</button>';
+          '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyStampReset()">🧪 いまのプレイヤーの スタンプと たっせいの きろくを リセット</button>';
         tab3.insertBefore(d, tab3.firstChild);
+        var dt = document.getElementById("fcDate");
+        if (dt) dt.value = localDateStr(new Date());
       }
     } catch (e) {}
+  };
+
+  window.fyCheckCode = function () {
+    var name = cleanName(document.getElementById("fcName").value);
+    var type = document.getElementById("fcType").value;
+    var n = parseInt(document.getElementById("fcN").value, 10);
+    if (type === "treble" || type === "bass" || type === "master") n = 0;
+    if (isNaN(n)) n = 0;
+    var date = document.getElementById("fcDate").value;
+    if (!name || !date) { document.getElementById("fcOut").textContent = "なまえと ひづけを いれてね"; return; }
+    document.getElementById("fcOut").textContent = codeFor(name, type, n, date);
   };
 
   window.fyStampSetFour = function () {
@@ -687,15 +881,16 @@
     Storage.set("fy_stamps_" + i, STAMPS_PER_CARD - 1);
     Storage.set("fy_stamp_date_" + i, "");
     initProfiles();
-    alert("スタンプを " + (STAMPS_PER_CARD - 1) + "こ にしました。20問で100%をとると、カードが かんせいします。");
+    alert("スタンプを " + (STAMPS_PER_CARD - 1) + "こ にしました。20問で ぜんぶ いっぱつで せいかいすると、カードが かんせいします。");
   };
   window.fyStampReset = function () {
     var i = activeProfileIndex;
     Storage.set("fy_stamps_" + i, 0);
     Storage.set("fy_stamp_date_" + i, "");
     Storage.set("fy_cards_" + i, []);
+    Storage.set("fy_ach_" + i, []);
     initProfiles();
-    alert("スタンプとコードを リセットしました。");
+    alert("スタンプと たっせいの きろくを リセットしました。");
   };
 
   window.saveStudentByTeacher = function (slot) {
@@ -714,11 +909,17 @@
     alert("枠" + (slot + 1) + " を「" + s + "」にしました");
   };
 
-  /* ===== 同じカードが続けて出ないようにする（新しい問題になるたび、「間違えたか」をリセット） ===== */
+  /* ===== 問題を出す：同じカードが続けない／「よく考えて」は 次の問題が出たときに 1回だけ ===== */
   window.showRandomTrainingQuestion = function () {
     qMistake = false;
     if (trainingCorrectCount >= targetValue) { showResultScreen(); return; }
     document.getElementById("qCountBadge").textContent = "あと " + (targetValue - trainingCorrectCount) + " 問";
+
+    var n = trainingCorrectCount;
+    if (!thinkPlayed && n >= THINK_AFTER && (firstTry / n) < THINK_RATE) {
+      thinkPlayed = true;
+      try { playAudioCloned("yokukangaeteAudio"); } catch (e) {}
+    }
 
     var prev = (lastTrainingIndex >= 0 && currentCards[lastTrainingIndex]) ? currentCards[lastTrainingIndex].id : null;
     var pool = [];
@@ -747,13 +948,11 @@
     } catch (e) {}
   }, 800);
 
-  /* ===== ランキングボタンを隠す（画面のコードは残してあります） ===== */
   try {
     var rk = document.querySelector(".ranking-btn");
     if (rk) rk.style.display = "none";
   } catch (e) {}
 
-  /* ===== 管理ページの文字（🔒を📊に） ===== */
   try {
     var mgBtn = document.querySelector(".select-button.challenge");
     if (mgBtn) mgBtn.textContent = "📊 保護者・先生ページ";
@@ -761,7 +960,6 @@
     if (mgTitle) mgTitle.textContent = "📊 管理ページ";
   } catch (e) {}
 
-  /* ===== 音声のクレジット表記（トップ画面の一番下） ===== */
   try {
     var sel0 = document.getElementById("selectScreen");
     if (sel0 && !document.getElementById("fyCredit")) {
@@ -788,7 +986,6 @@
       for (var i = 0; i < n; i++) v.setUint8(44 + i, 128);
       return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
     }
-
     var silent = null;
     try {
       silent = document.createElement("audio");
@@ -814,9 +1011,7 @@
         }
       } catch (e) {}
     }
-    ["touchend", "click", "pointerup"].forEach(function (ev) {
-      document.addEventListener(ev, wake, true);
-    });
+    ["touchend", "click", "pointerup"].forEach(function (ev) { document.addEventListener(ev, wake, true); });
 
     var hint = document.createElement("div");
     hint.style.cssText = "position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10002;background:rgba(60,40,20,0.88);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:14px;display:none;text-align:center;max-width:90%;";
