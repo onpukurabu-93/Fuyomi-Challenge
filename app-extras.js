@@ -24,6 +24,8 @@
   var celQueue = [];
   var celebrating = false;
   var queueScheduled = false;
+  var heldVoice = null;            /* マスターの声：おいわい画面が出たときに鳴らす */
+  var suppressMasterVoice = false;
 
   function norm(s) {
     return String(s || "").normalize("NFKC").trim().toLowerCase().replace(/\s+/g, "");
@@ -349,7 +351,13 @@
   document.body.appendChild(ov);
   document.getElementById("fyOvClose").addEventListener("click", function () {
     ov.style.display = "none";
-    if (celebrating) nextCel();
+    if (celebrating) {
+      celebrating = false;
+      queueScheduled = false;
+      celQueue = [];
+      /* 結果画面のボタンが、まだ薄いままのときは、ここで色づける */
+      try { closeAwardModal(); } catch (e) {}
+    }
   });
 
   function openOverlay(html) {
@@ -361,28 +369,48 @@
     return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + CODE_DAYS + '日いないに、この がめんを スクショして<br>せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
   }
 
-  /* おいわい画面 */
-  function showCel(rec, viewOnly) {
+  /* おいわい画面：いくつ あっても、1つの がめんに ならべる（スクショが 1回で すむ） */
+  function showCel(recs, viewOnly) {
+    if (!Array.isArray(recs)) recs = [recs];
     celebrating = !viewOnly;
-    openOverlay(
+    var body =
       '<div style="font-size:40px;">🎉</div>' +
-      '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>' +
-      cardHtml(rec) + sendText()
-    );
-    if (!viewOnly) {
-      try {
-        if (rec.type === "master") playAudioCloned("hyoshoFanfare1Audio");
-        else if (rec.type === "legend") playAudioCloned("hyoshoFanfareAudio");
-      } catch (e) {}
+      '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>';
+    recs.forEach(function (r) { body += cardHtml(r); });
+    body += sendText();
+    openOverlay(body);
+    if (!viewOnly) playCelSounds(recs);
+  }
+
+  /* 画面が出た しゅんかんに、マスターの声 → （おわってから）ファンファーレ */
+  function playCelSounds(recs) {
+    var hasLegend = false, hasMaster = false;
+    recs.forEach(function (r) {
+      if (r.type === "legend") hasLegend = true;
+      if (r.type === "master") hasMaster = true;
+    });
+    var voice = heldVoice;
+    heldVoice = null;
+    var delay = 0;
+    if (voice) {
+      try { playAudioCloned(voice); } catch (e) {}
+      delay = (getSoundDurationMs(voice) || 2500) + 300;
+    }
+    var fan = hasLegend ? "hyoshoFanfareAudio" : (hasMaster ? "hyoshoFanfare1Audio" : null);
+    if (fan) {
+      if (delay > 0) setTimeout(function () { try { playAudioCloned(fan); } catch (e) {} }, delay);
+      else { try { playAudioCloned(fan); } catch (e) {} }
     }
   }
+
   function nextCel() {
     if (celQueue.length) {
-      showCel(celQueue.shift(), false);
+      var recs = celQueue;
+      celQueue = [];
+      showCel(recs, false);
     } else {
       celebrating = false;
       queueScheduled = false;
-      /* 結果画面のボタンが、まだ薄いままのときは、ここで色づける */
       try { closeAwardModal(); } catch (e) {}
     }
   }
@@ -394,7 +422,7 @@
       return;
     }
     var rec = findAch(activeProfileIndex, "master");
-    if (rec) showCel(rec, true);
+    if (rec) showCel([rec], true);
   };
 
   /* 「きろくと コード」の一覧 */
@@ -451,7 +479,13 @@
     if (b) b.addEventListener("click", window.showCardCodes);
   };
 
-  /* ===== パーフェクトの ほし ===== */
+  /* ===== ほし と 「ぜんぶ いっぱつ せいかい」の かず =====
+     ・ほし（連続）：20問を ぜんぶ いっぱつで せいかい → 1日に 1こまで。
+       ちがったとき（ほしを もらう前）は、いまの10この 中だけ 0に もどる。
+     ・ぜんぶ いっぱつ せいかいの かず：へらない。1日に なんど とっても ふえる。 */
+  function perfTotal(idx) { return Storage.getNumber("fy_perfect_total_" + idx, 0); }
+
+  /* トップ画面：数字で見せる */
   function renderStars(idx) {
     var host = document.getElementById("stampMiniBox");
     if (!host) return;
@@ -459,27 +493,70 @@
     if (!el) {
       el = document.createElement("div");
       el.id = "fyStars";
-      el.style.cssText = "margin-top:6px;padding:6px 4px;background:#fffbea;border-radius:10px;border:1px dashed #ffe082;text-align:center;";
+      el.style.cssText = "margin-top:6px;padding:6px 8px;background:#fffbea;border-radius:10px;border:1px dashed #ffe082;text-align:left;font-size:13px;color:#5b4636;line-height:1.8;";
       host.parentNode.insertBefore(el, host.nextSibling);
     }
     var s = Storage.getNumber("onpu_perf_streak_" + idx, 0);
     var small = s % 10, big = Math.floor((s % 100) / 10), hund = Math.floor(s / 100);
-    var bigRow = "", smallRow = "";
+    el.innerHTML =
+      '<div>⭐ ほし　おおきい <b style="color:#e65100;font-size:16px;">' + big + '</b> こ ・ ちいさい <b style="color:#e65100;font-size:16px;">' + small + '</b> こ</div>' +
+      '<div>✅ ぜんぶ いっぱつ せいかい <b style="color:#e65100;font-size:16px;">' + perfTotal(idx) + '</b> かい</div>' +
+      (hund > 0 ? '<div>👑 レジェンドまで すすんだ かいすう <b style="color:#7a4f00;font-size:16px;">' + hund + '</b></div>' : '');
+  }
+
+  /* 結果画面：ほしを ならべて、あたらしく ついた ほしを 目立たせる */
+  (function () {
+    try {
+      var st = document.createElement("style");
+      st.textContent =
+        "@keyframes fyPop{0%{transform:scale(.2);opacity:0}55%{transform:scale(2.1);opacity:1}100%{transform:scale(1.5);opacity:1}}" +
+        "@keyframes fyGlow{0%,100%{text-shadow:0 0 4px #ffd54f}50%{text-shadow:0 0 14px #ff9800,0 0 22px #ffd54f}}" +
+        ".fy-new{display:inline-block;animation:fyPop .7s ease-out forwards, fyGlow 1.2s ease-in-out .7s infinite;}";
+      document.head.appendChild(st);
+    } catch (e) {}
+  })();
+
+  function starRowHtml(lit, hi, size, onColor) {
+    var out = "";
     for (var i = 0; i < 10; i++) {
-      bigRow += '<span style="font-size:22px;line-height:1;color:' + (i < big ? '#ffb300' : '#dcdcdc') + ';">★</span>';
-      smallRow += '<span style="font-size:14px;line-height:1;color:' + (i < small ? '#ff9800' : '#dcdcdc') + ';">★</span>';
+      var on = i < lit;
+      var cls = (i === hi) ? ' class="fy-new"' : "";
+      out += '<span' + cls + ' style="font-size:' + size + 'px;line-height:1;color:' + (on ? onColor : "#dcdcdc") + ';margin:0 1px;">★</span>';
+    }
+    return out;
+  }
+
+  function renderResultStars(visible, s1, newStar, note) {
+    var el = document.getElementById("fyResStars");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "fyResStars";
+      el.style.cssText = "margin:6px 0 2px;padding:6px 8px;background:#fffbea;border-radius:12px;border:1px dashed #ffe082;text-align:center;";
+      var wrap = document.getElementById("resultButtonsWrap");
+      wrap.parentNode.insertBefore(el, wrap);
+    }
+    if (!visible) { el.style.display = "none"; return; }
+    el.style.display = "block";
+
+    var smallLit, bigLit, hiS = -1, hiB = -1;
+    if (newStar && s1 % 10 === 0) {
+      smallLit = 10;
+      bigLit = (s1 % 100 === 0) ? 10 : Math.floor((s1 % 100) / 10);
+      hiB = bigLit - 1;
+    } else {
+      smallLit = s1 % 10;
+      bigLit = Math.floor((s1 % 100) / 10);
+      if (newStar) hiS = smallLit - 1;
     }
     el.innerHTML =
-      '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">20もん ぜんぶ いっぱつで せいかい！で ほしが ひかるよ</div>' +
-      '<div style="letter-spacing:1px;">' + bigRow + '</div>' +
-      '<div style="letter-spacing:2px;margin-top:2px;">' + smallRow + '</div>' +
-      (hund > 0 ? '<div style="font-size:13px;font-weight:800;color:#7a4f00;margin-top:2px;">👑 × ' + hund + '</div>' : '');
+      '<div style="font-size:14px;font-weight:900;color:#e65100;min-height:20px;">' + (newStar ? "⭐ いま この ほしが ついたよ！" : esc(note || "")) + '</div>' +
+      '<div style="margin-top:4px;">' + starRowHtml(bigLit, hiB, 24, "#ffb300") + '</div>' +
+      '<div style="margin-top:4px;">' + starRowHtml(smallLit, hiS, 16, "#ff9800") + '</div>';
   }
 
   /* ===== 結果画面 =====
      「一発せいかいりつ」＝ 最初のタップで当てた問題の数 ÷ 問題の数。
-     10問は れんしゅう：連続・スタンプ・ほし には 数えない。
-     20問：全部いっぱつで 100% → ほし1こ。ちがうときは、いまの10この中だけ 0に もどる。 */
+     10問は れんしゅう：連続・スタンプ・ほし・かず には 数えない。 */
   var origShowResult = window.showResultScreen;
   window.showResultScreen = function () {
     var idx = activeProfileIndex;
@@ -492,18 +569,35 @@
 
     var kS = "onpu_perf_streak_" + idx, kM = "onpu_perf_max_" + idx;
     var kT = "onpu_perf_treble_" + idx, kB = "onpu_perf_bass_" + idx, kA = "onpu_perf_all_" + idx;
+    var kTot = "fy_perfect_total_" + idx, kSD = "fy_star_date_" + idx;
     var s0 = Storage.getNumber(kS, 0), m0 = Storage.getNumber(kM, 0);
     var cT = Storage.getNumber(kT, 0), cB = Storage.getNumber(kB, 0), cA = Storage.getNumber(kA, 0);
+    var today = localDateStr(new Date());
+    var starToday = (Storage.get(kSD, "") === today);
 
-    var s1 = s0, legendNow = false;
+    var s1 = s0, legendNow = false, newStar = false, noteMsg = "";
     if (is20) {
-      if (acc === 100) { s1 = s0 + 1; legendNow = (s1 % 100 === 0); }
-      else { s1 = Math.floor(s0 / 10) * 10; }
+      if (acc === 100) {
+        Storage.set(kTot, Storage.getNumber(kTot, 0) + 1);
+        if (starToday) { noteMsg = "きょうの ほしは もう ついてるよ。（ぜんぶ いっぱつは かぞえたよ）"; }
+        else { s1 = s0 + 1; newStar = true; legendNow = (s1 % 100 === 0); Storage.set(kSD, today); }
+      } else {
+        if (!starToday) {
+          s1 = Math.floor(s0 / 10) * 10;
+          if (s0 % 10 > 0) noteMsg = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
+        }
+      }
     }
+
+    /* マスターの声は、おいわい画面が出てから鳴らす（はじめて取るときだけ） */
+    heldVoice = null;
+    suppressMasterVoice = !!(acc === 100 && is20 && selectedLevel === 5 &&
+      ((selectedClef === "treble" && !findAch(idx, "treble")) || (selectedClef === "bass" && !findAch(idx, "bass"))));
 
     /* もとの結果画面に、「100回目」の判定を させない */
     Storage.set(kS, 0);
     origShowResult.apply(this, arguments);
+    suppressMasterVoice = false;
     Storage.set(kS, s1);
     Storage.set(kM, Math.max(m0, s1));
     if (!is20) { Storage.set(kT, cT); Storage.set(kB, cB); Storage.set(kA, cA); }
@@ -513,12 +607,9 @@
       var rs = document.getElementById("resultScore");
       if (rs) rs.textContent = "いっぱつ せいかいりつ " + acc + "%";
       var sm = document.getElementById("resultStreakMsg");
-      if (sm) {
-        if (is20 && acc === 100) sm.textContent = "⭐ ぜんぶ いっぱつ せいかい！ ほし " + (s1 % 10) + "こ";
-        else if (is20 && s0 % 10 > 0) sm.textContent = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
-        else sm.textContent = "";
-      }
+      if (sm) sm.textContent = "";
     } catch (e) {}
+    try { renderResultStars(is20, s1, newStar, noteMsg); } catch (e) {}
 
     var cel = [];
     var line = document.getElementById("fyStampMsg");
@@ -532,7 +623,7 @@
     line.textContent = "";
 
     if (acc === 100 && !is20) {
-      line.textContent = "20もんで ぜんぶ いっぱつで せいかいすると スタンプが もらえるよ！";
+      line.textContent = "20もんで ぜんぶ いっぱつで せいかいすると、ほしと スタンプが もらえるよ！";
     }
 
     if (acc === 100 && is20) {
@@ -556,7 +647,7 @@
         if (mt) cel.push(mt);
       }
 
-      /* レジェンド（100回ごと） */
+      /* レジェンド（100回ごと。ほしが ついた日だけ） */
       if (legendNow) {
         var lc0 = getLegendCount(idx);
         Storage.set("onpu_legend_count_" + idx, lc0 + 1);
@@ -709,6 +800,12 @@
     if (DELAYED[id] && Date.now() - lastSugoiAt < 800) {
       var sMs = getSoundDurationMs("sugoiAudio") || 1500;
       var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+      /* はじめて マスターを取るときは、声を とっておいて、おいわい画面が出たときに鳴らす */
+      if (suppressMasterVoice && id !== "audio6do") {
+        heldVoice = id;
+        seqEndAt = Date.now() + sMs + 200 + fMs + 400;
+        return;
+      }
       var delay = sMs + 200 + MASTER_DELAY_MS;
       var dur = getSoundDurationMs(id) || 2500;
       var fanfareEnd = sMs + 200 + fMs;
@@ -777,7 +874,8 @@
       html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
         '🔥 れんぞく ' + calculateStreak(idx) + '日<br>' +
         '🏅 スタンプ ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）<br>' +
-        '⭐ パーフェクト れんぞく ' + sk + '回<br>' +
+        '⭐ ほし れんぞく ' + sk + '回<br>' +
+        '✅ ぜんぶ いっぱつ せいかい ' + perfTotal(idx) + '回<br>' +
         '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
         '🎖 ' + (achs || 'まだ マスターは なし') + '<br>' +
         '👑 レジェンド ' + (cnt > 0 ? cnt + '回' : '-') + '</div>';
@@ -885,12 +983,27 @@
   };
   window.fyStampReset = function () {
     var i = activeProfileIndex;
+    Storage.set("fy_star_date_" + i, "");
+    Storage.set("fy_perfect_total_" + i, 0);
     Storage.set("fy_stamps_" + i, 0);
     Storage.set("fy_stamp_date_" + i, "");
     Storage.set("fy_cards_" + i, []);
     Storage.set("fy_ach_" + i, []);
     initProfiles();
     alert("スタンプと たっせいの きろくを リセットしました。");
+  };
+
+  /* 先生ページの「連続を99回にする」「リセット」でも、ほしの日付を もどす（テストが できるように） */
+  var o99 = window.setStreak99ForTest;
+  window.setStreak99ForTest = function () {
+    Storage.set("fy_star_date_" + activeProfileIndex, "");
+    return o99.apply(this, arguments);
+  };
+  var oRL = window.resetLegendForTest;
+  window.resetLegendForTest = function () {
+    Storage.set("fy_star_date_" + activeProfileIndex, "");
+    Storage.set("fy_perfect_total_" + activeProfileIndex, 0);
+    return oRL.apply(this, arguments);
   };
 
   window.saveStudentByTeacher = function (slot) {
