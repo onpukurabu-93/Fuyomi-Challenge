@@ -3,8 +3,6 @@
   var MASTER_DELAY_MS = 4000;
   /* ★ コードが、一覧に見えている日数 */
   var CODE_DAYS = 3;
-  /* ★ 1まいのスタンプの数 */
-  var STAMPS_PER_CARD = 5;
   /* ★ 「よく考えて」の声：何問おわってから出すか、一発せいかいりつの下限（0.7 = 70%） */
   var THINK_AFTER = 5;
   var THINK_RATE = 0.7;
@@ -269,17 +267,6 @@
     return "おめでとう！";
   }
 
-  function stampTotal(idx) { return Storage.getNumber("fy_stamps_" + idx, 0); }
-  function stampState(idx) {
-    var t = stampTotal(idx);
-    return { total: t, cardNo: Math.floor(t / STAMPS_PER_CARD) + 1, inCard: t % STAMPS_PER_CARD };
-  }
-  function getCards(idx) {
-    var a = Storage.get("fy_cards_" + idx, []);
-    if (!Array.isArray(a)) return [];
-    /* むかしの きろく（しゅるいが ないもの）は スタンプカードとして あつかう */
-    return a.map(function (r) { if (!r.type) r.type = "stamp"; return r; });
-  }
   function getAch(idx) {
     var a = Storage.get("fy_ach_" + idx, []);
     return Array.isArray(a) ? a : [];
@@ -303,23 +290,6 @@
     a.push(rec);
     Storage.set("fy_ach_" + idx, a);
     return rec;
-  }
-
-  /* スタンプを1こ ふやす（1日1こまで）。しゅうりょう: "none"=もうもらった / "stamp" / "card" */
-  function awardStamp(idx) {
-    var today = localDateStr(new Date());
-    if (Storage.get("fy_stamp_date_" + idx, "") === today) return { status: "none" };
-    Storage.set("fy_stamp_date_" + idx, today);
-    var total = stampTotal(idx) + 1;
-    Storage.set("fy_stamps_" + idx, total);
-    if (total % STAMPS_PER_CARD === 0) {
-      var rec = makeRec(idx, "stamp", total / STAMPS_PER_CARD);
-      var list = getCards(idx);
-      list.push(rec);
-      Storage.set("fy_cards_" + idx, list);
-      return { status: "card", rec: rec };
-    }
-    return { status: "stamp" };
   }
 
   function dmd(rec) {
@@ -428,13 +398,15 @@
   /* 「きろくと コード」の一覧 */
   var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"]];
 
+  function runNow(idx) { return Storage.getNumber("fy_run_now_" + idx, 0); }
+  function runBest(idx) { return Storage.getNumber("fy_run_best_" + idx, 0); }
+  function perfTotal(idx) { return Storage.getNumber("fy_perfect_total_" + idx, 0); }
+
   window.showCardCodes = function () {
     var idx = activeProfileIndex;
-    var st = stampState(idx);
     var now = Date.now();
     var limit = CODE_DAYS * 86400000;
-    var all = getCards(idx).concat(getAch(idx));
-    all.sort(function (a, b) { return b.t - a.t; });
+    var all = getAch(idx).slice().sort(function (a, b) { return b.t - a.t; });
     var visible = all.filter(function (r) { return now - r.t < limit; });
 
     var html = '<div style="font-size:18px;font-weight:900;margin-bottom:8px;">🎖 きろくと コード</div>';
@@ -445,9 +417,14 @@
       var r = findAch(idx, a[0]);
       lines += '<div style="font-size:14px;margin:3px 0;' + (r ? 'font-weight:800;color:#5b4636;' : 'color:#bbb;') + '">' + a[1] + (r ? ' ✓ ' + dmd(r) : ' …まだ') + '</div>';
     });
-    var lc = getLegendCount(idx);
-    lines += '<div style="font-size:14px;margin:3px 0;' + (lc > 0 ? 'font-weight:800;color:#5b4636;' : 'color:#bbb;') + '">👑 ふよみレジェンド ' + (lc > 0 ? '✓ ' + lc + '回' : '…まだ') + '</div>';
     html += '<div style="background:#fdf8ed;border-radius:12px;padding:8px;margin-bottom:10px;">' + lines + '</div>';
+
+    /* いっぱつ せいかい の きろく（20もん） */
+    html += '<div style="background:#fffbea;border:1px dashed #ffe082;border-radius:12px;padding:8px;margin-bottom:10px;text-align:left;font-size:13px;line-height:1.8;color:#5b4636;">' +
+      '<div style="font-weight:800;">✅ 20もん ぜんぶ いっぱつ せいかい</div>' +
+      '<div>れんぞく　いま <b style="color:#e65100;font-size:16px;">' + runNow(idx) + '</b> かい ／ さいこう <b style="color:#e65100;font-size:16px;">' + runBest(idx) + '</b> かい</div>' +
+      '<div>ぜんぶで <b style="color:#e65100;font-size:16px;">' + perfTotal(idx) + '</b> かい</div>' +
+      '</div>';
 
     if (visible.length) {
       visible.forEach(function (r) { html += cardHtml(r); });
@@ -455,108 +432,23 @@
     } else {
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
-    html += '<div style="font-size:13px;font-weight:800;color:#ff5722;margin-bottom:8px;">スタンプ いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>';
     openOverlay(html);
   };
 
-  /* トップ画面のスタンプ表示 */
+  /* トップ画面：スタンプの表示は やめて、「きろくと コード」のボタンだけ */
   window.renderStampMini = function (idx) {
     var container = document.getElementById("stampMiniBox");
     if (!container) return;
-    var st = stampState(idx);
-    container.style.flexDirection = "column";
-    container.style.alignItems = "center";
-    var dots = "";
-    for (var i = 1; i <= STAMPS_PER_CARD; i++) {
-      var on = i <= st.inCard;
-      dots += '<div class="stamp-dot' + (on ? ' active' : '') + '" style="width:26px;height:26px;font-size:13px;">' + (on ? "💮" : i) + '</div>';
-    }
-    container.innerHTML =
-      '<div style="font-size:13px;font-weight:800;color:#5b4636;margin-bottom:4px;">🏅 いま ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）</div>' +
-      '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:6px;">' + dots + '</div>' +
-      '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:12px;font-weight:800;border-radius:10px;padding:6px 12px;cursor:pointer;">🎖 きろくと コード</button>';
+    container.style.cssText = "display:flex;justify-content:center;margin-top:4px;padding:2px;background:transparent;border:none;";
+    container.innerHTML = '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:13px;font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;">🎖 きろくと コード</button>';
     var b = document.getElementById("fyCodeBtn");
     if (b) b.addEventListener("click", window.showCardCodes);
   };
 
-  /* ===== ほし と 「ぜんぶ いっぱつ せいかい」の かず =====
-     ・ほし（連続）：20問を ぜんぶ いっぱつで せいかい → 1日に 1こまで。
-       ちがったとき（ほしを もらう前）は、いまの10この 中だけ 0に もどる。
-     ・ぜんぶ いっぱつ せいかいの かず：へらない。1日に なんど とっても ふえる。 */
-  function perfTotal(idx) { return Storage.getNumber("fy_perfect_total_" + idx, 0); }
-
-  /* トップ画面：数字で見せる */
-  function renderStars(idx) {
-    var host = document.getElementById("stampMiniBox");
-    if (!host) return;
-    var el = document.getElementById("fyStars");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "fyStars";
-      el.style.cssText = "margin-top:6px;padding:6px 8px;background:#fffbea;border-radius:10px;border:1px dashed #ffe082;text-align:left;font-size:13px;color:#5b4636;line-height:1.8;";
-      host.parentNode.insertBefore(el, host.nextSibling);
-    }
-    var s = Storage.getNumber("onpu_perf_streak_" + idx, 0);
-    var small = s % 10, big = Math.floor((s % 100) / 10), hund = Math.floor(s / 100);
-    el.innerHTML =
-      '<div>⭐ ほし　おおきい <b style="color:#e65100;font-size:16px;">' + big + '</b> こ ・ ちいさい <b style="color:#e65100;font-size:16px;">' + small + '</b> こ</div>' +
-      '<div>✅ ぜんぶ いっぱつ せいかい <b style="color:#e65100;font-size:16px;">' + perfTotal(idx) + '</b> かい</div>' +
-      (hund > 0 ? '<div>👑 レジェンドまで すすんだ かいすう <b style="color:#7a4f00;font-size:16px;">' + hund + '</b></div>' : '');
-  }
-
-  /* 結果画面：ほしを ならべて、あたらしく ついた ほしを 目立たせる */
-  (function () {
-    try {
-      var st = document.createElement("style");
-      st.textContent =
-        "@keyframes fyPop{0%{transform:scale(.2);opacity:0}55%{transform:scale(2.1);opacity:1}100%{transform:scale(1.5);opacity:1}}" +
-        "@keyframes fyGlow{0%,100%{text-shadow:0 0 4px #ffd54f}50%{text-shadow:0 0 14px #ff9800,0 0 22px #ffd54f}}" +
-        ".fy-new{display:inline-block;animation:fyPop .7s ease-out forwards, fyGlow 1.2s ease-in-out .7s infinite;}";
-      document.head.appendChild(st);
-    } catch (e) {}
-  })();
-
-  function starRowHtml(lit, hi, size, onColor) {
-    var out = "";
-    for (var i = 0; i < 10; i++) {
-      var on = i < lit;
-      var cls = (i === hi) ? ' class="fy-new"' : "";
-      out += '<span' + cls + ' style="font-size:' + size + 'px;line-height:1;color:' + (on ? onColor : "#dcdcdc") + ';margin:0 1px;">★</span>';
-    }
-    return out;
-  }
-
-  function renderResultStars(visible, s1, newStar, note) {
-    var el = document.getElementById("fyResStars");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "fyResStars";
-      el.style.cssText = "margin:6px 0 2px;padding:6px 8px;background:#fffbea;border-radius:12px;border:1px dashed #ffe082;text-align:center;";
-      var wrap = document.getElementById("resultButtonsWrap");
-      wrap.parentNode.insertBefore(el, wrap);
-    }
-    if (!visible) { el.style.display = "none"; return; }
-    el.style.display = "block";
-
-    var smallLit, bigLit, hiS = -1, hiB = -1;
-    if (newStar && s1 % 10 === 0) {
-      smallLit = 10;
-      bigLit = (s1 % 100 === 0) ? 10 : Math.floor((s1 % 100) / 10);
-      hiB = bigLit - 1;
-    } else {
-      smallLit = s1 % 10;
-      bigLit = Math.floor((s1 % 100) / 10);
-      if (newStar) hiS = smallLit - 1;
-    }
-    el.innerHTML =
-      '<div style="font-size:14px;font-weight:900;color:#e65100;min-height:20px;">' + (newStar ? "⭐ いま この ほしが ついたよ！" : esc(note || "")) + '</div>' +
-      '<div style="margin-top:4px;">' + starRowHtml(bigLit, hiB, 24, "#ffb300") + '</div>' +
-      '<div style="margin-top:4px;">' + starRowHtml(smallLit, hiS, 16, "#ff9800") + '</div>';
-  }
-
   /* ===== 結果画面 =====
      「一発せいかいりつ」＝ 最初のタップで当てた問題の数 ÷ 問題の数。
-     10問は れんしゅう：連続・スタンプ・ほし・かず には 数えない。 */
+     10問は れんしゅう（れんぞくには 数えない）。
+     20問を ぜんぶ いっぱつで せいかい → れんぞくが ふえる。ちがったら 0に もどる（さいこうは のこる）。 */
   var origShowResult = window.showResultScreen;
   window.showResultScreen = function () {
     var idx = activeProfileIndex;
@@ -569,24 +461,21 @@
 
     var kS = "onpu_perf_streak_" + idx, kM = "onpu_perf_max_" + idx;
     var kT = "onpu_perf_treble_" + idx, kB = "onpu_perf_bass_" + idx, kA = "onpu_perf_all_" + idx;
-    var kTot = "fy_perfect_total_" + idx, kSD = "fy_star_date_" + idx;
-    var s0 = Storage.getNumber(kS, 0), m0 = Storage.getNumber(kM, 0);
+    var kRun = "fy_run_now_" + idx, kBest = "fy_run_best_" + idx, kTot = "fy_perfect_total_" + idx;
+    var m0 = Storage.getNumber(kM, 0);
     var cT = Storage.getNumber(kT, 0), cB = Storage.getNumber(kB, 0), cA = Storage.getNumber(kA, 0);
-    var today = localDateStr(new Date());
-    var starToday = (Storage.get(kSD, "") === today);
+    var run0 = Storage.getNumber(kRun, 0);
 
-    var s1 = s0, legendNow = false, newStar = false, noteMsg = "";
+    var run1 = run0;
     if (is20) {
       if (acc === 100) {
+        run1 = run0 + 1;
         Storage.set(kTot, Storage.getNumber(kTot, 0) + 1);
-        if (starToday) { noteMsg = "きょうの ほしは もう ついてるよ。（ぜんぶ いっぱつは かぞえたよ）"; }
-        else { s1 = s0 + 1; newStar = true; legendNow = (s1 % 100 === 0); Storage.set(kSD, today); }
+        if (run1 > runBest(idx)) Storage.set(kBest, run1);
       } else {
-        if (!starToday) {
-          s1 = Math.floor(s0 / 10) * 10;
-          if (s0 % 10 > 0) noteMsg = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
-        }
+        run1 = 0;
       }
+      Storage.set(kRun, run1);
     }
 
     /* マスターの声は、おいわい画面が出てから鳴らす（はじめて取るときだけ） */
@@ -594,66 +483,35 @@
     suppressMasterVoice = !!(acc === 100 && is20 && selectedLevel === 5 &&
       ((selectedClef === "treble" && !findAch(idx, "treble")) || (selectedClef === "bass" && !findAch(idx, "bass"))));
 
-    /* もとの結果画面に、「100回目」の判定を させない */
+    /* もとの結果画面の「れんぞく」「100回目」の判定は つかわない */
     Storage.set(kS, 0);
     origShowResult.apply(this, arguments);
     suppressMasterVoice = false;
-    Storage.set(kS, s1);
-    Storage.set(kM, Math.max(m0, s1));
-    if (!is20) { Storage.set(kT, cT); Storage.set(kB, cB); Storage.set(kA, cA); }
+    Storage.set(kS, 0);
+    Storage.set(kM, m0);
+    Storage.set(kT, cT); Storage.set(kB, cB); Storage.set(kA, cA);
 
     /* 表示 */
     try {
       var rs = document.getElementById("resultScore");
       if (rs) rs.textContent = "いっぱつ せいかいりつ " + acc + "%";
       var sm = document.getElementById("resultStreakMsg");
-      if (sm) sm.textContent = "";
+      if (sm) {
+        if (is20 && acc === 100) sm.textContent = "🔥 ぜんぶ いっぱつ せいかい！ れんぞく " + run1 + " かい";
+        else if (is20 && run0 > 0) sm.textContent = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
+        else if (!is20 && acc === 100) sm.textContent = "20もんにも ちょうせんしてみよう！";
+        else sm.textContent = "";
+      }
     } catch (e) {}
-    try { renderResultStars(is20, s1, newStar, noteMsg); } catch (e) {}
 
+    /* おいわい：マスター（レベル5を 20問 いっぱつで 100%）。はじめての 1かいだけ */
     var cel = [];
-    var line = document.getElementById("fyStampMsg");
-    if (!line) {
-      line = document.createElement("div");
-      line.id = "fyStampMsg";
-      line.style.cssText = "font-size:14px;font-weight:800;color:#e65100;margin-top:4px;";
-      var anchor = document.getElementById("resultStreakMsg");
-      anchor.parentNode.insertBefore(line, anchor.nextSibling);
-    }
-    line.textContent = "";
-
-    if (acc === 100 && !is20) {
-      line.textContent = "20もんで ぜんぶ いっぱつで せいかいすると、ほしと スタンプが もらえるよ！";
-    }
-
-    if (acc === 100 && is20) {
-      var r = awardStamp(idx);
-      var st = stampState(idx);
-      if (r.status === "none") {
-        line.textContent = "🏅 きょうの スタンプは もう もらったよ";
-      } else if (r.status === "stamp") {
-        line.textContent = "🏅 スタンプ ゲット！ いま " + st.cardNo + "まいめ（" + st.inCard + "こ）";
-      } else {
-        line.textContent = "🏅 スタンプが " + STAMPS_PER_CARD + "こ そろったよ！";
-        cel.push(r.rec);
-      }
-
-      /* マスター（レベル5を 20問 いっぱつで 100%） */
-      if (selectedLevel === 5) {
-        var mt = null;
-        if (selectedClef === "treble") mt = addAch(idx, "treble", 0);
-        else if (selectedClef === "bass") mt = addAch(idx, "bass", 0);
-        else if (selectedClef === "all") mt = addAch(idx, "master", 0);
-        if (mt) cel.push(mt);
-      }
-
-      /* レジェンド（100回ごと。ほしが ついた日だけ） */
-      if (legendNow) {
-        var lc0 = getLegendCount(idx);
-        Storage.set("onpu_legend_count_" + idx, lc0 + 1);
-        Storage.set("onpu_legend_" + idx, true);
-        cel.push(addAch(idx, "legend", s1));
-      }
+    if (acc === 100 && is20 && selectedLevel === 5) {
+      var mt = null;
+      if (selectedClef === "treble") mt = addAch(idx, "treble", 0);
+      else if (selectedClef === "bass") mt = addAch(idx, "bass", 0);
+      else if (selectedClef === "all") mt = addAch(idx, "master", 0);
+      if (mt) cel.push(mt);
     }
 
     try { initProfiles(); } catch (e) {}
@@ -771,7 +629,13 @@
       });
     } catch (e) {}
     updateSwitcherVisibility();
-    try { renderStars(activeProfileIndex); } catch (e) {}
+    try {
+      /* トップ画面の「れんぞく」は かくす（きろくは「きろくと コード」で見る） */
+      var items = document.querySelectorAll(".my-stats-summary .my-stat-item");
+      if (items[1]) items[1].style.display = "none";
+      var fs = document.getElementById("fyStars");
+      if (fs) fs.style.display = "none";
+    } catch (e) {}
   };
 
   window.openRegistration = function () {
@@ -864,21 +728,15 @@
     profiles.forEach(function (n, idx) {
       if (!isRegistered(idx)) return;
       any = true;
-      var st = stampState(idx);
       var doB = getDoTestBest(idx);
-      var cnt = getLegendCount(idx);
-      var sk = Storage.getNumber("onpu_perf_streak_" + idx, 0);
       var achs = ACH_LINES.map(function (a) { return findAch(idx, a[0]) ? a[1].replace(/^\S+\s/, "") + " ✓" : ""; }).filter(function (x) { return x; }).join("、");
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:8px;margin-bottom:10px;background:#fff;text-align:left;">';
-      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(legendMark(idx) + n) + '</div>';
+      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(n) + '</div>';
       html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
-        '🔥 れんぞく ' + calculateStreak(idx) + '日<br>' +
-        '🏅 スタンプ ' + st.cardNo + 'まいめ（' + st.inCard + 'こ）<br>' +
-        '⭐ ほし れんぞく ' + sk + '回<br>' +
-        '✅ ぜんぶ いっぱつ せいかい ' + perfTotal(idx) + '回<br>' +
+        '🔥 れんしゅうした日の れんぞく ' + calculateStreak(idx) + '日<br>' +
+        '✅ 20もん ぜんぶ いっぱつ せいかい ' + perfTotal(idx) + '回（れんぞく いま ' + runNow(idx) + ' ／ さいこう ' + runBest(idx) + '）<br>' +
         '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
-        '🎖 ' + (achs || 'まだ マスターは なし') + '<br>' +
-        '👑 レジェンド ' + (cnt > 0 ? cnt + '回' : '-') + '</div>';
+        '🎖 ' + (achs || 'まだ マスターは なし') + '</div>';
       html += '<table class="compare-table"><thead><tr><th>レベル</th><th>ト音記号</th><th>ヘ音記号</th><th>全カード</th></tr></thead><tbody>';
       for (var lv = 1; lv <= 5; lv++) {
         html += '<tr><td>Lv.' + lv + '</td><td>' + bestAcc(idx, "treble", lv) + '</td><td>' + bestAcc(idx, "bass", lv) + '</td><td>' + bestAcc(idx, "all", lv) + '</td></tr>';
@@ -931,6 +789,17 @@
     try {
       var t2 = document.getElementById("tTab2");
       if (t2) t2.style.display = "none";
+      /* むかしの 100回目の テスト用ボタンは つかわない */
+      var tab3b = document.getElementById("teacherTab3");
+      if (tab3b) {
+        Array.prototype.forEach.call(tab3b.querySelectorAll("button"), function (bt) {
+          var oc = bt.getAttribute("onclick") || "";
+          if (oc.indexOf("setStreak99ForTest") !== -1 || oc.indexOf("resetLegendForTest") !== -1) bt.style.display = "none";
+        });
+        Array.prototype.forEach.call(tab3b.querySelectorAll("div"), function (dv) {
+          if (dv.children.length === 0 && dv.textContent.indexOf("100回目のテスト") !== -1) dv.style.display = "none";
+        });
+      }
     } catch (e) {}
 
     try {
@@ -940,22 +809,18 @@
         d.id = "fyStampTest";
         d.innerHTML =
           '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🔍 コード かくにん（スクショの コードが 正しいか）</div>' +
-          '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">教室ネーム・しゅるい・かいすう・ひづけ を 入れると、正しい コードが 出ます。</div>' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">教室ネーム・しゅるい・ひづけ を 入れると、正しい コードが 出ます。</div>' +
           '<input id="fcName" class="modal-input" placeholder="教室ネーム（スクショの なまえ）">' +
           '<select id="fcType" class="modal-input">' +
-            '<option value="stamp">スタンプカード（まいすう）</option>' +
             '<option value="treble">ト音記号マスター</option>' +
             '<option value="bass">ヘ音記号マスター</option>' +
             '<option value="master">ふよみマスター</option>' +
-            '<option value="legend">レジェンド（れんぞく かいすう）</option>' +
           '</select>' +
-          '<input id="fcN" class="modal-input" type="number" placeholder="まいすう・かいすう（マスターは 空らん）">' +
           '<input id="fcDate" class="modal-input" type="date">' +
           '<button class="modal-btn" style="background:#5c6bc0;font-size:12px;padding:8px;" onclick="fyCheckCode()">コードを 出す</button>' +
           '<div id="fcOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0 12px;color:#3949ab;"></div>' +
-          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 スタンプ・きろくの テスト</div>' +
-          '<button class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;" onclick="fyStampSetFour()">🧪 いまのプレイヤーを スタンプ4こ・きょうもらえる 状態にする</button>' +
-          '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyStampReset()">🧪 いまのプレイヤーの スタンプと たっせいの きろくを リセット</button>';
+          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 たっせいの きろくの テスト</div>' +
+          '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyAchReset()">🧪 いまのプレイヤーの たっせいの きろくと れんぞくを リセット</button>';
         tab3.insertBefore(d, tab3.firstChild);
         var dt = document.getElementById("fcDate");
         if (dt) dt.value = localDateStr(new Date());
@@ -966,44 +831,19 @@
   window.fyCheckCode = function () {
     var name = cleanName(document.getElementById("fcName").value);
     var type = document.getElementById("fcType").value;
-    var n = parseInt(document.getElementById("fcN").value, 10);
-    if (type === "treble" || type === "bass" || type === "master") n = 0;
-    if (isNaN(n)) n = 0;
     var date = document.getElementById("fcDate").value;
     if (!name || !date) { document.getElementById("fcOut").textContent = "なまえと ひづけを いれてね"; return; }
-    document.getElementById("fcOut").textContent = codeFor(name, type, n, date);
+    document.getElementById("fcOut").textContent = codeFor(name, type, 0, date);
   };
 
-  window.fyStampSetFour = function () {
+  window.fyAchReset = function () {
     var i = activeProfileIndex;
-    Storage.set("fy_stamps_" + i, STAMPS_PER_CARD - 1);
-    Storage.set("fy_stamp_date_" + i, "");
-    initProfiles();
-    alert("スタンプを " + (STAMPS_PER_CARD - 1) + "こ にしました。20問で ぜんぶ いっぱつで せいかいすると、カードが かんせいします。");
-  };
-  window.fyStampReset = function () {
-    var i = activeProfileIndex;
-    Storage.set("fy_star_date_" + i, "");
-    Storage.set("fy_perfect_total_" + i, 0);
-    Storage.set("fy_stamps_" + i, 0);
-    Storage.set("fy_stamp_date_" + i, "");
-    Storage.set("fy_cards_" + i, []);
     Storage.set("fy_ach_" + i, []);
+    Storage.set("fy_run_now_" + i, 0);
+    Storage.set("fy_run_best_" + i, 0);
+    Storage.set("fy_perfect_total_" + i, 0);
     initProfiles();
-    alert("スタンプと たっせいの きろくを リセットしました。");
-  };
-
-  /* 先生ページの「連続を99回にする」「リセット」でも、ほしの日付を もどす（テストが できるように） */
-  var o99 = window.setStreak99ForTest;
-  window.setStreak99ForTest = function () {
-    Storage.set("fy_star_date_" + activeProfileIndex, "");
-    return o99.apply(this, arguments);
-  };
-  var oRL = window.resetLegendForTest;
-  window.resetLegendForTest = function () {
-    Storage.set("fy_star_date_" + activeProfileIndex, "");
-    Storage.set("fy_perfect_total_" + activeProfileIndex, 0);
-    return oRL.apply(this, arguments);
+    alert("たっせいの きろくと れんぞくを リセットしました。");
   };
 
   window.saveStudentByTeacher = function (slot) {
