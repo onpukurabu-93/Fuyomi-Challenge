@@ -497,10 +497,28 @@
       if (rs) rs.textContent = "いっぱつ せいかいりつ " + acc + "%";
       var sm = document.getElementById("resultStreakMsg");
       if (sm) {
-        if (is20 && acc === 100) sm.textContent = "🔥 ぜんぶ いっぱつ せいかい！ れんぞく " + run1 + " かい";
+        if (is20 && acc === 100) sm.textContent = "🔥 20もん ぜんぶ いっぱつ せいかい！ " + perfTotal(idx) + " かい";
         else if (is20 && run0 > 0) sm.textContent = "つぎは ぜんぶ いっぱつで せいかいを めざそう！";
         else if (!is20 && acc === 100) sm.textContent = "20もんにも ちょうせんしてみよう！";
         else sm.textContent = "";
+      }
+    } catch (e) {}
+
+    /* 10問は「れんしゅう」、20問は「きろくに なる」：色で ちがいを 見せる */
+    try {
+      var mb = document.getElementById("fyModeBanner");
+      if (!mb) {
+        mb = document.createElement("div");
+        mb.id = "fyModeBanner";
+        var ttl = document.getElementById("resultTitleBig");
+        ttl.parentNode.insertBefore(mb, ttl);
+      }
+      if (is20) {
+        mb.textContent = "⭐ 20もん チャレンジ（きろくに なるよ）";
+        mb.style.cssText = "font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;margin-bottom:8px;background:#fff3cd;color:#8a5a00;border:2px solid #f5a300;";
+      } else {
+        mb.textContent = "れんしゅう 10もん";
+        mb.style.cssText = "font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;margin-bottom:8px;background:#e3f2fd;color:#1565c0;border:2px solid #64b5f6;";
       }
     } catch (e) {}
 
@@ -638,6 +656,12 @@
     } catch (e) {}
   };
 
+  /* プレイヤーを えらんだ しゅんかんに きりかえる（スタートを おし わすれても、えらんだ人で あそべるように） */
+  try {
+    var psel = document.getElementById("profileSelect");
+    if (psel) psel.addEventListener("change", function () { try { confirmProfileSelect(); } catch (e) {} });
+  } catch (e) {}
+
   window.openRegistration = function () {
     cancelable = true;
     codeInput.value = "";
@@ -733,19 +757,19 @@
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:8px;margin-bottom:10px;background:#fff;text-align:left;">';
       html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(n) + '</div>';
       html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
-        '🔥 れんしゅうした日の れんぞく ' + calculateStreak(idx) + '日<br>' +
-        '✅ 20もん ぜんぶ いっぱつ せいかい ' + perfTotal(idx) + '回（れんぞく いま ' + runNow(idx) + ' ／ さいこう ' + runBest(idx) + '）<br>' +
+        '🔥 練習した日の連続 ' + calculateStreak(idx) + '日<br>' +
+        '✅ 20問 全部一発正解 ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）<br>' +
         '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
-        '🎖 ' + (achs || 'まだ マスターは なし') + '</div>';
+        '🎖 マスター：' + (achs || 'まだありません') + '</div>';
+      html += '<div style="font-size:10px;color:#806c5a;margin:2px 0;">※下の表は、20問トレーニングの一発正解率の最高です</div>';
       html += '<table class="compare-table"><thead><tr><th>レベル</th><th>ト音記号</th><th>ヘ音記号</th><th>全カード</th></tr></thead><tbody>';
       for (var lv = 1; lv <= 5; lv++) {
         html += '<tr><td>Lv.' + lv + '</td><td>' + bestAcc(idx, "treble", lv) + '</td><td>' + bestAcc(idx, "bass", lv) + '</td><td>' + bestAcc(idx, "all", lv) + '</td></tr>';
       }
       html += '</tbody></table>';
-      html += '<div style="font-size:10px;color:#806c5a;margin-top:2px;">※20問テストの 一発せいかいりつの 最高です</div>';
       html += '</div>';
     });
-    if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ だれも とうろくしていません</div>';
+    if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
     document.getElementById("parentCompareTable").innerHTML = html;
   };
 
@@ -866,7 +890,9 @@
   window.showRandomTrainingQuestion = function () {
     qMistake = false;
     if (trainingCorrectCount >= targetValue) { showResultScreen(); return; }
-    document.getElementById("qCountBadge").textContent = "あと " + (targetValue - trainingCorrectCount) + " 問";
+    var badge = document.getElementById("qCountBadge");
+    badge.textContent = "あと " + (targetValue - trainingCorrectCount) + " 問";
+    badge.style.background = (targetValue >= 20) ? "#f5a300" : "#42a5f5";
 
     var n = trainingCorrectCount;
     if (!thinkPlayed && n >= THINK_AFTER && (firstTry / n) < THINK_RATE) {
