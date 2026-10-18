@@ -478,6 +478,15 @@
       Storage.set(kRun, run1);
     }
 
+    /* けっかを 日づけつきで きろく（保護者ページの「今週の頑張り」用） */
+    try {
+      var log = Storage.get("fy_log_" + idx, []);
+      if (!Array.isArray(log)) log = [];
+      log.push({ t: Date.now(), c: selectedClef, l: selectedLevel, n: N, a: acc });
+      if (log.length > 300) log = log.slice(log.length - 300);
+      Storage.set("fy_log_" + idx, log);
+    } catch (e) {}
+
     /* マスターの声は、おいわい画面が出てから鳴らす（はじめて取るときだけ） */
     heldVoice = null;
     suppressMasterVoice = !!(acc === 100 && is20 && selectedLevel === 5 &&
@@ -534,6 +543,13 @@
 
     try { initProfiles(); } catch (e) {}
 
+    /* 10問かんぺき → 「つぎは きろくに のこる 20問に チャレンジ！」の声（ファンファーレが おわってから） */
+    if (acc === 100 && !is20) {
+      var s2 = getSoundDurationMs("sugoiAudio") || 1500;
+      var f2 = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+      delayedTimers.push(setTimeout(function () { try { playAudioCloned("challenge20Audio"); } catch (e) {} }, s2 + 200 + f2 + 500));
+    }
+
     if (cel.length) {
       celQueue = cel;
       queueScheduled = true;
@@ -554,6 +570,15 @@
     yk.src = "yokukangaete.mp3";
     document.body.appendChild(yk);
     if (typeof soundIds !== "undefined" && soundIds.indexOf("yokukangaeteAudio") === -1) soundIds.push("yokukangaeteAudio");
+  } catch (e) {}
+
+  try {
+    var c20 = document.createElement("audio");
+    c20.id = "challenge20Audio";
+    c20.preload = "auto";
+    c20.src = "20challenge.mp3";
+    document.body.appendChild(c20);
+    if (typeof soundIds !== "undefined" && soundIds.indexOf("challenge20Audio") === -1) soundIds.push("challenge20Audio");
   } catch (e) {}
 
   var origStartTraining = window.startTrainingWithConfig;
@@ -627,6 +652,9 @@
           solo.textContent = "👤 " + legendMark(activeProfileIndex) + profiles[activeProfileIndex] + " さん";
         }
       }
+
+      var goBtn = document.querySelector(".profile-confirm-btn");
+      if (goBtn) goBtn.style.display = "none";
 
       var regBtn = document.querySelector(".reg-open-btn");
       if (regBtn) {
@@ -737,13 +765,38 @@
   };
 
   /* ===== 保護者ページ：パスワードなし。1人ずつ、レベルごとの最高点（20問）を表示 ===== */
-  function bestAcc(idx, clef, lv) {
-    var b = Storage.get("onpu_best_20_" + idx + "_" + clef + "_" + lv);
-    if (!b) {
-      var ob = Storage.get("onpu_count_best_" + idx + "_" + clef + "_" + lv);
-      if (ob && ob.count >= 20) b = ob;
+  /* いま どこまで 合格したか */
+  function clefProgress(idx, clef) {
+    var cleared = 0;
+    for (var lv = 1; lv <= 5; lv++) {
+      if (hasLevelCleared(idx, clef, lv)) cleared = lv; else break;
     }
-    return b && typeof b.accuracy === "number" ? b.accuracy + "%" : "-";
+    return cleared;
+  }
+  function progressText(idx, clef, label) {
+    var c = clefProgress(idx, clef);
+    if (clef === "bass" && !hasLevelCleared(idx, "treble", 1) && c === 0) return label + "：まだ始めていません（ト音記号レベル1の合格後）";
+    if (clef === "all" && !(hasLevelCleared(idx, "treble", 5) && hasLevelCleared(idx, "bass", 5)) && c === 0) return label + "：まだ解放されていません";
+    if (c >= 5) return label + "：全レベル合格";
+    if (c === 0) return label + "：レベル1に挑戦中";
+    return label + "：レベル" + (c + 1) + "に挑戦中（レベル" + c + "まで合格）";
+  }
+
+  /* 月曜はじまりの 1週間 */
+  function weekStart(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var day = x.getDay();                 /* 0=日 */
+    x.setDate(x.getDate() - ((day + 6) % 7));
+    return x.getTime();
+  }
+  function weekStats(log, ws) {
+    var days = {}, cnt = 0, sum = 0;
+    log.forEach(function (e) {
+      if (weekStart(new Date(e.t)) !== ws) return;
+      days[localDateStr(new Date(e.t))] = 1;
+      cnt++; sum += e.a;
+    });
+    return { days: Object.keys(days).length, cnt: cnt, avg: cnt ? Math.round(sum / cnt) : null };
   }
 
   window.renderParentCompareTable = function () {
@@ -754,19 +807,39 @@
       any = true;
       var doB = getDoTestBest(idx);
       var achs = ACH_LINES.map(function (a) { return findAch(idx, a[0]) ? a[1].replace(/^\S+\s/, "") + " ✓" : ""; }).filter(function (x) { return x; }).join("、");
-      html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:8px;margin-bottom:10px;background:#fff;text-align:left;">';
-      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:4px;">' + esc(n) + '</div>';
-      html += '<div style="font-size:11.5px;color:#5b4636;line-height:1.7;margin-bottom:4px;">' +
-        '🔥 練習した日の連続 ' + calculateStreak(idx) + '日<br>' +
-        '✅ 20問 全部一発正解 ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）<br>' +
-        '🎵 6つのド 最高点 ' + (doB ? doB.accuracy + '%' : '-') + '<br>' +
-        '🎖 マスター：' + (achs || 'まだありません') + '</div>';
-      html += '<div style="font-size:10px;color:#806c5a;margin:2px 0;">※下の表は、20問トレーニングの一発正解率の最高です</div>';
-      html += '<table class="compare-table"><thead><tr><th>レベル</th><th>ト音記号</th><th>ヘ音記号</th><th>全カード</th></tr></thead><tbody>';
-      for (var lv = 1; lv <= 5; lv++) {
-        html += '<tr><td>Lv.' + lv + '</td><td>' + bestAcc(idx, "treble", lv) + '</td><td>' + bestAcc(idx, "bass", lv) + '</td><td>' + bestAcc(idx, "all", lv) + '</td></tr>';
+
+      var log = Storage.get("fy_log_" + idx, []);
+      if (!Array.isArray(log)) log = [];
+      var last = log.length ? log[log.length - 1] : null;
+      var recent = log.slice(-5);
+      var recentAvg = recent.length ? Math.round(recent.reduce(function (s, e) { return s + e.a; }, 0) / recent.length) : null;
+      var thisWs = weekStart(new Date());
+      var tw = weekStats(log, thisWs), lw = weekStats(log, thisWs - 7 * 86400000);
+      var clefName = { treble: "ト音記号", bass: "ヘ音記号", all: "全カード", "do": "6つのド" };
+      var lastText = last
+        ? "前回 " + last.a + "%（" + (clefName[last.c] || "") + (last.l ? " レベル" + last.l : "") + "・" + last.n + "問）／直近" + recent.length + "回の平均 " + recentAvg + "%"
+        : "まだ記録がありません";
+      var twText;
+      if (tw.cnt === 0) twText = "今週はまだ練習していません";
+      else {
+        var arrow = "";
+        if (lw.avg !== null) arrow = tw.avg > lw.avg ? " ↑" : (tw.avg < lw.avg ? " ↓" : " →");
+        twText = "練習した日 " + tw.days + "日／トレーニング " + tw.cnt + "回／平均 " + tw.avg + "%" + (lw.avg !== null ? "（先週 " + lw.avg + "%" + arrow + "）" : "（先週は記録なし）");
       }
-      html += '</tbody></table>';
+
+      html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;text-align:left;">';
+      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:6px;">' + esc(n) + '</div>';
+      html += '<div style="font-size:12px;color:#5b4636;line-height:1.8;">' +
+        '<b>📘 今の挑戦</b><br>' +
+        esc(progressText(idx, "treble", "ト音記号")) + '<br>' +
+        esc(progressText(idx, "bass", "ヘ音記号")) + '<br>' +
+        esc(progressText(idx, "all", "全カード")) + '<br>' +
+        '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '<br>' +
+        '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '<br>' +
+        '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）<br>' +
+        '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '<br>' +
+        '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') +
+        '</div>';
       html += '</div>';
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
