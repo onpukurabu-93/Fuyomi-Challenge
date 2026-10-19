@@ -589,8 +589,36 @@
     return origStartTraining.apply(this, arguments);
   };
 
+  /* ===== 答えを 見る じかんは、子どもの ペースで =====
+     せいかいの キーに ゆびを のせて いる あいだは、答えが のこる。ゆびを はなすと、つぎの問題へ。
+     ちょんと おすと、これまでどおり すぐ つぎへ。 */
+  var HOLD_MAX_MS = 6000;      /* ゆびが はなれた あいずが こなかったときの ほけん */
+  var NEXT_AFTER_RELEASE_MS = 250;
+  var fingerDown = false;
+  var holdWait = false;
+  var holdTimer = null;
+
+  function scheduleNext(ms) {
+    holdWait = false;
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    try { if (nextQuestionTimer !== null) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; } } catch (e) {}
+    nextQuestionTimer = setTimeout(function () {
+      nextQuestionTimer = null;
+      if (trainingMode) showRandomTrainingQuestion();
+    }, ms);
+  }
+
+  document.addEventListener("pointerdown", function () { fingerDown = true; }, true);
+  ["pointerup", "pointercancel"].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      fingerDown = false;
+      if (holdWait) scheduleNext(NEXT_AFTER_RELEASE_MS);
+    }, true);
+  });
+
   var origPressKey = window.pressKey;
   window.pressKey = function (key) {
+    var wasLocked = trainingLocked;
     try {
       if (trainingMode && !trainingLocked && currentCards.length) {
         var card = currentCards[currentIndex];
@@ -598,7 +626,31 @@
         else { qMistake = true; }
       }
     } catch (e) {}
-    return origPressKey.apply(this, arguments);
+    var ret = origPressKey.apply(this, arguments);
+    try {
+      /* せいかいで つぎへ すすむ じゅんびが できたとき：ゆびが のっていれば、はなすまで まつ */
+      if (trainingMode && !wasLocked && trainingLocked) {
+        if (fingerDown) {
+          holdWait = true;
+          try { if (nextQuestionTimer !== null) { clearTimeout(nextQuestionTimer); nextQuestionTimer = null; } } catch (e) {}
+          if (holdTimer) clearTimeout(holdTimer);
+          holdTimer = setTimeout(function () { if (holdWait) scheduleNext(0); }, HOLD_MAX_MS);
+        } else {
+          scheduleNext(NEXT_AFTER_RELEASE_MS);
+        }
+      }
+    } catch (e) {}
+    return ret;
+  };
+
+  /* つぎの問題に かわる とき、答えを かくす 板が ゆっくり もどって、一しゅん 答えが 見えるのを ふせぐ */
+  var origShowCurrentCard = window.showCurrentCard;
+  window.showCurrentCard = function () {
+    var cv = document.getElementById("trainingCover");
+    if (cv) cv.style.transition = "none";
+    var r = origShowCurrentCard.apply(this, arguments);
+    if (cv) { void cv.offsetWidth; cv.style.transition = ""; }
+    return r;
   };
 
   /* ===== 鍵：ト音記号は はじめから。ヘ音記号は ト音記号レベル1のクリアで ===== */
@@ -740,6 +792,8 @@
     delayedTimers = [];
     if (unlockTimer !== null) { clearTimeout(unlockTimer); unlockTimer = null; }
     seqEndAt = 0;
+    holdWait = false;
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
     if (!celebrating) { queueScheduled = false; celQueue = []; }
   };
 
@@ -828,7 +882,7 @@
       }
 
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;text-align:left;">';
-      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:6px;">' + esc(n) + '</div>';
+      html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:6px;">' + esc(n) + ' さん</div>';
       html += '<div style="font-size:12px;color:#5b4636;line-height:1.8;">' +
         '<b>📘 今の挑戦</b><br>' +
         esc(progressText(idx, "treble", "ト音記号")) + '<br>' +
