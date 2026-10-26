@@ -14,9 +14,7 @@
   .tabs button.on { background: #2b8ad8; border-color: #2b8ad8; color: #fff; }
 
   .sheet { position: relative; width: var(--sheet); height: calc(var(--sheet) * 100 / 148); background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.2); overflow: hidden; }
-  .card { position: absolute; top: 11.5%; width: 36.486%; height: 77%; }
-  .card.f { left: 9.459%; }
-  .card.b { left: 54.054%; }
+  .card { position: absolute; }
   .card img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
   .ov { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-weight: 800; text-align: center; line-height: 1; }
 
@@ -62,7 +60,7 @@
     <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
   </div>
   <div>
-    <input id="inScale" type="number" min="80" max="200" step="1" value="135" style="width:90px"> ％ （印刷の拡大率）
+    <input id="inScale" type="number" min="80" max="200" step="1" value="100" style="width:90px"> ％ （印刷の拡大率）
   </div>
   <button id="btnPrint">印刷する（ハガキ）</button>
   <button id="btnShot">画像として見る（長押しで保存）</button>
@@ -70,8 +68,8 @@
   <div class="note">
     入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
     「印刷する」を押すと、ハガキ1枚ぶんの画像を作って、印刷の画面を開きます。用紙は「ハガキ」、向きは「たて」にしてください。<br>
-    印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。左がおもて、右がうらです。（54×77mm）<br>
-    カードの幅が54mmにならないときは、「印刷の拡大率」を変えて、もう一度刷ります。たとえば、刷ったカードが48mmなら、いまの数字に 54÷48 をかけます。
+    印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。左がおもて、右がうらです。（<span id="sizeText">56×75mm</span>）<br>
+    カードの幅が上に出る大きさにならないときは、「印刷の拡大率」を変えて、もう一度刷ります。たとえば、56mmのはずが52mmに刷れたら、いまの数字に 56÷52 をかけます。
   </div>
 </div>
 
@@ -84,15 +82,16 @@
    cloud … 回数を入れるまるい枠の中心(x,y)と幅(w)。回数のあるカードだけ
    ========================================================= */
 var TYPES = [
-  { id: "treble",     label: "ト音記号",         img: "treble",     name: 0.800, date: 0.860 },
-  { id: "bass",       label: "ヘ音記号",         img: "bass",       name: 0.804, date: 0.864 },
-  { id: "master",     label: "ふよみマスター",   img: "master",     name: 0.777, date: 0.836 },
-  { id: "legend",     label: "レジェンド（100〜900）", img: "legend", name: 0.735, date: 0.816, cloud: { x: 0.507, y: 0.395, w: 0.44 }, color: "#7a4f00" },
-  { id: "legend1000", label: "レジェンド（1000）", img: "legend1000", name: 0.780, date: 0.836, cloud: { x: 0.496, y: 0.310, w: 0.56 }, color: "#7a4f00" }
+  { id: "treble",     label: "ト音記号",         img: "treble",     cw: 56, ch: 74.7, name: 0.814, date: 0.864, nx: 0.572, nf: 0.060, no: 0.010, df: 0.040, dof: 0.006 },
+  { id: "bass",       label: "ヘ音記号",         img: "bass",       cw: 56, ch: 74.7, name: 0.811, date: 0.861, nx: 0.572, nf: 0.060, no: 0.010, df: 0.040, dof: 0.006 },
+  { id: "master",     label: "ふよみマスター",   img: "master",     cw: 56, ch: 74.7, name: 0.810, date: 0.864, nx: 0.572, nf: 0.060, no: 0.010, df: 0.040, dof: 0.006 },
+  { id: "legend",     label: "レジェンド（100〜900）", img: "legend", cw: 54, ch: 77, name: 0.735, date: 0.816, nx: 0.605, nf: 0.046, no: 0.004, df: 0.042, dof: 0.004, cloud: { x: 0.507, y: 0.395, w: 0.44 }, color: "#7a4f00" },
+  { id: "legend1000", label: "レジェンド（1000）", img: "legend1000", cw: 54, ch: 77, name: 0.780, date: 0.836, nx: 0.605, nf: 0.046, no: 0.004, df: 0.042, dof: 0.004, cloud: { x: 0.496, y: 0.310, w: 0.56 }, color: "#7a4f00" }
 ];
 
-var NAME_X = 0.605;   /* 名前・日付の横の中心（カードの幅を 1 としたとき） */
-var CARD_W = "calc(var(--sheet) * 0.36486)";   /* カード1枚の幅 */
+/* 横長の配置（148×100mm）のなかの、おもて・うらの中心 */
+var CX_FRONT = 41, CX_BACK = 107, CY = 50;
+var SW = 148, SH = 100;
 
 var cur = 0;
 var nameEl = document.getElementById("inName");
@@ -102,24 +101,23 @@ var countEl = document.getElementById("inCount");
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function cnt() { var n = parseInt(countEl.value, 10); return isNaN(n) ? 100 : n; }
 
-function overlay(cls, x, y, fsRatio, color, html) {
+function overlay(cls, x, y, fsRatio, color, html, cwMm) {
   var d = document.createElement("div");
   d.className = "ov";
   d.style.left = (x * 100) + "%";
   d.style.top = (y * 100) + "%";
-  d.style.fontSize = "calc(" + CARD_W + " * " + fsRatio + ")";
+  d.style.fontSize = "calc(var(--sheet) * " + (cwMm / SW) + " * " + fsRatio + ")";
   d.style.color = color;
   d.innerHTML = html;
   return d;
 }
 
-function addMarks(sheet) {
+function addMarks(sheet, t) {
   /* 4すみ×2枚。カードの角の外側に、短い線を入れる */
   sheet.querySelectorAll(".mark").forEach(function (m) { m.remove(); });
   var L = 1.5, G = 1.0, T = 0.2;                 /* mm */
-  var SW = 148, SH = 100;
-  [[14, 11.5], [80, 11.5]].forEach(function (p) {
-    var x0 = p[0], y0 = p[1], x1 = x0 + 54, y1 = y0 + 77;
+  [CX_FRONT, CX_BACK].forEach(function (cx) {
+    var x0 = cx - t.cw / 2, y0 = CY - t.ch / 2, x1 = x0 + t.cw, y1 = y0 + t.ch;
     [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (c) {
       var hx = c[2] < 0 ? c[0] - G - L : c[0] + G;
       var vy = c[3] < 0 ? c[1] - G - L : c[1] + G;
@@ -136,30 +134,43 @@ function addMarks(sheet) {
   });
 }
 
+function placeCard(el, cx, t) {
+  el.style.left = ((cx - t.cw / 2) / SW * 100) + "%";
+  el.style.top = ((CY - t.ch / 2) / SH * 100) + "%";
+  el.style.width = (t.cw / SW * 100) + "%";
+  el.style.height = (t.ch / SH * 100) + "%";
+}
+
 function render() {
   var t = TYPES[cur];
   document.getElementById("imgF").src = "card_" + t.img + "_front.png";
   document.getElementById("imgB").src = "card_" + t.img + "_back.png";
 
-  var cardF = document.getElementById("cardF");
+  var cardF = document.getElementById("cardF"), cardB = document.getElementById("cardB");
+  placeCard(cardF, CX_FRONT, t);
+  placeCard(cardB, CX_BACK, t);
+  addMarks(document.getElementById("sheet"), t);
+  var sz = document.getElementById("sizeText");
+  if (sz) sz.textContent = t.cw + "×" + Math.round(t.ch * 10) / 10 + "mm";
+
   cardF.querySelectorAll(".ov").forEach(function (o) { o.remove(); });
 
   var name = nameEl.value, date = dateEl.value;
   if (name) {
     var n = name.length;
-    var fs = n <= 7 ? 0.062 : (0.062 * 7 / n);
-    cardF.appendChild(overlay("name", NAME_X, t.name - 0.006, fs, "#2b3a6a", esc(name)));
+    var fs = Math.min(t.nf, 0.50 / Math.max(n, 1));
+    cardF.appendChild(overlay("name", t.nx, t.name - t.no, fs, "#2b3a6a", esc(name), t.cw));
   }
   if (date) {
     var m = date.length;
-    var fs2 = m <= 11 ? 0.046 : (0.046 * 11 / m);
-    cardF.appendChild(overlay("date", NAME_X, t.date - 0.006, fs2, "#2b3a6a", esc(date)));
+    var fs2 = Math.min(t.df, 0.50 / Math.max(m, 1));
+    cardF.appendChild(overlay("date", t.nx, t.date - t.dof, fs2, "#2b3a6a", esc(date), t.cw));
   }
   if (t.cloud) {
     var digits = String(cnt()).length;
-    var cw = t.cloud.w;                              /* 枠の幅（カード幅に対する割合） */
+    var cw = t.cloud.w;
     var fsn = Math.min(0.30, cw * 0.88 / (digits * 0.62));
-    var box = overlay("count", t.cloud.x, t.cloud.y + fsn * 0.42, fsn, t.color, cnt());
+    var box = overlay("count", t.cloud.x, t.cloud.y + fsn * 0.42, fsn, t.color, cnt(), t.cw);
     box.style.fontWeight = "900";
     cardF.appendChild(box);
   }
@@ -204,7 +215,7 @@ function buildHagaki() {
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
 
   var t = TYPES[cur];
-  var cw = 54, ch = 77;
+  var cw = t.cw, ch = t.ch;
 
   ctx.save();
   ctx.translate(100 * P * pxmm, 0);
@@ -212,8 +223,8 @@ function buildHagaki() {
   ctx.scale(pxmm * P, pxmm * P);               /* ここから先は、拡大率をかけた mm の単位。よこ 148 × たて 100 */
 
   var cards = [
-    { img: document.getElementById("imgF"), cx: 41,  front: true },
-    { img: document.getElementById("imgB"), cx: 107, front: false }
+    { img: document.getElementById("imgF"), cx: CX_FRONT, front: true },
+    { img: document.getElementById("imgB"), cx: CX_BACK, front: false }
   ];
   var FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif';
 
@@ -238,14 +249,14 @@ function buildHagaki() {
 
     var name = nameEl.value, date = dateEl.value;
     if (name) {
-      var n = name.length, fs = n <= 7 ? 0.062 : (0.062 * 7 / n);
+      var n = name.length, fs = Math.min(t.nf, 0.50 / Math.max(n, 1));
       ctx.font = "800 " + (fs * cw) + "px " + FONT;
-      ctx.fillText(name, x0 + NAME_X * cw, y0 + (t.name - 0.006) * ch);
+      ctx.fillText(name, x0 + t.nx * cw, y0 + (t.name - t.no) * ch);
     }
     if (date) {
-      var m = date.length, fs2 = m <= 11 ? 0.046 : (0.046 * 11 / m);
+      var m = date.length, fs2 = Math.min(t.df, 0.50 / Math.max(m, 1));
       ctx.font = "800 " + (fs2 * cw) + "px " + FONT;
-      ctx.fillText(date, x0 + NAME_X * cw, y0 + (t.date - 0.006) * ch);
+      ctx.fillText(date, x0 + t.nx * cw, y0 + (t.date - t.dof) * ch);
     }
     if (t.cloud) {
       var digits = String(cnt()).length;
@@ -289,7 +300,6 @@ document.getElementById("btnShot").addEventListener("click", function () {
   document.getElementById("shotBox").style.display = "block";
 });
 
-addMarks(document.getElementById("sheet"));
 render();
 </script>
 </body>
