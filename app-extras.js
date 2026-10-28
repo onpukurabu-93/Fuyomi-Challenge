@@ -965,7 +965,9 @@
   }
 
   window.renderParentCompareTable = function () {
-    var html = "";
+    var html = '<div style="font-size:11.5px;line-height:1.7;background:#f7f7f7;border-radius:10px;padding:8px;margin-bottom:10px;text-align:left;">' +
+      '<span style="color:#1565c0;font-weight:800;">■ 青い項目</span>：先生の復元コードで、戻せます。<br>' +
+      '<span style="color:#9a9a9a;font-weight:800;">■ グレーの項目</span>：復元できません（復元した日から、また記録されます）。</div>';
     var any = false;
     profiles.forEach(function (n, idx) {
       if (!isRegistered(idx)) return;
@@ -994,16 +996,17 @@
 
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;text-align:left;">';
       html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:6px;">' + esc(n) + ' さん</div>';
-      html += '<div style="font-size:12px;color:#5b4636;line-height:1.8;">' +
-        '<b>📘 今の挑戦</b><br>' +
-        esc(progressText(idx, "treble", "ト音記号")) + '<br>' +
-        esc(progressText(idx, "bass", "ヘ音記号")) + '<br>' +
-        esc(progressText(idx, "all", "全カード")) + '<br>' +
-        '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '<br>' +
-        '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '<br>' +
-        '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）<br>' +
-        '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '<br>' +
-        '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') +
+      var BL = '<div style="color:#1565c0;margin-bottom:4px;">', GR = '<div style="color:#9a9a9a;margin-bottom:4px;">';
+      html += '<div style="font-size:12px;line-height:1.8;">' +
+        BL + '<b>📘 今の挑戦</b><br>' +
+          esc(progressText(idx, "treble", "ト音記号")) + '<br>' +
+          esc(progressText(idx, "bass", "ヘ音記号")) + '<br>' +
+          esc(progressText(idx, "all", "全カード")) + '</div>' +
+        GR + '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '</div>' +
+        GR + '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '</div>' +
+        BL + '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
+        BL + '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '</div>' +
+        GR + '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') + '</div>' +
         '</div>';
       html += '</div>';
     });
