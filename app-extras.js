@@ -398,6 +398,114 @@
   /* 「きろくと コード」の一覧 */
   var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"]];
 
+  /* =========================================================
+     記録の復元（先生が作った「復元コード」を、端末に貼ると、記録がもどる）
+     コードの形：FY1.（名前と記録を文字にしたもの）.（しるし）
+     ・コードの なまえと、この端末の プレイヤーの なまえが ちがうと、もどせない
+     ・端末の きろくより 小さい数字は、書きこまない（もどる方向には 変えない）
+     ========================================================= */
+  function b64enc(str) {
+    return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function b64dec(b) {
+    var t = String(b).replace(/-/g, "+").replace(/_/g, "/");
+    while (t.length % 4) t += "=";
+    return decodeURIComponent(escape(atob(t)));
+  }
+  function signOf(payload) {
+    var s = payload + "|" + SALT;
+    var h = 2166136261 >>> 0;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    var out = "";
+    for (var k = 0; k < 6; k++) { out += CODE_CHARS.charAt(h % CODE_CHARS.length); h = Math.floor(h / CODE_CHARS.length); }
+    return out;
+  }
+  function ymd(str) {                      /* "2026-10-01" → "20261001"（空なら "0"） */
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str || ""));
+    return m ? m[1] + m[2] + m[3] : "0";
+  }
+  function makeRestoreCode(o) {
+    var payload = ["FY1", o.name,
+      [ymd(o.dt), ymd(o.db), ymd(o.dm)].join(","),
+      [o.tot | 0, o.rb | 0, o.rn | 0].join(","),
+      [o.lt | 0, o.lb | 0, o.la | 0].join(",")].join("|");
+    return "FY1." + b64enc(payload) + "." + signOf(payload);
+  }
+  function parseRestoreCode(raw) {
+    var code = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+    var parts = code.split(".");
+    if (parts.length !== 3 || parts[0] !== "FY1") return { err: "コードの形が正しくありません。先生から届いたコードを、そのまま貼ってください。" };
+    var payload;
+    try { payload = b64dec(parts[1]); } catch (e) { return { err: "コードを読めませんでした。最後まで、全部コピーしましたか？" }; }
+    if (signOf(payload) !== parts[2]) return { err: "コードが正しくありません。途中で切れていないか、確かめてください。" };
+    var f = payload.split("|");
+    if (f.length !== 5 || f[0] !== "FY1") return { err: "コードの形が正しくありません。" };
+    var d = f[2].split(","), n = f[3].split(","), l = f[4].split(",");
+    return { name: f[1], dt: d[0], db: d[1], dm: d[2],
+             tot: parseInt(n[0], 10) || 0, rb: parseInt(n[1], 10) || 0, rn: parseInt(n[2], 10) || 0,
+             lt: parseInt(l[0], 10) || 0, lb: parseInt(l[1], 10) || 0, la: parseInt(l[2], 10) || 0 };
+  }
+  function ensureLevels(idx, clef, upTo) {
+    var changed = false;
+    for (var lv = 1; lv <= Math.min(5, upTo); lv++) {
+      var key = "onpu_best_20_" + idx + "_" + clef + "_" + lv;
+      var b = Storage.get(key);
+      if (!b || typeof b.accuracy !== "number" || b.accuracy < 90) {
+        Storage.set(key, { accuracy: 90, time: (b && b.time) || 999, count: 20 });
+        changed = true;
+      }
+    }
+    return changed;
+  }
+  function restoreMaster(idx, type, ds, name) {
+    if (ds === "0" || ds.length !== 8 || findAch(idx, type)) return false;
+    var y = parseInt(ds.slice(0, 4), 10), m = parseInt(ds.slice(4, 6), 10), d = parseInt(ds.slice(6, 8), 10);
+    var dateStr = y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d);
+    var a = getAch(idx);
+    a.push({ type: type, n: 0, t: new Date(y, m - 1, d, 12).getTime(), d: dateStr, name: name, code: codeFor(name, type, 0, dateStr), r: 1 });
+    Storage.set("fy_ach_" + idx, a);
+    return true;
+  }
+  function applyRestore(raw, idx) {
+    var p = parseRestoreCode(raw);
+    if (p.err) return { ok: false, msg: p.err };
+    var cur = profiles[idx] || "";
+    if (cleanName(p.name) !== cleanName(cur)) {
+      return { ok: false, msg: "このコードは「" + p.name + "」さん用です。いまのプレイヤーは「" + cur + "」さんです。プレイヤーを選びなおしてください。" };
+    }
+    var done = [];
+    if (restoreMaster(idx, "treble", p.dt, p.name)) done.push("ト音記号マスター");
+    if (restoreMaster(idx, "bass", p.db, p.name)) done.push("ヘ音記号マスター");
+    if (restoreMaster(idx, "master", p.dm, p.name)) done.push("ふよみマスター");
+    if (p.tot > perfTotal(idx)) { Storage.set("fy_perfect_total_" + idx, p.tot); done.push("20問 全部一発正解 " + p.tot + "回"); }
+    if (p.rb > runBest(idx)) { Storage.set("fy_run_best_" + idx, p.rb); done.push("連続の最高 " + p.rb + "回"); }
+    if (p.rn > runNow(idx)) { Storage.set("fy_run_now_" + idx, p.rn); done.push("連続 現在 " + p.rn + "回"); }
+    if (p.lt > 0 && ensureLevels(idx, "treble", p.lt)) done.push("ト音記号 レベル" + p.lt + "まで合格");
+    if (p.lb > 0 && ensureLevels(idx, "bass", p.lb)) done.push("ヘ音記号 レベル" + p.lb + "まで合格");
+    if (p.la > 0 && ensureLevels(idx, "all", p.la)) done.push("全カード レベル" + p.la + "まで合格");
+    try { initProfiles(); } catch (e) {}
+    if (!done.length) return { ok: true, msg: "この端末には、すでに同じか、それ以上の記録があります。新しく書き込む記録は、ありませんでした。" };
+    return { ok: true, msg: "復元しました。\n・" + done.join("\n・") };
+  }
+
+  /* 復元の入力画面（「きろくと コード」のページから） */
+  function showRestoreForm() {
+    var idx = activeProfileIndex;
+    openOverlay(
+      '<div style="font-size:18px;font-weight:900;margin-bottom:6px;">🔁 記録の復元</div>' +
+      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">先生から届いた「復元コード」を、貼ってください。<br>いまのプレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
+      '<textarea id="fyRestoreIn" style="width:100%;height:90px;font-size:13px;padding:8px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;-webkit-user-select:text;user-select:text;" placeholder="FY1.…"></textarea>' +
+      '<button id="fyRestoreGo" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#ff7043;color:#fff;">復元する</button>' +
+      '<div id="fyRestoreMsg" style="font-size:13px;line-height:1.6;margin:8px 0;white-space:pre-line;text-align:left;"></div>'
+    );
+    document.getElementById("fyRestoreGo").addEventListener("click", function () {
+      var r = applyRestore(document.getElementById("fyRestoreIn").value, activeProfileIndex);
+      var m = document.getElementById("fyRestoreMsg");
+      m.textContent = r.msg;
+      m.style.color = r.ok ? "#2e7d32" : "#d84315";
+    });
+  }
+
   function runNow(idx) { return Storage.getNumber("fy_run_now_" + idx, 0); }
   function runBest(idx) { return Storage.getNumber("fy_run_best_" + idx, 0); }
   function perfTotal(idx) { return Storage.getNumber("fy_perfect_total_" + idx, 0); }
@@ -432,7 +540,10 @@
     } else {
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
+    html += '<button id="fyRestoreBtn" style="width:100%;margin:2px 0 4px;padding:8px;font-size:12px;font-weight:700;border:1px dashed #b0a090;border-radius:10px;background:#fff;color:#806c5a;">🔁 記録の復元（先生から コードが 届いたとき）</button>';
     openOverlay(html);
+    var rbtn = document.getElementById("fyRestoreBtn");
+    if (rbtn) rbtn.addEventListener("click", showRestoreForm);
   };
 
   /* トップ画面：スタンプの表示は やめて、「きろくと コード」のボタンだけ */
@@ -970,6 +1081,24 @@
           '<input id="fcDate" class="modal-input" type="date">' +
           '<button class="modal-btn" style="background:#5c6bc0;font-size:12px;padding:8px;" onclick="fyCheckCode()">コードを 出す</button>' +
           '<div id="fcOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0 12px;color:#3949ab;"></div>' +
+          '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:4px 0 6px;text-align:left;">🔁 復元コードを つくる（名簿の きろくから）</div>' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">LINEで 保護者に 送ると、生徒さんの 端末の「きろくと コード」で 復元できます。</div>' +
+          '<input id="frName" class="modal-input" placeholder="教室ネーム（ひらがな・すうじ）">' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;">マスターの たっせい日（とっていなければ 空らん）</div>' +
+          '<div style="text-align:left;font-size:11px;">ト音記号マスター<input id="frDt" class="modal-input" type="date"></div>' +
+          '<div style="text-align:left;font-size:11px;">ヘ音記号マスター<input id="frDb" class="modal-input" type="date"></div>' +
+          '<div style="text-align:left;font-size:11px;">ふよみマスター<input id="frDm" class="modal-input" type="date"></div>' +
+          '<input id="frTot" class="modal-input" type="number" min="0" placeholder="20問 全部一発正解の 回数">' +
+          '<input id="frRb" class="modal-input" type="number" min="0" placeholder="連続の 最高（回）">' +
+          '<input id="frRn" class="modal-input" type="number" min="0" placeholder="連続の いま（回）">' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;">合格した レベル（0〜5）</div>' +
+          '<div style="display:flex;gap:4px;margin-bottom:6px;">' +
+            '<select id="frLt" class="modal-input" style="margin:0;"><option value="0">ト音 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+            '<select id="frLb" class="modal-input" style="margin:0;"><option value="0">ヘ音 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+            '<select id="frLa" class="modal-input" style="margin:0;"><option value="0">全カード 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+          '</div>' +
+          '<button class="modal-btn" style="background:#5c6bc0;font-size:12px;padding:8px;" onclick="fyMakeRestore()">復元コードを 出す</button>' +
+          '<textarea id="frOut" readonly style="width:100%;height:70px;font-size:11px;margin:6px 0 12px;box-sizing:border-box;-webkit-user-select:text;user-select:text;" placeholder="ここに コードが 出ます"></textarea>' +
           '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin-bottom:6px;text-align:left;">🧪 たっせいの きろくの テスト</div>' +
           '<button class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:12px;" onclick="fyAchReset()">🧪 いまのプレイヤーの たっせいの きろくと れんぞくを リセット</button>';
         tab3.insertBefore(d, tab3.firstChild);
@@ -985,6 +1114,21 @@
     var date = document.getElementById("fcDate").value;
     if (!name || !date) { document.getElementById("fcOut").textContent = "なまえと ひづけを いれてね"; return; }
     document.getElementById("fcOut").textContent = codeFor(name, type, 0, date);
+  };
+
+  window.fyMakeRestore = function () {
+    var name = cleanName(document.getElementById("frName").value);
+    var err = nameError(name);
+    if (err) { document.getElementById("frOut").value = "教室ネームを 入れてください（" + err + "）"; return; }
+    var v = function (id) { return document.getElementById(id).value; };
+    var code = makeRestoreCode({
+      name: name, dt: v("frDt"), db: v("frDb"), dm: v("frDm"),
+      tot: parseInt(v("frTot"), 10) || 0, rb: parseInt(v("frRb"), 10) || 0, rn: parseInt(v("frRn"), 10) || 0,
+      lt: parseInt(v("frLt"), 10) || 0, lb: parseInt(v("frLb"), 10) || 0, la: parseInt(v("frLa"), 10) || 0
+    });
+    var out = document.getElementById("frOut");
+    out.value = code;
+    try { out.focus(); out.select(); } catch (e) {}
   };
 
   window.fyAchReset = function () {
