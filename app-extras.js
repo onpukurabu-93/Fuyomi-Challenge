@@ -1295,3 +1295,289 @@
     showCode("あいことばを いれてね", false);
   }
 })();
+
+/* =====================================================================
+   v13：トレーニングポイント（ハンコ と 週の ポイント）
+   ・トレーニング（10問・20問）を さいごまで やりきると、その日の ハンコ。6つのドは かぞえない。
+   ・1週間は 月〜日。週が かわって アプリを ひらくと、先週の ポイントが 入る。
+   ・2〜3日で 1p、4〜6日で 2p、7日で 4p、0〜1日は 0p。
+   ・（こうかんの がめんは、つぎの かいで つくります）
+   ===================================================================== */
+(function () {
+  var VOICE1_FILE = "hanko-motte.mp3";   /* トレーニングして ハンコを もらおう */
+  var VOICE2_FILE = "point-kokan.mp3";   /* トレーニングポイントは きょうしつで… */
+
+  var K = {
+    stamps: function (i) { return "fy_hanko_" + i; },        /* ハンコの 日づけ（"2026-11-02" の 一覧） */
+    tp:     function (i) { return "fy_tp_" + i; },           /* トレーニングポイント */
+    paid:   function (i) { return "fy_tp_paid_" + i; },      /* まだ ポイントに していない いちばん 古い 週の はじまり日 */
+    notice: function (i) { return "fy_tp_notice_" + i; }     /* 「先週は…」の おしらせ（見せるまで のこる） */
+  };
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function dstr(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseD(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
+  function weekStartOf(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+
+  function pointsFor(days) { return days >= 7 ? 4 : days >= 4 ? 2 : days >= 2 ? 1 : 0; }
+
+  function getStamps(idx) {
+    var s = Storage.get(K.stamps(idx), []);
+    return Array.isArray(s) ? s : [];
+  }
+  function daysIn(stamps, startDate) {
+    var n = 0;
+    for (var i = 0; i < 7; i++) { if (stamps.indexOf(dstr(addDays(startDate, i))) !== -1) n++; }
+    return n;
+  }
+  function daysThisWeek(idx) { return daysIn(getStamps(idx), weekStartOf(new Date())); }
+  function getTP(idx) { return Storage.getNumber(K.tp(idx), 0); }
+
+  /* ハンコを おす（その日 はじめてなら true） */
+  function giveStamp(idx) {
+    var t = dstr(new Date());
+    var s = getStamps(idx);
+    if (s.indexOf(t) !== -1) return false;
+    s.push(t);
+    s.sort();
+    if (s.length > 60) s = s.slice(s.length - 60);
+    Storage.set(K.stamps(idx), s);
+    return true;
+  }
+
+  /* 先週までの ぶんを ポイントに する（週が かわって はじめて ひらいたとき） */
+  function settle(idx) {
+    var cur = dstr(weekStartOf(new Date()));
+    var paid = Storage.get(K.paid(idx), null);
+    if (!paid || typeof paid !== "string") { Storage.set(K.paid(idx), cur); return; }
+    if (paid >= cur) return;
+    var stamps = getStamps(idx), total = 0, lastDays = 0;
+    var w = parseD(paid), curD = parseD(cur);
+    var guard = 0;
+    while (w < curD && guard++ < 400) {
+      lastDays = daysIn(stamps, w);
+      total += pointsFor(lastDays);
+      w = addDays(w, 7);
+    }
+    Storage.set(K.tp(idx), getTP(idx) + total);
+    Storage.set(K.paid(idx), cur);
+    if (total > 0 || lastDays > 0) {
+      var old = Storage.get(K.notice(idx), null);
+      Storage.set(K.notice(idx), { days: lastDays, pts: total + (old && old.pts ? old.pts : 0) });
+    }
+  }
+
+  function hintText(d) {
+    if (d >= 7) return "ぜんぶ そろったよ！ 4ポイント ゲット！";
+    var need, pts;
+    if (d < 2) { need = 2 - d; pts = 1; }
+    else if (d < 4) { need = 4 - d; pts = 2; }
+    else { need = 7 - d; pts = 4; }
+    return "あと " + need + "日で " + pts + "ポイント！";
+  }
+
+  /* ---- 声 ---- */
+  function addAudio(id, src) {
+    try {
+      var a = document.createElement("audio");
+      a.id = id; a.preload = "auto"; a.src = src;
+      document.body.appendChild(a);
+      if (typeof soundIds !== "undefined" && soundIds.indexOf(id) === -1) soundIds.push(id);
+    } catch (e) {}
+  }
+  addAudio("hankoMotteAudio", VOICE1_FILE);
+  addAudio("pointKokanAudio", VOICE2_FILE);
+
+  /* 画面に はじめて さわるまでは 音が 出せないので、さわった あとに 鳴らす */
+  function speakWhenReady(id, stillWanted) {
+    function go() { try { if (!stillWanted || stillWanted()) playAudioCloned(id); } catch (e) {} }
+    if (typeof audioInitialized !== "undefined" && audioInitialized) { go(); return; }
+    document.addEventListener("pointerdown", function once() {
+      document.removeEventListener("pointerdown", once, true);
+      setTimeout(go, 120);
+    }, true);
+  }
+
+  /* ---- 見た目の もと ---- */
+  try {
+    var st = document.createElement("style");
+    st.textContent =
+      "@keyframes fyPon{0%{transform:scale(2.2) rotate(-12deg);opacity:0}60%{transform:scale(.9) rotate(-12deg);opacity:1}100%{transform:scale(1) rotate(-12deg);opacity:1}}" +
+      ".fy-stamp-pon{animation:fyPon .45s ease-out both}";
+    document.head.appendChild(st);
+  } catch (e) {}
+
+  var DAY_LABEL = ["月", "火", "水", "木", "金", "土", "日"];
+
+  function dotHtml(kind) {
+    var base = "width:34px;height:34px;border-radius:50%;margin:3px auto 0;display:flex;align-items:center;justify-content:center;";
+    if (kind === "on") return '<div style="' + base + 'font-size:17px;background:#ff7043;color:#fff;">💮</div>';
+    if (kind === "tmp") return '<div id="fyTmpStamp" style="' + base + 'font-size:11px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
+    return '<div style="' + base + 'font-size:17px;background:#e6e6e6;color:#aaa;">・</div>';
+  }
+
+  /* ---- トップ画面の ハンコ ---- */
+  var voice1Done = {};   /* きょう この 起動で、声を 鳴らした 枠 */
+
+  function renderTop() {
+    var anchor = document.getElementById("stampMiniBox");
+    if (!anchor || !anchor.parentNode) return;
+    var box = document.getElementById("fyHankoTop");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "fyHankoTop";
+      box.style.cssText = "background:#fdf8ed;border-radius:12px;padding:8px;margin:8px 0 4px;text-align:center;";
+      anchor.parentNode.insertBefore(box, anchor);
+    }
+    var idx = activeProfileIndex;
+    if (!isRegistered(idx)) { box.style.display = "none"; return; }
+    box.style.display = "block";
+
+    var stamps = getStamps(idx);
+    var ws = weekStartOf(new Date());
+    var todayS = dstr(new Date());
+    var d = daysIn(stamps, ws);
+
+    var row = "";
+    for (var i = 0; i < 7; i++) {
+      var ds = dstr(addDays(ws, i));
+      var kind = stamps.indexOf(ds) !== -1 ? "on" : (ds === todayS ? "tmp" : "off");
+      row += '<div style="width:36px;text-align:center;font-size:11px;color:#5b4636;">' + DAY_LABEL[i] + dotHtml(kind) + '</div>';
+    }
+    box.innerHTML =
+      '<div style="font-size:13px;font-weight:800;color:#5b4636;">今週の ハンコ（月〜日）</div>' +
+      '<div style="display:flex;justify-content:space-between;margin:6px 0;">' + row + '</div>' +
+      '<div style="font-size:13px;font-weight:800;color:#5b4636;">' + hintText(d) + '</div>' +
+      '<div style="font-size:12px;color:#5b4636;margin-top:4px;">トレーニングポイント <span style="font-size:20px;font-weight:900;color:#e65100;">' + getTP(idx) + ' p</span></div>';
+
+    var tmp = document.getElementById("fyTmpStamp");
+    if (tmp) tmp.addEventListener("click", function () { try { playAudioCloned("seikaiAudio"); } catch (e) {} });
+  }
+
+  /* ---- 「先週は…」の おしらせ ---- */
+  var noticeOpen = false;
+
+  function gateVisible() {
+    var g = document.getElementById("gateMsg");
+    return !!(g && g.getClientRects().length > 0);
+  }
+
+  function maybeNotice() {
+    if (noticeOpen) return;
+    var idx = activeProfileIndex;
+    if (!isRegistered(idx)) return;
+    var sel = document.getElementById("selectScreen");
+    if (!sel || sel.classList.contains("hidden")) return;
+    if (gateVisible()) return;
+    var n = Storage.get(K.notice(idx), null);
+    if (!n) return;
+
+    noticeOpen = true;
+    voice1Done[idx] = true;     /* おしらせの 声を 優先する */
+    var ov = document.createElement("div");
+    ov.id = "fyNotice";
+    ov.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9000;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+    var msg = n.pts > 0 ? '<div style="font-size:34px;font-weight:900;color:#ff5722;">+ ' + n.pts + ' ポイント</div>'
+                        : '<div style="font-size:16px;font-weight:800;color:#806c5a;">こんしゅうは もっと がんばろう！</div>';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:18px;padding:18px;width:100%;max-width:340px;text-align:center;color:#5b4636;box-shadow:0 4px 18px rgba(0,0,0,.2);">' +
+      '<div style="font-size:36px;">🎉</div>' +
+      '<div style="font-size:16px;font-weight:900;margin:4px 0 6px;">先週は ' + n.days + '日 がんばったよ！</div>' + msg +
+      '<div style="font-size:13px;margin:8px 0;">いま ぜんぶで <span style="font-size:20px;font-weight:900;color:#e65100;">' + getTP(idx) + ' p</span></div>' +
+      '<div style="word-break:keep-all;line-height:1.6;background:#fff3cd;border:2px solid #f5a300;border-radius:14px;padding:8px 10px;font-size:12px;font-weight:800;color:#8a5a00;margin:8px 0;">🔊「トレーニングポイントは<br>きょうしつで ごほうびと<br>こうかんできるよ！」</div>' +
+      '<button id="fyNoticeClose" style="width:100%;border:none;border-radius:12px;padding:11px;font-size:15px;font-weight:800;background:#ffb300;color:#5b4636;cursor:pointer;">とじる</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    document.getElementById("fyNoticeClose").addEventListener("click", function () {
+      Storage.set(K.notice(idx), null);
+      try { ov.remove(); } catch (e) {}
+      noticeOpen = false;
+    });
+    speakWhenReady("pointKokanAudio");
+  }
+
+  /* ---- 起動・トップ画面に もどるたび ---- */
+  var prevInit = window.initProfiles;
+  window.initProfiles = function () {
+    var r = prevInit.apply(this, arguments);
+    try {
+      if (isRegistered(activeProfileIndex)) settle(activeProfileIndex);
+      renderTop();
+      maybeNotice();
+      /* きょう まだ ハンコが ないとき、起動ごとに 1回だけ 声 */
+      var idx = activeProfileIndex;
+      var sel = document.getElementById("selectScreen");
+      if (isRegistered(idx) && !voice1Done[idx] && sel && !sel.classList.contains("hidden") &&
+          getStamps(idx).indexOf(dstr(new Date())) === -1) {
+        voice1Done[idx] = true;
+        speakWhenReady("hankoMotteAudio", function () {
+          var s = document.getElementById("selectScreen");
+          return !noticeOpen && s && !s.classList.contains("hidden") && !gateVisible();
+        });
+      }
+    } catch (e) {}
+    return r;
+  };
+
+  /* ---- 結果画面：ハンコ ---- */
+  var prevResult = window.showResultScreen;
+  window.showResultScreen = function () {
+    var r = prevResult.apply(this, arguments);
+    try {
+      var old = document.getElementById("fyHankoResult");
+      if (old) old.remove();
+      if (selectedClef === "do") return r;           /* 6つのドは かぞえない */
+      var idx = activeProfileIndex;
+      var isNew = giveStamp(idx);
+      var d = daysThisWeek(idx);
+      var wrap = document.getElementById("resultButtonsWrap");
+      if (!wrap) return r;
+      var box = document.createElement("div");
+      box.id = "fyHankoResult";
+      box.style.cssText = "background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:8px 10px;margin:8px auto 0;width:92%;text-align:center;color:#5b4636;";
+      var stampPart = isNew
+        ? '<div class="fy-stamp-pon" style="width:64px;height:64px;border-radius:50%;border:4px solid #e53935;color:#e53935;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;margin:2px auto 4px;background:rgba(255,255,255,.6);">ポン！</div>' +
+          '<div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
+        : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>';
+      box.innerHTML = stampPart +
+        '<div style="font-size:13px;margin-top:4px;line-height:1.6;">今週は <b>' + d + '日め</b><br>' + hintText(d) + '</div>';
+      wrap.parentNode.insertBefore(box, wrap);
+    } catch (e) {}
+    return r;
+  };
+
+  /* ---- 先生ページ：ためすための ボタン（1週間 まてないので） ---- */
+  try {
+    var t3 = document.getElementById("teacherTab3");
+    if (t3) {
+      var tb = document.createElement("div");
+      tb.innerHTML =
+        '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🧪 トレーニングポイントの テスト</div>' +
+        '<button id="fyTestWeek" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 先週 4日ぶんの ハンコを つくる（つぎに トップを ひらくと おしらせ）</button>' +
+        '<button id="fyTestReset" class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:6px;">🧪 いまのプレイヤーの ハンコと ポイントを リセット</button>';
+      t3.insertBefore(tb, t3.firstChild);
+      document.getElementById("fyTestWeek").addEventListener("click", function () {
+        var idx = activeProfileIndex;
+        var lastWs = addDays(weekStartOf(new Date()), -7);
+        var s = getStamps(idx);
+        [0, 1, 3, 4].forEach(function (k) { var ds = dstr(addDays(lastWs, k)); if (s.indexOf(ds) === -1) s.push(ds); });
+        s.sort();
+        Storage.set(K.stamps(idx), s);
+        Storage.set(K.paid(idx), dstr(lastWs));
+        Storage.set(K.notice(idx), null);
+        alert("先週に 4日ぶんの ハンコを つくりました。\n「閉じる」で トップに もどると、おしらせが 出ます。");
+      });
+      document.getElementById("fyTestReset").addEventListener("click", function () {
+        var idx = activeProfileIndex;
+        [K.stamps(idx), K.tp(idx), K.paid(idx), K.notice(idx)].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+        voice1Done = {};
+        try { initProfiles(); } catch (e) {}
+        alert("ハンコと ポイントを リセットしました。");
+      });
+    }
+  } catch (e) {}
+
+  /* はじめの 表示 */
+  try { initProfiles(); } catch (e) {}
+})();
