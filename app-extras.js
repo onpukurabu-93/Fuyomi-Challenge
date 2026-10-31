@@ -1411,10 +1411,10 @@
   var DAY_LABEL = ["月", "火", "水", "木", "金", "土", "日"];
 
   function dotHtml(kind) {
-    var base = "width:34px;height:34px;border-radius:50%;margin:3px auto 0;display:flex;align-items:center;justify-content:center;";
-    if (kind === "on") return '<div style="' + base + 'font-size:17px;background:#ff7043;color:#fff;">💮</div>';
-    if (kind === "tmp") return '<div id="fyTmpStamp" style="' + base + 'font-size:11px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
-    return '<div style="' + base + 'font-size:17px;background:#e6e6e6;color:#aaa;">・</div>';
+    var base = "width:42px;height:42px;border-radius:50%;margin:4px auto 0;display:flex;align-items:center;justify-content:center;";
+    if (kind === "on") return '<div style="' + base + 'font-size:22px;background:#ff7043;color:#fff;">💮</div>';
+    if (kind === "tmp") return '<div id="fyTmpStamp" style="' + base + 'font-size:13px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
+    return '<div style="' + base + 'font-size:22px;background:#e6e6e6;color:#aaa;">・</div>';
   }
 
   /* ---- トップ画面の ハンコ ---- */
@@ -1427,7 +1427,7 @@
     if (!box) {
       box = document.createElement("div");
       box.id = "fyHankoTop";
-      box.style.cssText = "background:#fdf8ed;border-radius:12px;padding:8px;margin:8px 0 4px;text-align:center;";
+      box.style.cssText = "background:#fdf8ed;border-radius:12px;padding:12px 8px;margin:8px 0 4px;text-align:center;";
       anchor.parentNode.insertBefore(box, anchor);
     }
     var idx = activeProfileIndex;
@@ -1443,13 +1443,13 @@
     for (var i = 0; i < 7; i++) {
       var ds = dstr(addDays(ws, i));
       var kind = stamps.indexOf(ds) !== -1 ? "on" : (ds === todayS ? "tmp" : "off");
-      row += '<div style="width:36px;text-align:center;font-size:11px;color:#5b4636;">' + DAY_LABEL[i] + dotHtml(kind) + '</div>';
+      row += '<div style="flex:1;text-align:center;font-size:14px;font-weight:800;color:#5b4636;">' + DAY_LABEL[i] + dotHtml(kind) + '</div>';
     }
     box.innerHTML =
-      '<div style="font-size:13px;font-weight:800;color:#5b4636;">今週の ハンコ（月〜日）</div>' +
-      '<div style="display:flex;justify-content:space-between;margin:6px 0;">' + row + '</div>' +
-      '<div style="font-size:13px;font-weight:800;color:#5b4636;">' + hintText(d) + '</div>' +
-      '<div style="font-size:12px;color:#5b4636;margin-top:4px;">トレーニングポイント <span style="font-size:20px;font-weight:900;color:#e65100;">' + getTP(idx) + ' p</span></div>';
+      '<div style="font-size:16px;font-weight:900;color:#5b4636;">今週の ハンコ（月〜日）</div>' +
+      '<div style="display:flex;gap:2px;margin:8px 0;">' + row + '</div>' +
+      '<div style="font-size:17px;font-weight:900;color:#5b4636;">' + hintText(d) + '</div>' +
+      '<div style="font-size:14px;color:#5b4636;margin-top:6px;">トレーニングポイント <span style="font-size:26px;font-weight:900;color:#e65100;">' + getTP(idx) + ' p</span></div>';
 
     var tmp = document.getElementById("fyTmpStamp");
     if (tmp) tmp.addEventListener("click", function () { try { playAudioCloned("seikaiAudio"); } catch (e) {} });
