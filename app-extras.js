@@ -1300,7 +1300,7 @@
    v13：トレーニングポイント（ハンコ と 週の ポイント）
    ・トレーニング（10問・20問）を さいごまで やりきると、その日の ハンコ。6つのドは かぞえない。
    ・1週間は 月〜日。週が かわって アプリを ひらくと、先週の ポイントが 入る。
-   ・2〜3日で 1p、4〜6日で 2p、7日で 4p、0〜1日は 0p。
+   ・1〜2日で 1p、3〜4日で 2p、5〜6日で 3p、7日(パーフェクト)で 5p、0日は 0p。
    ・（こうかんの がめんは、つぎの かいで つくります）
    ===================================================================== */
 (function () {
@@ -1320,7 +1320,7 @@
   function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
   function weekStartOf(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 
-  function pointsFor(days) { return days >= 7 ? 4 : days >= 4 ? 2 : days >= 2 ? 1 : 0; }
+  function pointsFor(days) { return days >= 7 ? 5 : days >= 5 ? 3 : days >= 3 ? 2 : days >= 1 ? 1 : 0; }
 
   function getStamps(idx) {
     var s = Storage.get(K.stamps(idx), []);
@@ -1369,11 +1369,12 @@
   }
 
   function hintText(d) {
-    if (d >= 7) return "ぜんぶ そろったよ！ 4ポイント ゲット！";
+    if (d >= 7) return "ぜんぶ そろったよ！ 5ポイント ゲット！";
     var need, pts;
-    if (d < 2) { need = 2 - d; pts = 1; }
-    else if (d < 4) { need = 4 - d; pts = 2; }
-    else { need = 7 - d; pts = 4; }
+    if (d < 1) { need = 1 - d; pts = 1; }
+    else if (d < 3) { need = 3 - d; pts = 2; }
+    else if (d < 5) { need = 5 - d; pts = 3; }
+    else { need = 7 - d; pts = 5; }
     return "あと " + need + "日で " + pts + "ポイント！";
   }
 
@@ -1412,7 +1413,7 @@
 
   function dotHtml(kind) {
     var base = "width:42px;height:42px;border-radius:50%;margin:4px auto 0;display:flex;align-items:center;justify-content:center;";
-    if (kind === "on") return '<div style="' + base + 'font-size:22px;background:#ff7043;color:#fff;">💮</div>';
+    if (kind === "on") return '<div style="' + base + 'font-size:38px;line-height:1;background:transparent;">💮</div>';
     if (kind === "tmp") return '<div id="fyTmpStamp" style="' + base + 'font-size:13px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
     return '<div style="' + base + 'font-size:22px;background:#e6e6e6;color:#aaa;">・</div>';
   }
