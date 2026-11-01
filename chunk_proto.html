@@ -1,1 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>かたまり読み（ためし版）</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; background: #fdf8ed; color: #5b4636; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+#app { max-width: 420px; margin: 0 auto; padding: 12px 10px 20px; }
+h1 { font-size: 18px; text-align: center; margin: 6px 0 2px; font-weight: 900; }
+.sub { text-align: center; font-size: 12px; color: #806c5a; margin-bottom: 8px; }
+.card { background: #fff; border-radius: 16px; padding: 8px 4px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.prog { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 800; padding: 2px 10px 0; }
+.bar { height: 8px; background: #efe5d2; border-radius: 4px; margin: 6px 10px 0; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: #ff7043; transition: width .25s; }
+svg { width: 100%; height: auto; display: block; }
+#notes { transition: transform .28s ease-out; }
+.nt { transition: opacity .28s ease-out; }
+.keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 6px 4px 4px; background: #e0d0ba; border-radius: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); margin-top: 10px; }
+.key-btn { border: none; border-radius: 8px; min-height: 64px; color: #fff; font-size: 16px; font-weight: 900; cursor: pointer; position: relative; box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 5px 6px rgba(0,0,0,0.15); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; transition: transform .05s ease, box-shadow .05s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); touch-action: manipulation; }
+.key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 2px 3px rgba(0,0,0,.1); }
+.key-do { background: #e99595; } .key-re { background: #e6b26a; } .key-mi { background: #d6c45d; }
+.key-fa { background: #8dbb8d; } .key-so { background: #78a9c8; } .key-la { background: #5a82d6; } .key-si { background: #b28bb9; }
+.shake { animation: shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+.flash { animation: flash .35s; }
+@keyframes flash { 0%{background:#fff} 30%{background:#ffe3df} 100%{background:#fff} }
+.res { display: none; text-align: center; padding: 18px 10px; }
+.res .big { font-size: 40px; font-weight: 900; color: #ff5722; margin: 4px 0; }
+.btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; font-size: 17px; font-weight: 800; background: #ff7043; color: #fff; margin-top: 12px; cursor: pointer; }
+.note { font-size: 11px; color: #806c5a; text-align: center; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>かたまり読み（ためし版）</h1>
+  <div class="sub">ト音記号　3つの おんを ひとまとまりで よもう</div>
+  <div class="card" id="card">
+    <div class="prog"><span id="pq">1 / 20</span><span id="pm"></span></div>
+    <div class="bar"><i id="pb"></i></div>
+    <div id="stage"></div>
+    <div class="res" id="res">
+      <div style="font-size:15px;font-weight:800;">おつかれさま！</div>
+      <div style="font-size:13px;color:#806c5a;margin-top:6px;">いっぱつ せいかいりつ</div>
+      <div class="big" id="rate">0%</div>
+      <div id="rtext" style="font-size:14px;"></div>
+      <button class="btn" id="again">もういちど</button>
+    </div>
+  </div>
+  <div class="keyboard" id="kb">
+    <button class="key-btn key-do" data-k="ド">ド</button>
+    <button class="key-btn key-re" data-k="レ">レ</button>
+    <button class="key-btn key-mi" data-k="ミ">ミ</button>
+    <button class="key-btn key-fa" data-k="ファ">ファ</button>
+    <button class="key-btn key-so" data-k="ソ">ソ</button>
+    <button class="key-btn key-la" data-k="ラ">ラ</button>
+    <button class="key-btn key-si" data-k="シ">シ</button>
+  </div>
+  <div class="note">ひだりの おんから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
+</div>
+<script>
+(function () {
+  var TOTAL = 20;
+  var NAMES = ["ミ", "ファ", "ソ", "ラ", "シ", "ド", "レ"];   /* n=0 が ミ(E4) */
+  var N_MIN = -2, N_MAX = 9;                                   /* ド(C4) 〜 ソ(G5) */
+  var SLOT_X = 112, SLOT_DX = 68, VISIBLE = 5;
+  var Y_BOTTOM = 92, LINE_GAP = 10;                            /* 下の線(E4)の y */
+  var SVGNS = "http://www.w3.org/2000/svg";
 
+  function nameOf(n) { return NAMES[((n % 7) + 7) % 7]; }
+  function yOf(n) { return Y_BOTTOM - n * (LINE_GAP / 2); }
+  function rnd() { return N_MIN + Math.floor(Math.random() * (N_MAX - N_MIN + 1)); }
+
+  var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false;
+
+  var stage = document.getElementById("stage");
+  var svg, notesG, slots = [];
+
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  function buildStage() {
+    stage.innerHTML = "";
+    svg = el("svg", { viewBox: "0 0 400 170", role: "img", "aria-label": "五線譜" });
+    stage.appendChild(svg);
+    /* 読む まとまり（3おん）の 枠 */
+    el("rect", { x: SLOT_X - 34, y: 18, width: SLOT_DX * 2 + 68, height: 134, rx: 18, fill: "#fff6d6", stroke: "#f5c242", "stroke-width": 2.5, "stroke-dasharray": "6 5" }, svg);
+    /* 五線 */
+    for (var i = 0; i < 5; i++) {
+      el("line", { x1: 14, x2: 388, y1: Y_BOTTOM - i * LINE_GAP, y2: Y_BOTTOM - i * LINE_GAP, stroke: "#5b4636", "stroke-width": 1.6 }, svg);
+    }
+    drawClef();
+    notesG = el("g", { id: "notes" }, svg);
+    slots = [];
+  }
+
+  /* ト音記号（線で 描いた ぞうけい。ソの せん＝下から2ほんめを まく） */
+  function drawClef() {
+    var g = el("g", { transform: "translate(52," + (Y_BOTTOM - LINE_GAP) + ")", fill: "none", stroke: "#5b4636", "stroke-width": 3, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    el("path", { d: "M3,22 C-9,20 -12,8 -3,2 C9,-6 21,4 17,15 C13,27 -5,25 -2,12 C0,4 9,2 11,9" /* 下の ふくらみ */ }, g);
+    el("path", { d: "M5,-30 C12,-38 12,-48 6,-50 C0,-52 -4,-42 1,-30 L6,26 C7,36 2,40 -4,38" /* たてせん と 上の かざり */ }, g);
+    el("circle", { cx: -4, cy: 38, r: 3, fill: "#5b4636", stroke: "none" }, g);
+  }
+
+  function noteEl(n, slot) {
+    var g = el("g", { "class": "nt" });
+    var x = SLOT_X + slot * SLOT_DX, y = yOf(n);
+    g.setAttribute("transform", "translate(" + x + ",0)");
+    /* 加線（ド=C4 だけ） */
+    if (n <= -2) el("line", { x1: -17, x2: 17, y1: Y_BOTTOM + LINE_GAP, y2: Y_BOTTOM + LINE_GAP, stroke: "#5b4636", "stroke-width": 1.8 }, g);
+    if (n >= 10) el("line", { x1: -17, x2: 17, y1: Y_BOTTOM - 5 * LINE_GAP, y2: Y_BOTTOM - 5 * LINE_GAP, stroke: "#5b4636", "stroke-width": 1.8 }, g);
+    var up = n < 4;
+    el("ellipse", { cx: 0, cy: y, rx: 8.6, ry: 6.4, fill: "#3d2c20", transform: "rotate(-20 0 " + y + ")" }, g);
+    if (up) el("line", { x1: 8, x2: 8, y1: y - 1, y2: y - 34, stroke: "#3d2c20", "stroke-width": 2.2, "stroke-linecap": "round" }, g);
+    else   el("line", { x1: -8, x2: -8, y1: y + 1, y2: y + 34, stroke: "#3d2c20", "stroke-width": 2.2, "stroke-linecap": "round" }, g);
+    g.dataset.n = n;
+    return g;
+  }
+
+  function opacityFor(i) { return i <= 2 ? 1 : (i === 3 ? 0.4 : 0); }
+
+  function render() {
+    notesG.style.transition = "none";
+    notesG.style.transform = "translateX(0px)";
+    notesG.innerHTML = "";
+    slots = [];
+    for (var i = 0; i < VISIBLE; i++) {
+      var n = queue[idx + i];
+      if (n === undefined) { slots.push(null); continue; }
+      var g = noteEl(n, i);
+      g.style.transition = "none";
+      g.style.opacity = opacityFor(i);
+      notesG.appendChild(g);
+      slots.push(g);
+    }
+    void notesG.getBoundingClientRect();
+    notesG.style.transition = "";
+    Array.prototype.forEach.call(notesG.children, function (c) { c.style.transition = ""; });
+    updateProg();
+  }
+
+  function updateProg() {
+    document.getElementById("pq").textContent = Math.min(idx + 1, TOTAL) + " / " + TOTAL;
+    document.getElementById("pb").style.width = (idx / TOTAL * 100) + "%";
+    document.getElementById("pm").textContent = "";
+  }
+
+  function start() {
+    queue = [];
+    for (var i = 0; i < TOTAL + VISIBLE; i++) queue.push(rnd());
+    idx = 0; missed = false; firstOk = 0; busy = false; done = false;
+    document.getElementById("res").style.display = "none";
+    stage.style.display = "block";
+    document.querySelector(".prog").style.display = "flex";
+    document.querySelector(".bar").style.display = "block";
+    document.getElementById("kb").style.visibility = "visible";
+    buildStage();
+    render();
+  }
+
+  function finish() {
+    done = true;
+    var rate = Math.round(firstOk / TOTAL * 100);
+    document.getElementById("rate").textContent = rate + "%";
+    document.getElementById("rtext").textContent = firstOk + " もん ひとりで せいかい（" + TOTAL + " もん ちゅう）";
+    stage.style.display = "none";
+    document.querySelector(".prog").style.display = "none";
+    document.querySelector(".bar").style.display = "none";
+    document.getElementById("kb").style.visibility = "hidden";
+    document.getElementById("res").style.display = "block";
+  }
+
+  function press(key) {
+    if (busy || done) return;
+    var n = queue[idx];
+    if (nameOf(n) === key) {
+      if (!missed) firstOk++;
+      missed = false;
+      idx++;
+      document.getElementById("pb").style.width = (idx / TOTAL * 100) + "%";
+      if (idx >= TOTAL) { busy = true; setTimeout(finish, 280); return; }
+      busy = true;
+      /* ぜんぶを 1こ ひだりへ ながす */
+      notesG.style.transform = "translateX(" + (-SLOT_DX) + "px)";
+      var cur = notesG.children;
+      for (var i = 0; i < cur.length; i++) cur[i].style.opacity = opacityFor(i - 1);
+      /* あたらしい おんが みぎから はいる */
+      var nn = queue[idx - 1 + VISIBLE];
+      if (nn !== undefined) {
+        var g = noteEl(nn, VISIBLE);
+        g.style.opacity = 0;
+        notesG.appendChild(g);
+        void g.getBoundingClientRect();
+        g.style.opacity = opacityFor(VISIBLE - 1);
+      }
+      setTimeout(function () { render(); busy = false; }, 300);
+    } else {
+      missed = true;
+      var c = document.getElementById("card");
+      c.classList.remove("shake", "flash"); void c.offsetWidth; c.classList.add("shake", "flash");
+    }
+  }
+
+  document.getElementById("kb").addEventListener("pointerdown", function (e) {
+    var b = e.target.closest ? e.target.closest(".key-btn") : null;
+    if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
+  });
+  document.getElementById("again").addEventListener("click", start);
+
+  window.__chunk = { press: press, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  start();
+})();
+</script>
+</body>
+</html>
