@@ -27,6 +27,13 @@
   .note { font-size: 12px; color: #678; margin-top: 6px; line-height: 1.7; }
 
   #printArea { display: none; }
+  .steps { text-align: left; background: #fff; border: 2px solid #9cc; border-radius: 12px; padding: 10px 14px; margin: 12px 8px 6px; font-size: 14px; line-height: 1.7; }
+  .steps-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+  .steps ol { margin: 4px 0 6px; padding-left: 22px; }
+  .steps li { margin-bottom: 4px; }
+  .steps .sub, .sub { font-size: 12px; color: #678; }
+  .adv { margin: 10px 8px; font-size: 13px; color: #678; text-align: left; }
+  .adv summary { cursor: pointer; }
   #shotBox { margin-top: 10px; display: none; }
   #shotBox img { width: min(90vw, 360px); border: 1px solid #ccc; }
 
@@ -60,17 +67,34 @@
     <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
   </div>
   <div>
-    <input id="inScale" type="number" min="80" max="200" step="0.1" value="95" style="width:90px"> ％ （印刷の拡大率）
+    <button id="btnShot">🖼 画像として見る（長押しで保存）</button>
   </div>
-  <button id="btnPrint">印刷する（ハガキ）</button>
-  <button id="btnShot">画像として見る（長押しで保存）</button>
-  <div id="shotBox"><img id="shotImg" alt=""></div>
-  <div class="note">
-    入力した名前・日付は、この画面にだけ表示されます。保存も送信もしません。<br>
-    「印刷する」を押すと、ハガキ1枚ぶんの画像を作って、印刷の画面を開きます。用紙は「ハガキ」、向きは「たて」にしてください。<br>
-    印刷されたカードは、横に寝て見えますが、切り分ければ正しい向きです。左がおもて、右がうらです。（<span id="sizeText">56×83.6mm</span>）<br>
-    カードの幅が上に出る大きさにならないときは、「印刷の拡大率」を変えて、もう一度刷ります。たとえば、56mmのはずが52mmに刷れたら、いまの数字に 56÷52 をかけます。
+  <div id="shotBox"><img id="shotImg" alt=""><div class="note" id="shotNote">↑ この画像を <b>長押し</b> → 「共有」→ 「プリント」</div></div>
+
+  <div class="steps">
+    <div class="steps-title">🖨 印刷のしかた</div>
+    <ol>
+      <li>カードの しゅるいを えらぶ（上の ボタン）</li>
+      <li>なまえ・ひづけを いれる<br><span class="sub">（空欄なら 手書き用の 線のまま）</span></li>
+      <li>「<b>画像として見る（長押しで保存）</b>」を おす</li>
+      <li>でてきた 画像を <b>長押し</b> → 「<b>共有</b>」→「<b>プリント</b>」</li>
+      <li>用紙は「<b>ハガキ</b>」、向きは「たて」で 印刷</li>
+      <li>印刷したら、おもて（左）とうら（右）を 切り分けて、貼り合わせて、60×90mmの パウチへ</li>
+    </ol>
+    <div class="sub">カードの 大きさは 幅56mm × 高さ83.6mm です。</div>
   </div>
+
+  <details class="adv">
+    <summary>大きさが ちがうとき（ふだんは さわらない）</summary>
+    <div style="margin-top:6px;">
+      <input id="inScale" type="number" min="80" max="200" step="0.1" value="95" style="width:90px"> ％ （印刷の拡大率）
+    </div>
+    <div class="note">
+      いまの 95 で、幅56mmに なります。<br>
+      ちがう大きさに なったときは、いまの数字に「ねらいの幅 ÷ 印刷された幅」を かけます。<br>
+      たとえば、56mmのはずが 59mmに なったら、95 × 56 ÷ 59 ＝ 90 です。
+    </div>
+  </details>
 </div>
 
 <script>
@@ -282,20 +306,6 @@ function makeImage() {
   try { return buildHagaki(); }
   catch (e) { alert("画像を作れませんでした。ページを開き直してください。"); return null; }
 }
-
-document.getElementById("btnPrint").addEventListener("click", function () {
-  var url = makeImage();
-  if (!url) return;
-  var P = getP();
-  var pw = "100mm", ph = "148mm";
-  document.documentElement.style.setProperty("--pw", pw);
-  document.documentElement.style.setProperty("--ph", ph);
-  document.getElementById("pageStyle").textContent = "@page { size: " + pw + " " + ph + "; margin: 0; }";
-  var pi = document.getElementById("printImg");
-  pi.onload = function () { pi.onload = null; window.print(); };
-  pi.src = "";
-  pi.src = url;
-});
 
 document.getElementById("btnShot").addEventListener("click", function () {
   var url = makeImage();
