@@ -111,7 +111,42 @@ svg { width: 100%; height: auto; display: block; }
     } catch (e) {}
   }
 
-  var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false;
+  /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
+  var FILES = { sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3" };
+  var aud = null;
+  function unlockAudio() {
+    if (aud) return;
+    aud = {};
+    Object.keys(FILES).forEach(function (k) {
+      try {
+        var a = new Audio(FILES[k]); a.preload = "auto"; aud[k] = a;
+        a.muted = true;
+        var pr = a.play();
+        if (pr && pr.then) pr.then(function () { a.pause(); a.currentTime = 0; a.muted = false; }).catch(function () { a.muted = false; });
+      } catch (e) {}
+    });
+  }
+  window.__playLog = [];
+  function playSeq(keys) {
+    var i = 0;
+    function next() {
+      if (i >= keys.length) return;
+      var k = keys[i++], a = aud && aud[k], fin = false;
+      function go() { if (fin) return; fin = true; setTimeout(next, 150); }
+      window.__playLog.push(k);
+      if (!a) { go(); return; }
+      try {
+        a.onended = go; a.onerror = go;
+        a.currentTime = 0;
+        var pr = a.play();
+        if (pr && pr.catch) pr.catch(go);
+      } catch (e) { go(); }
+      setTimeout(go, 9000);
+    }
+    next();
+  }
+
+  var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false, run = 0, bestRun = 0, missCount = 0;
 
   var stage = document.getElementById("stage");
   var svg, notesG, slots = [];
@@ -211,7 +246,7 @@ svg { width: 100%; height: auto; display: block; }
       while (queue.length && nx === queue[queue.length - 1]) nx = rnd();
       queue.push(nx);
     }
-    idx = 0; missed = false; firstOk = 0; busy = false; done = false;
+    idx = 0; missed = false; firstOk = 0; busy = false; done = false; run = 0; bestRun = 0; missCount = 0;
     document.getElementById("res").style.display = "none";
     stage.style.display = "block";
     document.querySelector(".prog").style.display = "flex";
@@ -226,14 +261,14 @@ svg { width: 100%; height: auto; display: block; }
     var rate = Math.round(firstOk / TOTAL * 100);
     document.getElementById("rate").textContent = rate + "%";
     document.getElementById("rtext").textContent = firstOk === TOTAL
-      ? TOTAL + "音のうち、ぜんぶいっぱつでせいかい！"
-      : TOTAL + "音のうち、" + firstOk + "音 いっぱつでせいかい";
+      ? "すごい！" + TOTAL + "音ぜんぶれんぞくせいかい！"
+      : (TOTAL - firstOk) + "音まちがえて、れんぞくせいかいは 最高 " + bestRun + "回だったよ！";
     /* 鍵：90%いじょうで、つぎの レベルが ひらく */
-    var msg = "", nextLv = 0;
+    var msg = "", nextLv = 0, newlyOpened = false;
     if (firstOk >= needOf(level)) {
       if (level < 4) {
         nextLv = level + 1;
-        if (getMax() < nextLv) { setMax(nextLv); msg = "🎉 レベル" + nextLv + " が ひらいたよ！"; }
+        if (getMax() < nextLv) { setMax(nextLv); newlyOpened = true; msg = "🎉 レベル" + nextLv + " が ひらいたよ！"; }
         else msg = "レベル" + level + " クリア！";
       } else {
         msg = "🎉 レベル4 クリア！ レベル5（きょく）は じゅんびちゅう";
@@ -242,6 +277,12 @@ svg { width: 100%; height: auto; display: block; }
       msg = "レベル" + (level + 1 <= 4 ? level + 1 : level) + (level < 4 ? " に すすむには、" : " クリアには、") + needOf(level) + "音 いっぱつで せいかい が ひつよう";
     }
     document.getElementById("rnext").textContent = msg;
+    var seq = [];
+    if (firstOk === TOTAL) seq = ["sugoi", "fanfare"];
+    else if (firstOk >= needOf(level)) seq = ["fanfare"];
+    else seq = ["ganbatte"];
+    if (newlyOpened) seq.push("levelOpen");
+    playSeq(seq);
     var nb = document.getElementById("nextBtn");
     nb.style.display = nextLv ? "block" : "none";
     nb.onclick = function () { level = nextLv; start(); };
@@ -258,7 +299,7 @@ svg { width: 100%; height: auto; display: block; }
     var n = queue[idx];
     if (nameOf(n) === key) {
       playNote(n);
-      if (!missed) firstOk++;
+      if (!missed) { firstOk++; run++; if (run > bestRun) bestRun = run; }
       missed = false;
       idx++;
       document.getElementById("pb").style.width = (idx / TOTAL * 100) + "%";
@@ -279,12 +320,14 @@ svg { width: 100%; height: auto; display: block; }
       }
       setTimeout(function () { render(); busy = false; }, 300);
     } else {
+      if (!missed) { missCount++; run = 0; }
       missed = true;
       var c = document.getElementById("card");
       c.classList.remove("shake", "flash"); void c.offsetWidth; c.classList.add("shake", "flash");
     }
   }
 
+  document.addEventListener("pointerdown", unlockAudio, { once: true, capture: true });
   document.getElementById("kb").addEventListener("pointerdown", function (e) {
     var b = e.target.closest ? e.target.closest(".key-btn") : null;
     if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
@@ -293,7 +336,7 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); level = 1; start(); });
 
-  window.__chunk = { getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
