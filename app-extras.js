@@ -1082,6 +1082,7 @@
           '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">教室ネーム・しゅるい・ひづけ を 入れると、正しい コードが 出ます。</div>' +
           '<input id="fcName" class="modal-input" placeholder="教室ネーム（スクショの なまえ）">' +
           '<select id="fcType" class="modal-input">' +
+            '<option value="">▼ しゅるいを えらんでね</option>' +
             '<option value="treble">ト音記号マスター</option>' +
             '<option value="bass">ヘ音記号マスター</option>' +
             '<option value="master">ふよみマスター</option>' +
@@ -1124,6 +1125,12 @@
     var type = document.getElementById("fcType").value;
     var date = document.getElementById("fcDate").value;
     if (!name || !date) { document.getElementById("fcOut").textContent = "なまえと ひづけを いれてね"; return; }
+    if (!type) {
+      /* しゅるいを えらび わすれたとき：ポイントの 数字が 入っていれば ポイントこうかん */
+      var a0 = document.getElementById("fcAmt").value, r0 = document.getElementById("fcRest").value;
+      if (a0 !== "" && r0 !== "") { type = "exchange"; document.getElementById("fcType").value = "exchange"; }
+      else { document.getElementById("fcOut").textContent = "しゅるいを えらんでね"; return; }
+    }
     if (type === "exchange") {
       var amt = document.getElementById("fcAmt").value, rest = document.getElementById("fcRest").value;
       if (amt === "" || rest === "") { document.getElementById("fcOut").textContent = "こうかんした p と のこり p を いれてね"; return; }
