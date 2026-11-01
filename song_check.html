@@ -1,1 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>きょく かくにん（せんせい用）</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: #fdf8ed; color: #5b4636; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+#app { max-width: 460px; margin: 0 auto; padding: 14px 12px 40px; }
+h1 { font-size: 19px; margin: 6px 0 2px; text-align: center; }
+.sub { font-size: 12px; color: #806c5a; text-align: center; margin-bottom: 10px; line-height: 1.6; }
+.btns { display: flex; gap: 8px; margin: 10px 0; }
+button { flex: 1; border: none; border-radius: 12px; padding: 14px 6px; font-size: 16px; font-weight: 800; color: #fff; background: #ff7043; cursor: pointer; }
+button.sub2 { background: #78a9c8; }
+.bar { background: #fff; border-radius: 12px; padding: 8px 10px; margin: 8px 0; box-shadow: 0 1px 5px rgba(0,0,0,.08); }
+.bn { font-size: 11px; color: #9a8672; margin-bottom: 4px; }
+.notes { display: flex; flex-wrap: wrap; gap: 6px; }
+.n { min-width: 46px; text-align: center; padding: 8px 4px 6px; border-radius: 10px; background: #fdf8ed; border: 2px solid #eadcc8; font-size: 20px; font-weight: 900; line-height: 1.1; transition: background .08s, transform .08s; }
+.n small { display: block; font-size: 10px; font-weight: 700; color: #9a8672; margin-top: 2px; }
+.n.half { min-width: 80px; }
+.n.eighth { min-width: 38px; font-size: 17px; }
+.n.on { background: #ffd54f; border-color: #ff9800; transform: scale(1.12); }
+.hint { font-size: 12px; line-height: 1.7; background: #fff3cd; border-radius: 10px; padding: 8px 10px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>アマリリス　かくにん</h1>
+  <div class="sub">せんせい用：楽譜から よみとった おとが ただしいか、<br>きいて、みて たしかめるページです</div>
+  <div class="btns">
+    <button id="play">▶ きく</button>
+    <button id="stop" class="sub2">■ とめる</button>
+  </div>
+  <div id="bars"></div>
+  <div class="hint">
+    ・みどころ：①1小節ごとの おとの ならび ②ひくい／たかい ド の ちがい ③ながさ（2はく・はんぶん）<br>
+    ・「ド↓」は したの ド（ト音記号の 下の 加線）、「ド↑」は ごせんの 中の うえの ド です。<br>
+    ・アプリで つかうのは「おとの たかさの じゅんばん」だけです。ながさは、ここで きいて たしかめる ためだけに いれています。
+  </div>
+</div>
+<script>
+(function () {
+  /* n: E4=0 を 0 として、ミファソラシドレ…の じゅんに 1ずつ。C4=-2, G4=2, A4=3, C5=5 */
+  var NAMES = ["ミ", "ファ", "ソ", "ラ", "シ", "ド", "レ"];
+  var OFFS = [0, 1, 3, 5, 7, 8, 10];
+  function nameOf(n) { return NAMES[((n % 7) + 7) % 7]; }
+  function midiOf(n) { return 64 + 12 * Math.floor(n / 7) + OFFS[((n % 7) + 7) % 7]; }
+  var G = 2, A = 3, F = 1, E = 0, D = -1, C4 = -2, C5 = 5;
 
+  /* アマリリス（H.ギース）。ながさ：1 = 4ぶおんぷ、2 = 2ぶおんぷ、0.5 = 8ぶおんぷ */
+  var BARS = [
+    [[G, 1], [A, 1]],
+    [[G, 1], [C5, 1], [G, 1], [A, 1]],
+    [[G, 2], [A, 1], [A, 1]],
+    [[G, 1], [A, 1], [G, .5], [F, .5], [E, .5], [D, .5]],
+    [[E, 1], [C4, 1], [G, 1], [A, 1]],
+    [[G, 1], [C5, 1], [G, 1], [A, 1]],
+    [[G, 2], [A, 1], [A, 1]],
+    [[G, 1], [A, 1], [G, .5], [F, .5], [E, .5], [D, .5]],
+    [[C4, 2]]
+  ];
+
+  var box = document.getElementById("bars"), els = [], seq = [];
+  BARS.forEach(function (bar, bi) {
+    var d = document.createElement("div"); d.className = "bar";
+    d.innerHTML = '<div class="bn">' + (bi + 1) + ' しょうせつめ' + (bi === 0 ? '（はじまり・2はく）' : '') + '</div><div class="notes"></div>';
+    var row = d.querySelector(".notes");
+    bar.forEach(function (nt) {
+      var n = nt[0], len = nt[1];
+      var e = document.createElement("div");
+      e.className = "n" + (len >= 2 ? " half" : (len < 1 ? " eighth" : ""));
+      var label = nameOf(n);
+      if (n === C4) label += "↓"; else if (n === C5) label += "↑";
+      e.innerHTML = label + "<small>" + (len >= 2 ? "2はく" : (len < 1 ? "はんぶん" : "1はく")) + "</small>";
+      row.appendChild(e);
+      els.push(e); seq.push(nt);
+    });
+    box.appendChild(d);
+  });
+  document.getElementById("bars").dataset.count = seq.length;
+
+  var actx = null, timers = [], playing = false;
+  function tone(n, t, dur) {
+    var f = 440 * Math.pow(2, (midiOf(n) - 69) / 12);
+    var master = actx.createGain();
+    master.gain.setValueAtTime(0.0001, t);
+    master.gain.exponentialRampToValueAtTime(0.5, t + 0.008);
+    master.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur * 1.4, 0.6));
+    master.connect(actx.destination);
+    [[1, 1], [2, .45], [3, .2], [4, .1]].forEach(function (h) {
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = "sine"; o.frequency.value = f * h[0]; g.gain.value = h[1] * .5;
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + Math.max(dur * 1.4, .6) + .05);
+    });
+  }
+  function stop() {
+    timers.forEach(clearTimeout); timers = []; playing = false;
+    els.forEach(function (e) { e.classList.remove("on"); });
+  }
+  function play() {
+    stop();
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!actx) actx = new AC();
+    var go = function () {
+      var beat = 0.55, t0 = actx.currentTime + 0.15, at = 0;
+      playing = true;
+      seq.forEach(function (nt, i) {
+        var dur = nt[1] * beat;
+        tone(nt[0], t0 + at, dur);
+        (function (k, delay, d) {
+          timers.push(setTimeout(function () { els.forEach(function (e) { e.classList.remove("on"); }); els[k].classList.add("on"); }, delay));
+        })(i, (0.15 + at) * 1000, dur);
+        at += dur;
+      });
+      timers.push(setTimeout(stop, (0.15 + at) * 1000 + 600));
+    };
+    if (actx.state === "suspended") { actx.resume().then(go, go); } else go();
+  }
+  document.getElementById("play").addEventListener("click", play);
+  document.getElementById("stop").addEventListener("click", stop);
+  window.__song = { names: seq.map(function (x) { return nameOf(x[0]); }), n: seq.map(function (x) { return x[0]; }), len: seq.map(function (x) { return x[1]; }) };
+})();
+</script>
+</body>
+</html>
