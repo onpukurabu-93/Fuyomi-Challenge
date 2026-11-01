@@ -50,7 +50,9 @@ svg { width: 100%; height: auto; display: block; }
       <div style="font-size:13px;color:#806c5a;margin-top:6px;">いっぱつ せいかいりつ</div>
       <div class="big" id="rate">0%</div>
       <div id="rtext" style="font-size:14px;"></div>
-      <button class="btn" id="again">もういちど</button>
+      <div id="rnext" style="font-size:14px;font-weight:800;margin-top:10px;color:#e65100;line-height:1.5;"></div>
+      <button class="btn" id="nextBtn" style="display:none;">つぎの レベルへ</button>
+      <button class="btn" id="again" style="background:#78a9c8;">もういちど</button>
     </div>
   </div>
   <div class="keyboard" id="kb">
@@ -62,12 +64,17 @@ svg { width: 100%; height: auto; display: block; }
     <button class="key-btn key-la" data-k="ラ">ラ</button>
     <button class="key-btn key-si" data-k="シ">シ</button>
   </div>
+  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a></div>
   <div class="note">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <script>
 (function () {
   var LEVELS = [16, 32, 64, 96];   /* レベル1〜4 の おとの かず（レベル5は きょく） */
   var level = 1, TOTAL = 16;
+  var KEY_MAX = "fy_chunk_max";                     /* ひらいている いちばん うえの レベル */
+  function needOf(l) { return Math.ceil(LEVELS[l - 1] * 9 / 10); }   /* 一発 せいかい 90%いじょう */
+  function getMax() { try { var v = parseInt(localStorage.getItem(KEY_MAX), 10); return v >= 1 && v <= 5 ? v : 1; } catch (e) { return 1; } }
+  function setMax(v) { try { localStorage.setItem(KEY_MAX, String(v)); } catch (e) {} }
   var NAMES = ["ミ", "ファ", "ソ", "ラ", "シ", "ド", "レ"];   /* n=0 が ミ(E4) */
   var N_MIN = -2, N_MAX = 9;                                   /* ド(C4) 〜 ソ(G5) */
   var SLOT_X = 112, SLOT_DX = 68, VISIBLE = 5;
@@ -183,12 +190,14 @@ svg { width: 100%; height: auto; display: block; }
 
   function renderLv() {
     var box = document.getElementById("lv"); box.innerHTML = "";
+    var mx = getMax();
     for (var i = 1; i <= 5; i++) {
       var b = document.createElement("button");
-      b.innerHTML = "レベル" + i + "<br>" + (i <= 4 ? LEVELS[i - 1] + "音" : "きょく");
+      var locked = i > mx || i === 5;
+      b.innerHTML = "レベル" + i + "<br>" + (locked ? "🔒" : "") + (i <= 4 ? LEVELS[i - 1] + "音" : "きょく");
       if (i === level) b.className = "on";
-      if (i === 5) b.className = "off";
-      (function (lv) { if (lv <= 4) b.addEventListener("click", function () { level = lv; start(); }); })(i);
+      else if (locked) b.className = "off";
+      (function (lv, lk) { if (!lk) b.addEventListener("click", function () { level = lv; start(); }); })(i, locked);
       box.appendChild(b);
     }
   }
@@ -197,7 +206,11 @@ svg { width: 100%; height: auto; display: block; }
     TOTAL = LEVELS[level - 1];
     renderLv();
     queue = [];
-    for (var i = 0; i < TOTAL + VISIBLE; i++) queue.push(rnd());
+    for (var i = 0; i < TOTAL + VISIBLE; i++) {
+      var nx = rnd();
+      while (queue.length && nx === queue[queue.length - 1]) nx = rnd();
+      queue.push(nx);
+    }
     idx = 0; missed = false; firstOk = 0; busy = false; done = false;
     document.getElementById("res").style.display = "none";
     stage.style.display = "block";
@@ -212,12 +225,32 @@ svg { width: 100%; height: auto; display: block; }
     done = true;
     var rate = Math.round(firstOk / TOTAL * 100);
     document.getElementById("rate").textContent = rate + "%";
-    document.getElementById("rtext").textContent = TOTAL + " おとのうち、" + firstOk + " おと ひとりで せいかい";
+    document.getElementById("rtext").textContent = firstOk === TOTAL
+      ? TOTAL + "音のうち、ぜんぶいっぱつでせいかい！"
+      : TOTAL + "音のうち、" + firstOk + "音 いっぱつでせいかい";
+    /* 鍵：90%いじょうで、つぎの レベルが ひらく */
+    var msg = "", nextLv = 0;
+    if (firstOk >= needOf(level)) {
+      if (level < 4) {
+        nextLv = level + 1;
+        if (getMax() < nextLv) { setMax(nextLv); msg = "🎉 レベル" + nextLv + " が ひらいたよ！"; }
+        else msg = "レベル" + level + " クリア！";
+      } else {
+        msg = "🎉 レベル4 クリア！ レベル5（きょく）は じゅんびちゅう";
+      }
+    } else {
+      msg = "レベル" + (level + 1 <= 4 ? level + 1 : level) + (level < 4 ? " に すすむには、" : " クリアには、") + needOf(level) + "音 いっぱつで せいかい が ひつよう";
+    }
+    document.getElementById("rnext").textContent = msg;
+    var nb = document.getElementById("nextBtn");
+    nb.style.display = nextLv ? "block" : "none";
+    nb.onclick = function () { level = nextLv; start(); };
     stage.style.display = "none";
     document.querySelector(".prog").style.display = "none";
     document.querySelector(".bar").style.display = "none";
     document.getElementById("kb").style.visibility = "hidden";
     document.getElementById("res").style.display = "block";
+    renderLv();
   }
 
   function press(key) {
@@ -257,8 +290,10 @@ svg { width: 100%; height: auto; display: block; }
     if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
   });
   document.getElementById("again").addEventListener("click", start);
+  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
+  document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); level = 1; start(); });
 
-  window.__chunk = { setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
