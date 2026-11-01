@@ -2,7 +2,7 @@
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
   /* ★ コードが、一覧に見えている日数 */
-  var CODE_DAYS = 3;
+  var CODE_DAYS = 7;
   /* ★ 「よく考えて」の声：何問おわってから出すか、一発せいかいりつの下限（0.7 = 70%） */
   var THINK_AFTER = 5;
   var THINK_RATE = 0.7;
@@ -430,25 +430,29 @@
     return m ? m[1] + m[2] + m[3] : "0";
   }
   function makeRestoreCode(o) {
-    var payload = ["FY1", o.name,
+    /* FY2：FY1 の おわりに、トレーニングポイントを 足した形（FY1 の古いコードも、そのまま読める） */
+    var payload = ["FY2", o.name,
       [ymd(o.dt), ymd(o.db), ymd(o.dm)].join(","),
       [o.tot | 0, o.rb | 0, o.rn | 0].join(","),
-      [o.lt | 0, o.lb | 0, o.la | 0].join(",")].join("|");
-    return "FY1." + b64enc(payload) + "." + signOf(payload);
+      [o.lt | 0, o.lb | 0, o.la | 0].join(","),
+      String(o.tp | 0)].join("|");
+    return "FY2." + b64enc(payload) + "." + signOf(payload);
   }
   function parseRestoreCode(raw) {
     var code = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
     var parts = code.split(".");
-    if (parts.length !== 3 || parts[0] !== "FY1") return { err: "コードの形が正しくありません。先生から届いたコードを、そのまま貼ってください。" };
+    if (parts.length !== 3 || (parts[0] !== "FY1" && parts[0] !== "FY2")) return { err: "コードの形が正しくありません。先生から届いたコードを、そのまま貼ってください。" };
     var payload;
     try { payload = b64dec(parts[1]); } catch (e) { return { err: "コードを読めませんでした。最後まで、全部コピーしましたか？" }; }
     if (signOf(payload) !== parts[2]) return { err: "コードが正しくありません。途中で切れていないか、確かめてください。" };
     var f = payload.split("|");
-    if (f.length !== 5 || f[0] !== "FY1") return { err: "コードの形が正しくありません。" };
+    var isV2 = (f[0] === "FY2");
+    if (f[0] !== parts[0] || f.length !== (isV2 ? 6 : 5)) return { err: "コードの形が正しくありません。" };
     var d = f[2].split(","), n = f[3].split(","), l = f[4].split(",");
     return { name: f[1], dt: d[0], db: d[1], dm: d[2],
              tot: parseInt(n[0], 10) || 0, rb: parseInt(n[1], 10) || 0, rn: parseInt(n[2], 10) || 0,
-             lt: parseInt(l[0], 10) || 0, lb: parseInt(l[1], 10) || 0, la: parseInt(l[2], 10) || 0 };
+             lt: parseInt(l[0], 10) || 0, lb: parseInt(l[1], 10) || 0, la: parseInt(l[2], 10) || 0,
+             tp: isV2 ? (parseInt(f[5], 10) || 0) : 0, v: isV2 ? 2 : 1 };
   }
   function ensureLevels(idx, clef, upTo) {
     var changed = false;
@@ -485,6 +489,7 @@
     if (p.tot > perfTotal(idx)) { Storage.set("fy_perfect_total_" + idx, p.tot); done.push("20問 全部一発正解 " + p.tot + "回"); }
     if (p.rb > runBest(idx)) { Storage.set("fy_run_best_" + idx, p.rb); done.push("連続の最高 " + p.rb + "回"); }
     if (p.rn > runNow(idx)) { Storage.set("fy_run_now_" + idx, p.rn); done.push("連続 現在 " + p.rn + "回"); }
+    if (p.tp > Storage.getNumber("fy_tp_" + idx, 0)) { Storage.set("fy_tp_" + idx, p.tp); done.push("トレーニングポイント " + p.tp + " p"); }
     if (p.lt > 0 && ensureLevels(idx, "treble", p.lt)) done.push("ト音記号 レベル" + p.lt + "まで合格");
     if (p.lb > 0 && ensureLevels(idx, "bass", p.lb)) done.push("ヘ音記号 レベル" + p.lb + "まで合格");
     if (p.la > 0 && ensureLevels(idx, "all", p.la)) done.push("全カード レベル" + p.la + "まで合格");
@@ -1010,7 +1015,9 @@
         GR + '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '</div>' +
         GR + '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '</div>' +
         BL + '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
+        BL + '<b>🏅 トレーニングポイント</b> ' + ((typeof window.fyParentTP === "function") ? window.fyParentTP(idx) : "") + '</div>' +
         BL + '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '</div>' +
+        GR + '<b>💮 今週のハンコ</b> ' + ((typeof window.fyParentStamps === "function") ? window.fyParentStamps(idx) : "") + '</div>' +
         GR + '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') + '</div>' +
         '</div>';
       html += '</div>';
@@ -1103,6 +1110,7 @@
           '<input id="frTot" class="modal-input" type="number" min="0" placeholder="20問 全部一発正解の 回数">' +
           '<input id="frRb" class="modal-input" type="number" min="0" placeholder="連続の 最高（回）">' +
           '<input id="frRn" class="modal-input" type="number" min="0" placeholder="連続の いま（回）">' +
+          '<input id="frTp" class="modal-input" type="number" min="0" placeholder="トレーニングポイント（いま 何p）">' +
           '<div style="text-align:left;font-size:11px;color:#806c5a;">合格した レベル（0〜5）</div>' +
           '<div style="display:flex;gap:4px;margin-bottom:6px;">' +
             '<select id="frLt" class="modal-input" style="margin:0;"><option value="0">ト音 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
@@ -1148,7 +1156,8 @@
     var code = makeRestoreCode({
       name: name, dt: v("frDt"), db: v("frDb"), dm: v("frDm"),
       tot: parseInt(v("frTot"), 10) || 0, rb: parseInt(v("frRb"), 10) || 0, rn: parseInt(v("frRn"), 10) || 0,
-      lt: parseInt(v("frLt"), 10) || 0, lb: parseInt(v("frLb"), 10) || 0, la: parseInt(v("frLa"), 10) || 0
+      lt: parseInt(v("frLt"), 10) || 0, lb: parseInt(v("frLb"), 10) || 0, la: parseInt(v("frLa"), 10) || 0,
+      tp: parseInt(v("frTp"), 10) || 0
     });
     var out = document.getElementById("frOut");
     out.value = code;
@@ -1577,7 +1586,7 @@
      ・生徒は スクショを 先生に 送る → 先生は 先生ページの「コードかくにん」で たしかめる
      ===================================================================== */
   var EX_UNIT = 10;
-  var EX_DAYS = 3;                         /* こうかんの きろくが 画面に のこる 日数 */
+  var EX_DAYS = 7;                         /* こうかんの きろくが 画面に のこる 日数 */
   var exOv = null;
   var exBusy = false;
 
@@ -1690,6 +1699,10 @@
     }
     w.style.display = isRegistered(activeProfileIndex) ? "flex" : "none";
   }
+
+  /* 保護者ページ用 */
+  window.fyParentTP = function (idx) { return getTP(idx) + " p"; };
+  window.fyParentStamps = function (idx) { return daysThisWeek(idx) + "日（月〜日）"; };
 
   /* ---- 先生ページ：ためすための ボタン（1週間 まてないので） ---- */
   try {
