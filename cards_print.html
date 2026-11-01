@@ -208,7 +208,7 @@ function getP() {
 function buildHagaki() {
   var P = getP();
   var DPI = 300, pxmm = DPI / 25.4;
-  var W = Math.round(100 * P * pxmm), H = Math.round(148 * P * pxmm);
+  var W = Math.round(100 * pxmm), H = Math.round(148 * pxmm);   /* 紙の画像は、いつも 100×148mm */
   var cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   var ctx = cv.getContext("2d");
@@ -218,9 +218,9 @@ function buildHagaki() {
   var cw = t.cw, ch = t.ch;
 
   ctx.save();
-  ctx.translate(100 * P * pxmm, 0);
+  ctx.translate(100 * pxmm, 0);
   ctx.rotate(Math.PI / 2);
-  ctx.scale(pxmm * P, pxmm * P);               /* ここから先は、拡大率をかけた mm の単位。よこ 148 × たて 100 */
+  ctx.scale(pxmm, pxmm);                       /* ここから先は mm の単位。よこ 148 × たて 100 */
 
   var cards = [
     { img: document.getElementById("imgF"), cx: CX_FRONT, front: true },
@@ -230,6 +230,9 @@ function buildHagaki() {
 
   cards.forEach(function (c) {
     var x0 = c.cx - cw / 2, y0 = 50 - ch / 2;
+    ctx.save();
+    /* 拡大率は、カードだけに かける（カードの中心は、動かさない） */
+    ctx.translate(c.cx, 50); ctx.scale(P, P); ctx.translate(-c.cx, -50);
     ctx.drawImage(c.img, x0, y0, cw, ch);
 
     /* 切るための目印 */
@@ -242,7 +245,7 @@ function buildHagaki() {
       ctx.fillRect(p[0] - T / 2, vy, T, L);
     });
 
-    if (!c.front) return;
+    if (!c.front) { ctx.restore(); return; }
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
     ctx.fillStyle = "#2b3a6a";
@@ -265,6 +268,7 @@ function buildHagaki() {
       ctx.font = "900 " + (fsn * cw) + "px " + FONT;
       ctx.fillText(String(cnt()), x0 + t.cloud.x * cw, y0 + (t.cloud.y + fsn * (cw / ch) * 0.58) * ch);
     }
+    ctx.restore();
   });
 
   ctx.restore();
@@ -283,7 +287,7 @@ document.getElementById("btnPrint").addEventListener("click", function () {
   var url = makeImage();
   if (!url) return;
   var P = getP();
-  var pw = (100 * P).toFixed(2) + "mm", ph = (148 * P).toFixed(2) + "mm";
+  var pw = "100mm", ph = "148mm";
   document.documentElement.style.setProperty("--pw", pw);
   document.documentElement.style.setProperty("--ph", ph);
   document.getElementById("pageStyle").textContent = "@page { size: " + pw + " " + ph + "; margin: 0; }";
