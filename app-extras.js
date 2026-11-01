@@ -1067,11 +1067,12 @@
       var t2 = document.getElementById("tTab2");
       if (t2) t2.style.display = "none";
       /* むかしの 100回目の テスト用ボタンは つかわない */
+      window.resetParentPasswordByTeacher = function () {};   /* 保護者パスワードの リセットは つかわない */
       var tab3b = document.getElementById("teacherTab3");
       if (tab3b) {
         Array.prototype.forEach.call(tab3b.querySelectorAll("button"), function (bt) {
           var oc = bt.getAttribute("onclick") || "";
-          if (oc.indexOf("setStreak99ForTest") !== -1 || oc.indexOf("resetLegendForTest") !== -1) bt.style.display = "none";
+          if (oc.indexOf("setStreak99ForTest") !== -1 || oc.indexOf("resetLegendForTest") !== -1 || oc.indexOf("resetParentPasswordByTeacher") !== -1) bt.style.display = "none";
         });
         Array.prototype.forEach.call(tab3b.querySelectorAll("div"), function (dv) {
           if (dv.children.length === 0 && dv.textContent.indexOf("100回目のテスト") !== -1) dv.style.display = "none";
@@ -1365,10 +1366,12 @@
   function getTP(idx) { return Storage.getNumber(K.tp(idx), 0); }
 
   /* ハンコを おす（その日 はじめてなら true） */
+  var justStamped = {};   /* いま ハンコを おした プレイヤー（トップで 光らせる） */
   function giveStamp(idx) {
     var t = dstr(new Date());
     var s = getStamps(idx);
     if (s.indexOf(t) !== -1) return false;
+    justStamped[idx] = { t: 0 };
     s.push(t);
     s.sort();
     if (s.length > 60) s = s.slice(s.length - 60);
@@ -1435,7 +1438,15 @@
     var st = document.createElement("style");
     st.textContent =
       "@keyframes fyPon{0%{transform:scale(2.2) rotate(-12deg);opacity:0}60%{transform:scale(.9) rotate(-12deg);opacity:1}100%{transform:scale(1) rotate(-12deg);opacity:1}}" +
-      ".fy-stamp-pon{animation:fyPon .45s ease-out both}";
+      ".fy-stamp-pon{animation:fyPon .45s ease-out both}" +
+      "@keyframes fyBig{0%{transform:scale(3.2) rotate(-18deg);opacity:0}55%{transform:scale(.82) rotate(-12deg);opacity:1}75%{transform:scale(1.12) rotate(-12deg)}100%{transform:scale(1) rotate(-12deg);opacity:1}}" +
+      "@keyframes fyRing{0%{transform:scale(.5);opacity:.9}100%{transform:scale(2.4);opacity:0}}" +
+      ".fy-big-pon{display:inline-block;font-size:76px;line-height:1;animation:fyBig .6s cubic-bezier(.2,.8,.3,1) both}" +
+      ".fy-ring{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;border:4px solid #ff8a65;opacity:0;animation:fyRing .7s ease-out .25s both;pointer-events:none}" +
+      "@keyframes fyGlow{0%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,160,0,0))}30%{transform:scale(1.45);filter:drop-shadow(0 0 10px rgba(255,160,0,1))}60%{transform:scale(1);filter:drop-shadow(0 0 4px rgba(255,160,0,.6))}100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,160,0,0))}}" +
+      ".fy-glow{animation:fyGlow 1s ease-in-out .3s 3 both}" +
+      "@keyframes fyNudge{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,112,67,.5)}50%{transform:scale(1.1);box-shadow:0 0 0 8px rgba(255,112,67,0)}}" +
+      ".fy-nudge{animation:fyNudge 1.6s ease-in-out infinite}";
     document.head.appendChild(st);
   } catch (e) {}
 
@@ -1444,7 +1455,8 @@
   function dotHtml(kind) {
     var base = "width:42px;height:42px;border-radius:50%;margin:4px auto 0;display:flex;align-items:center;justify-content:center;";
     if (kind === "on") return '<div style="' + base + 'font-size:38px;line-height:1;background:transparent;">💮</div>';
-    if (kind === "tmp") return '<div id="fyTmpStamp" style="' + base + 'font-size:13px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
+    if (kind === "onNew") return '<div class="fy-glow" style="' + base + 'font-size:38px;line-height:1;background:transparent;">💮</div>';
+    if (kind === "tmp") return '<div id="fyTmpStamp" class="fy-nudge" style="' + base + 'font-size:13px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
     return '<div style="' + base + 'font-size:22px;background:#e6e6e6;color:#aaa;">・</div>';
   }
 
@@ -1470,10 +1482,16 @@
     var todayS = dstr(new Date());
     var d = daysIn(stamps, ws);
 
+    var glowToday = false;
+    var js = justStamped[idx];
+    if (js) {
+      if (!js.t) js.t = Date.now();
+      if (Date.now() - js.t < 5000) glowToday = true; else delete justStamped[idx];
+    }
     var row = "";
     for (var i = 0; i < 7; i++) {
       var ds = dstr(addDays(ws, i));
-      var kind = stamps.indexOf(ds) !== -1 ? "on" : (ds === todayS ? "tmp" : "off");
+      var kind = stamps.indexOf(ds) !== -1 ? ((glowToday && ds === todayS) ? "onNew" : "on") : (ds === todayS ? "tmp" : "off");
       row += '<div style="flex:1;text-align:center;font-size:14px;font-weight:800;color:#5b4636;">' + DAY_LABEL[i] + dotHtml(kind) + '</div>';
     }
     box.innerHTML =
@@ -1569,7 +1587,7 @@
       box.id = "fyHankoResult";
       box.style.cssText = "background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:8px 10px;margin:8px auto 0;width:92%;text-align:center;color:#5b4636;";
       var stampPart = isNew
-        ? '<div class="fy-stamp-pon" style="width:64px;height:64px;border-radius:50%;border:4px solid #e53935;color:#e53935;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;margin:2px auto 4px;background:rgba(255,255,255,.6);">ポン！</div>' +
+        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">💮</span></div>' +
           '<div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
         : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>';
       box.innerHTML = stampPart +
