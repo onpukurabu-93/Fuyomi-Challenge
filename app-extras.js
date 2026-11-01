@@ -244,6 +244,11 @@
     return out;
   }
 
+  /* ポイントこうかんの コード（生徒の画面と、先生の コードかくにん で、同じ 計算を つかう） */
+  window.fyExchangeCode = function (name, amt, rest, dateStr) {
+    return codeFor(name, "exchange", (amt | 0) + "-" + (rest | 0), dateStr);
+  };
+
   var INFO = {
     stamp:  { icon: "🏅", label: "スタンプカード", bg: "#fffdf0", bd: "#ffb300", tx: "#5b4636", ac: "#ff5722", cbg: "#fff", ctx: "#5b4636" },
     treble: { icon: "🎼", label: "ト音記号マスター", bg: "#eaf6ff", bd: "#2a8fd6", tx: "#1a4a7a", ac: "#2a8fd6", cbg: "#fff", ctx: "#1a4a7a" },
@@ -1080,8 +1085,11 @@
             '<option value="treble">ト音記号マスター</option>' +
             '<option value="bass">ヘ音記号マスター</option>' +
             '<option value="master">ふよみマスター</option>' +
+            '<option value="exchange">ポイント こうかん</option>' +
           '</select>' +
           '<input id="fcDate" class="modal-input" type="date">' +
+          '<div style="text-align:left;font-size:11px;color:#806c5a;">「ポイント こうかん」のときだけ、スクショの 数字を 入れてね</div>' +
+          '<div style="display:flex;gap:4px;"><input id="fcAmt" class="modal-input" type="number" min="0" placeholder="こうかんした p"><input id="fcRest" class="modal-input" type="number" min="0" placeholder="のこり p"></div>' +
           '<button class="modal-btn" style="background:#5c6bc0;font-size:12px;padding:8px;" onclick="fyCheckCode()">コードを 出す</button>' +
           '<div id="fcOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0 12px;color:#3949ab;"></div>' +
           '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:4px 0 6px;text-align:left;">🔁 復元コードを つくる（名簿の きろくから）</div>' +
@@ -1116,6 +1124,12 @@
     var type = document.getElementById("fcType").value;
     var date = document.getElementById("fcDate").value;
     if (!name || !date) { document.getElementById("fcOut").textContent = "なまえと ひづけを いれてね"; return; }
+    if (type === "exchange") {
+      var amt = document.getElementById("fcAmt").value, rest = document.getElementById("fcRest").value;
+      if (amt === "" || rest === "") { document.getElementById("fcOut").textContent = "こうかんした p と のこり p を いれてね"; return; }
+      document.getElementById("fcOut").textContent = window.fyExchangeCode(name, parseInt(amt, 10) || 0, parseInt(rest, 10) || 0, date);
+      return;
+    }
     document.getElementById("fcOut").textContent = codeFor(name, type, 0, date);
   };
 
@@ -1301,7 +1315,7 @@
    ・トレーニング（10問・20問）を さいごまで やりきると、その日の ハンコ。6つのドは かぞえない。
    ・1週間は 月〜日。週が かわって アプリを ひらくと、先週の ポイントが 入る。
    ・1〜2日で 1p、3〜4日で 2p、5〜6日で 3p、7日(パーフェクト)で 5p、0日は 0p。
-   ・（こうかんの がめんは、つぎの かいで つくります）
+   ・10ポイントずつ こうかん。こうかんの きろくと コードが 画面に 出る
    ===================================================================== */
 (function () {
   var VOICE1_FILE = "hanko-motte.mp3";   /* トレーニングして ハンコを もらおう */
@@ -1505,6 +1519,7 @@
     try {
       if (isRegistered(activeProfileIndex)) settle(activeProfileIndex);
       renderTop();
+      renderExBtn();
       maybeNotice();
       /* きょう まだ ハンコが ないとき、起動ごとに 1回だけ 声 */
       var idx = activeProfileIndex;
@@ -1548,6 +1563,127 @@
     return r;
   };
 
+  /* =====================================================================
+     ポイントの こうかん（10ポイントずつ）
+     ・こうかんすると、ポイントが へる（もどせない）
+     ・「教室ネーム・日づけ・こうかんした p・のこり p」から コードを 計算して 画面に出す
+     ・生徒は スクショを 先生に 送る → 先生は 先生ページの「コードかくにん」で たしかめる
+     ===================================================================== */
+  var EX_UNIT = 10;
+  var EX_DAYS = 3;                         /* こうかんの きろくが 画面に のこる 日数 */
+  var exOv = null;
+  var exBusy = false;
+
+  function exLog(idx) { var a = Storage.get("fy_tp_log_" + idx, []); return Array.isArray(a) ? a : []; }
+  function md(ds) { var p = String(ds).split("-"); return parseInt(p[1], 10) + "/" + parseInt(p[2], 10); }
+  function exClose() { if (exOv) { try { exOv.remove(); } catch (e) {} exOv = null; } }
+
+  function exShell(inner) {
+    if (!exOv) {
+      exOv = document.createElement("div");
+      exOv.id = "fyExchange";
+      exOv.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9000;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;";
+      document.body.appendChild(exOv);
+    }
+    exOv.innerHTML = '<div style="background:#fdf8ed;border-radius:18px;padding:16px;width:100%;max-width:340px;max-height:94%;overflow-y:auto;text-align:center;color:#5b4636;box-shadow:0 4px 18px rgba(0,0,0,.25);">' + inner + '</div>';
+  }
+
+  var BTN = "width:100%;border:none;border-radius:12px;padding:12px;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;";
+
+  function receiptHtml(e) {
+    return '<div style="border:3px double #ffb300;background:#fffdf0;border-radius:14px;padding:10px;margin:8px 0;">' +
+      '<div style="font-size:28px;">🎁</div>' +
+      '<div style="font-weight:900;">ポイント こうかん　' + e.amt + 'p</div>' +
+      '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc2(e.name) + ' さん</div>' +
+      '<div style="font-size:13px;">' + md(e.d) + '</div>' +
+      '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
+      '<div style="font-size:11px;color:#806c5a;line-height:1.6;">この がめんを スクショして<br>せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
+      '</div>';
+  }
+  function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  function exMain(amt) {
+    var idx = activeProfileIndex, tp = getTP(idx);
+    var max = Math.floor(tp / EX_UNIT) * EX_UNIT;
+    var html = '<div style="font-size:18px;font-weight:900;">🎁 ポイントを こうかん</div>' +
+      '<div style="font-size:14px;margin-top:6px;">いま <span style="font-size:24px;font-weight:900;color:#e65100;">' + tp + ' p</span></div>';
+    if (max < EX_UNIT) {
+      html += '<div style="font-size:14px;font-weight:800;line-height:1.7;margin:12px 0;">' + EX_UNIT + 'ポイントから こうかん できるよ！<br>あと <b>' + (EX_UNIT - tp) + '</b> ポイント！</div>';
+    } else {
+      if (!amt || amt > max || amt < EX_UNIT) amt = EX_UNIT;
+      var cs = "width:44px;height:44px;border-radius:50%;border:none;background:#78a9c8;color:#fff;font-size:26px;font-weight:900;cursor:pointer;";
+      html += '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0;">' +
+        '<button id="fyExMinus" style="' + cs + (amt <= EX_UNIT ? 'opacity:.3;' : '') + '">−</button>' +
+        '<b id="fyExAmt" style="font-size:38px;min-width:80px;">' + amt + '</b>' +
+        '<button id="fyExPlus" style="' + cs + (amt >= max ? 'opacity:.3;' : '') + '">＋</button></div>' +
+        '<button id="fyExGo" style="' + BTN + 'background:#ff7043;color:#fff;">' + amt + 'ポイント こうかんする</button>' +
+        '<div style="font-size:12px;color:#806c5a;line-height:1.7;margin-top:8px;">こうかんすると、ポイントが へります。<br>もどせません。</div>';
+    }
+    /* さいきんの こうかん（スクショを とりわすれたとき） */
+    var now = Date.now(), recent = exLog(idx).filter(function (e) { return now - e.t < EX_DAYS * 86400000; });
+    if (recent.length) {
+      html += '<div style="font-size:12px;font-weight:800;margin-top:14px;text-align:left;">さいきんの こうかん（' + EX_DAYS + '日で きえるよ）</div>';
+      recent.slice().reverse().forEach(function (e) { html += receiptHtml(e); });
+    }
+    html += '<button id="fyExClose" style="' + BTN + 'background:#ccc;color:#5b4636;">とじる</button>';
+    exShell(html);
+
+    var q = function (id) { return document.getElementById(id); };
+    if (q("fyExMinus")) q("fyExMinus").addEventListener("click", function () { exMain(Math.max(EX_UNIT, amt - EX_UNIT)); });
+    if (q("fyExPlus")) q("fyExPlus").addEventListener("click", function () { exMain(Math.min(max, amt + EX_UNIT)); });
+    if (q("fyExGo")) q("fyExGo").addEventListener("click", function () { exConfirm(amt); });
+    q("fyExClose").addEventListener("click", function () { exClose(); try { initProfiles(); } catch (e) {} });
+  }
+
+  function exConfirm(amt) {
+    exShell('<div style="font-size:30px;">🎁</div>' +
+      '<div style="font-size:20px;font-weight:900;margin:6px 0;">' + amt + 'ポイント こうかん する？</div>' +
+      '<div style="font-size:13px;color:#806c5a;line-height:1.7;">ポイントが へります。<br>もどせません。</div>' +
+      '<button id="fyExYes" style="' + BTN + 'background:#ff7043;color:#fff;">する</button>' +
+      '<button id="fyExNo" style="' + BTN + 'background:#ccc;color:#5b4636;">やめる</button>');
+    document.getElementById("fyExYes").addEventListener("click", function () { exDo(amt); });
+    document.getElementById("fyExNo").addEventListener("click", function () { exMain(amt); });
+  }
+
+  function exDo(amt) {
+    if (exBusy) return;
+    exBusy = true;
+    try {
+      var idx = activeProfileIndex, tp = getTP(idx);
+      if (amt < EX_UNIT || amt % EX_UNIT !== 0 || tp < amt) { exMain(EX_UNIT); return; }
+      var rest = tp - amt;
+      var d = dstr(new Date());
+      var name = (typeof profiles !== "undefined" && profiles[idx]) || "";
+      var code = (typeof window.fyExchangeCode === "function") ? window.fyExchangeCode(name, amt, rest, d) : "----";
+      var e = { t: Date.now(), d: d, amt: amt, rest: rest, code: code, name: name };
+      Storage.set(K.tp(idx), rest);
+      var log = exLog(idx); log.push(e);
+      if (log.length > 20) log = log.slice(log.length - 20);
+      Storage.set("fy_tp_log_" + idx, log);
+      exShell('<div style="font-size:16px;font-weight:900;">こうかん できたよ！</div>' + receiptHtml(e) +
+        '<button id="fyExDone" style="' + BTN + 'background:#ffb300;color:#5b4636;">とじる</button>');
+      document.getElementById("fyExDone").addEventListener("click", function () { exClose(); try { initProfiles(); } catch (er) {} });
+    } finally {
+      exBusy = false;
+    }
+  }
+
+  /* トップ画面の「ポイントを こうかん」ボタン */
+  function renderExBtn() {
+    var anchor = document.getElementById("stampMiniBox");
+    if (!anchor || !anchor.parentNode) return;
+    var w = document.getElementById("fyExBtnWrap");
+    if (!w) {
+      w = document.createElement("div");
+      w.id = "fyExBtnWrap";
+      w.style.cssText = "display:flex;justify-content:center;margin-top:6px;";
+      w.innerHTML = '<button id="fyExBtn" style="border:none;background:#8dbb8d;color:#fff;font-size:13px;font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;">🎁 ポイントを こうかん</button>';
+      anchor.parentNode.insertBefore(w, anchor.nextSibling);
+      document.getElementById("fyExBtn").addEventListener("click", function () { exMain(EX_UNIT); });
+    }
+    w.style.display = isRegistered(activeProfileIndex) ? "flex" : "none";
+  }
+
   /* ---- 先生ページ：ためすための ボタン（1週間 まてないので） ---- */
   try {
     var t3 = document.getElementById("teacherTab3");
@@ -1556,6 +1692,7 @@
       tb.innerHTML =
         '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🧪 トレーニングポイントの テスト</div>' +
         '<button id="fyTestWeek" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 先週 4日ぶんの ハンコを つくる（つぎに トップを ひらくと おしらせ）</button>' +
+        '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 ポイントを 10 ふやす</button>' +
         '<button id="fyTestReset" class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:6px;">🧪 いまのプレイヤーの ハンコと ポイントを リセット</button>';
       t3.insertBefore(tb, t3.firstChild);
       document.getElementById("fyTestWeek").addEventListener("click", function () {
@@ -1569,9 +1706,15 @@
         Storage.set(K.notice(idx), null);
         alert("先週に 4日ぶんの ハンコを つくりました。\n「閉じる」で トップに もどると、おしらせが 出ます。");
       });
+      document.getElementById("fyTestPlus").addEventListener("click", function () {
+        var idx = activeProfileIndex;
+        Storage.set(K.tp(idx), getTP(idx) + 10);
+        try { initProfiles(); } catch (e) {}
+        alert("ポイントを 10 ふやしました。（いま " + getTP(idx) + " p）");
+      });
       document.getElementById("fyTestReset").addEventListener("click", function () {
         var idx = activeProfileIndex;
-        [K.stamps(idx), K.tp(idx), K.paid(idx), K.notice(idx)].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+        [K.stamps(idx), K.tp(idx), K.paid(idx), K.notice(idx), "fy_tp_log_" + idx].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
         voice1Done = {};
         try { initProfiles(); } catch (e) {}
         alert("ハンコと ポイントを リセットしました。");
