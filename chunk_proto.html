@@ -165,6 +165,7 @@ svg { width: 100%; height: auto; display: block; }
         a.push(t); a.sort();
         if (a.length > 60) a = a.slice(a.length - 60);
         localStorage.setItem(k, JSON.stringify(a));
+        localStorage.setItem("fy_hanko_new_" + PID, String(Date.now()));   /* トップで 光らせる しるし */
         st = "new";
       }
       var ws = new Date(d.getFullYear(), d.getMonth(), d.getDate()); ws.setDate(ws.getDate() - ((ws.getDay() + 6) % 7));
