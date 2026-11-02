@@ -715,6 +715,9 @@ svg { width: 100%; height: auto; display: block; }
   var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1;
   var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
   function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; }
+  var NM12 = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
+  function pShow(pc, m, tag) { pSt("きこえた：" + NM12[pc] + (tag ? "（" + tag + "）" : "")); }
+  function expectName() { return queue[idx] === undefined ? null : nameOf(queue[idx]); }
   function pianoUi() {
     var box = document.getElementById("pianoBox");
     if (!box) return;
@@ -756,7 +759,8 @@ svg { width: 100%; height: auto; display: block; }
         if (pStab.n >= 4 && pc2 !== pLastPc && pLastPc !== -1 && now - pLast > 200) {
           pLastPc = pc2; pLast = now; pStab = null;
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(m2);
-          if (PC[pc2]) press(PC[pc2]);
+          pShow(pc2, m2, "つなげ");
+          if (PC[pc2] && expectName() === PC[pc2]) press(PC[pc2]);
         } else if (pLastPc === -1 && pStab.n >= 4) { pLastPc = pc2; }
       } else { pStab = null; }
     }
@@ -772,6 +776,7 @@ svg { width: 100%; height: auto; display: block; }
           var nm = PC[((bm % 12) + 12) % 12];
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(bm);
           pLastPc = ((bm % 12) + 12) % 12; pStab = null;
+          pShow(((bm % 12) + 12) % 12, bm, "");
           if (nm) press(nm);
         }
         pPend = null;
