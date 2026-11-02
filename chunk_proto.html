@@ -436,6 +436,18 @@ svg { width: 100%; height: auto; display: block; }
         ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">💮</span></div><div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
         : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>') +
         '<div style="font-size:13px;margin-top:4px;line-height:1.6;">今週は <b>' + hk.days + '日め</b><br>' + hintText(hk.days) + '</div>';
+      /* 💮が 画面の 下に かくれて 動きを 見のがさないよう、見える ところまで うごかしてから、もういちど 動かす */
+      if (hk.st === "new") {
+        setTimeout(function () {
+          try { hb.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+          setTimeout(function () {
+            var els = hb.querySelectorAll(".fy-ring, .fy-big-pon");
+            for (var q = 0; q < els.length; q++) { els[q].style.animation = "none"; }
+            void hb.offsetWidth;
+            for (var q2 = 0; q2 < els.length; q2++) { els[q2].style.animation = ""; }
+          }, 500);
+        }, 400);
+      }
     } else { hb.style.display = "none"; }
     if (cleared) {
       if (!rec.first) rec.first = el;
