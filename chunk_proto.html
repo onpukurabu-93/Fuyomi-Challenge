@@ -54,6 +54,10 @@ svg { width: 100%; height: auto; display: block; }
 #evScr th,#evScr td{border:1px solid #eadcc8;padding:3px 4px;text-align:center}
 #evScr th{background:#f6ecd8}
 #evCode{width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
+.aw-icon{font-size:84px;line-height:1.1;animation:awpop .9s cubic-bezier(.2,.8,.3,1) both}
+@keyframes awpop{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.25) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.aw-f{position:absolute;top:-30px;animation-name:awfall;animation-timing-function:linear;animation-iteration-count:2;pointer-events:none}
+@keyframes awfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(360deg);opacity:.8}}
 </style>
 </head>
 <body>
@@ -91,7 +95,7 @@ svg { width: 100%; height: auto; display: block; }
     <button class="key-btn key-si" data-k="シ">シ</button>
   </div>
   <button class="btn back" id="evBtn" style="margin-top:14px;">🏆 イベントの きろく</button>
-  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
+  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tLeg" style="color:#806c5a;">せんせい用：レジェンド表彰テスト</a>　<a href="#" id="tMae" style="color:#806c5a;">せんせい用：マエストロ表彰テスト</a><br><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
   <div class="note">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <div id="evScr"><div class="in" id="evIn"></div></div>
@@ -222,7 +226,7 @@ svg { width: 100%; height: auto; display: block; }
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3" };
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3" };
   var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
@@ -604,6 +608,72 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
+  /* ===== レジェンド・マエストロの 表彰（100曲） ===== */
+  var AWARD_N = 100;
+  var AW = {
+    legend:  { type: "legend5", icon: "👑", label: "ふよみレジェンド", sub: "ノーミス 100曲 たっせい！", snd: "awardLegend", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f", fall: ["👑", "✨", "🎉", "⭐"] },
+    maestro: { type: "maestro", icon: "🎻", label: "ふよみマエストロ", sub: "ながい曲 100曲 たっせい！", snd: "awardMaestro", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a", fall: ["🎻", "🎼", "✨", "🎉"] }
+  };
+  function codeFor(name, type, n, dateStr) {
+    var t = [name, type, n, dateStr, SALT].join("|"), h = 2166136261 >>> 0;
+    for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    var out = "";
+    for (var k = 0; k < 4; k++) { out += CODE_CHARS.charAt(h % CODE_CHARS.length); h = Math.floor(h / CODE_CHARS.length); }
+    return out;
+  }
+  function getJSON(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; } }
+  /* 曲を ノーミスで クリアしたとき よぶ（kind: "legend" か "maestro"、songId: 曲の名前）。ちがう曲 100曲で 表彰 */
+  function songCleared(kind, songId) {
+    if (PID === "x" || !AW[kind]) return 0;
+    var k = "fy_chunk_songs_" + kind + "_" + PID, a = getJSON(k, []);
+    if (!Array.isArray(a)) a = [];
+    if (a.indexOf(songId) === -1) { a.push(songId); try { localStorage.setItem(k, JSON.stringify(a)); } catch (e) {} }
+    if (a.length >= AWARD_N) grantAward(kind, false);
+    return a.length;
+  }
+  function songCount(kind) { var a = getJSON("fy_chunk_songs_" + kind + "_" + PID, []); return Array.isArray(a) ? a.length : 0; }
+  function grantAward(kind, test) {
+    var f = AW[kind], rec = null;
+    if (!test) {
+      var ak = "fy_ach_" + PID, list = getJSON(ak, []);
+      if (!Array.isArray(list)) list = [];
+      for (var i = 0; i < list.length; i++) if (list[i] && list[i].type === f.type) rec = list[i];
+      if (!rec) {
+        var now = new Date(), d = todayStr();
+        rec = { type: f.type, n: 0, t: now.getTime(), d: d, name: PNAME, code: codeFor(PNAME, f.type, 0, d) };
+        list.push(rec);
+        try { localStorage.setItem(ak, JSON.stringify(list)); } catch (e) {}
+      }
+    } else {
+      var d2 = todayStr();
+      rec = { type: f.type, n: 0, t: Date.now(), d: d2, name: PNAME || "てすと", code: codeFor(PNAME || "てすと", f.type, 0, d2) };
+    }
+    showAward(kind, rec, test);
+    return rec;
+  }
+  function showAward(kind, rec, test) {
+    var f = AW[kind], p = rec.d.split("-"), dt = (+p[1]) + "/" + (+p[2]);
+    var scr = document.getElementById("awScr");
+    if (!scr) { scr = document.createElement("div"); scr.id = "awScr"; document.body.appendChild(scr); }
+    var fall = "";
+    for (var i = 0; i < 26; i++) {
+      fall += '<span class="aw-f" style="left:' + Math.round(Math.random() * 96) + '%;animation-delay:' + (Math.random() * 3).toFixed(2) + 's;animation-duration:' + (3 + Math.random() * 3).toFixed(2) + 's;font-size:' + (16 + Math.round(Math.random() * 16)) + 'px;">' + f.fall[i % f.fall.length] + '</span>';
+    }
+    scr.style.cssText = "display:block;position:fixed;left:0;top:0;right:0;bottom:0;z-index:80;background:" + f.bg + ";overflow:auto;-webkit-overflow-scrolling:touch;";
+    scr.innerHTML = fall + '<div style="position:relative;max-width:380px;margin:0 auto;padding:22px 16px 26px;text-align:center;color:' + f.tx + ';">' +
+      (test ? '<div style="font-size:11px;opacity:.8;">（せんせい用の テストです・記録には のこりません）</div>' : '') +
+      '<div class="aw-icon">' + f.icon + '</div>' +
+      '<div style="font-size:26px;font-weight:900;margin:4px 0;">' + f.label + '</div>' +
+      '<div style="font-size:16px;font-weight:800;color:' + f.ac + ';">' + f.sub + '</div>' +
+      '<div style="font-size:22px;font-weight:900;margin:12px 0 2px;">' + (rec.name || "") + ' さん</div>' +
+      '<div style="font-size:13px;">' + dt + '</div>' +
+      '<div style="font-size:36px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:12px;padding:8px 0;margin:10px 0;">' + rec.code + '</div>' +
+      '<div style="font-size:13px;line-height:1.7;">7日いないに、この がめんを スクショして<br>せんせいに おくってね。</div>' +
+      '<button class="btn back" id="awClose" style="margin-top:16px;">とじる</button></div>';
+    scr.scrollTop = 0;
+    document.getElementById("awClose").addEventListener("click", function () { scr.style.display = "none"; });
+    setTimeout(function () { playSeq([f.snd]); }, 300);
+  }
   function md(ds) { var p = ds.split("-"); return (+p[1]) + "月" + (+p[2]) + "日"; }
   function showEvent() {
     var rows = "";
@@ -635,7 +705,9 @@ svg { width: 100%; height: auto; display: block; }
     });
   }
   document.getElementById("evBtn").addEventListener("click", showEvent);
-  window.__chunk = { begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
+  document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
+  window.__chunk = { songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
