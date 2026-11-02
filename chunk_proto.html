@@ -73,7 +73,7 @@ svg { width: 100%; height: auto; display: block; }
     <button class="key-btn key-la" data-k="ラ">ラ</button>
     <button class="key-btn key-si" data-k="シ">シ</button>
   </div>
-  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a></div>
+  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
   <div class="note">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <script>
@@ -128,7 +128,7 @@ svg { width: 100%; height: auto; display: block; }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
   var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3" };
-  var aud = null, audOK = false;
+  var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
     try {
@@ -141,45 +141,59 @@ svg { width: 100%; height: auto; display: block; }
   /* タッチのたびに、まだ あいていなければ あける（iPhoneは どの タッチで あくか きまっていないので、何回か ためす） */
   function tryUnlock() {
     var c = ensureCtx();
-    if (c) {
+    if (!c) return;
+    try {
+      if (c.state !== "running") c.resume();
+      var buf = c.createBuffer(1, 1, 22050), src = c.createBufferSource();
+      src.buffer = buf; src.connect(c.destination); src.start(0);
+    } catch (e) {}
+  }
+  /* 音声ファイルは、さいしょに ぜんぶ よみこんで、ピアノと おなじ しくみ（WebAudio）で ならす */
+  function decode(ab) {
+    return new Promise(function (res, rej) {
       try {
-        if (c.state !== "running") c.resume();
-        var buf = c.createBuffer(1, 1, 22050), src = c.createBufferSource();
-        src.buffer = buf; src.connect(c.destination); src.start(0);
-      } catch (e) {}
-    }
-    if (!audOK) {
-      if (!aud) {
-        aud = {};
-        Object.keys(FILES).forEach(function (k) { try { var a = new Audio(FILES[k]); a.preload = "auto"; aud[k] = a; } catch (e) {} });
-      }
-      var tried = 0;
-      Object.keys(aud).forEach(function (k) {
-        var a = aud[k];
-        try {
-          a.muted = true;
-          var pr = a.play();
-          if (pr && pr.then) pr.then(function () { a.pause(); a.currentTime = 0; a.muted = false; audOK = true; }).catch(function () { a.muted = false; });
-        } catch (e) { a.muted = false; }
-      });
-    }
+        var p = actx.decodeAudioData(ab, res, rej);
+        if (p && p.then) p.then(res, rej);
+      } catch (e) { rej(e); }
+    });
+  }
+  function loadFiles() {
+    var c = ensureCtx();
+    Object.keys(FILES).forEach(function (k) {
+      status[k] = "よみこみ中";
+      if (!c) { status[k] = "× 音が つかえません"; return; }
+      fetch(FILES[k]).then(function (r) {
+        if (!r.ok) throw new Error("ファイルが ない（" + r.status + "）");
+        return r.arrayBuffer();
+      }).then(decode).then(function (b) { bufs[k] = b; status[k] = "○"; renderDiag(); })
+        .catch(function (e) { status[k] = "× " + (e && e.message ? e.message : "よめません"); renderDiag(); });
+    });
+  }
+  function renderDiag() {
+    var d = document.getElementById("diag");
+    if (!d) return;
+    d.innerHTML = "音声ファイルの じょうたい<br>" + Object.keys(FILES).map(function (k) { return FILES[k] + "：" + status[k]; }).join("<br>");
   }
   window.__playLog = [];
   function playSeq(keys) {
-    var i = 0;
+    var c = ensureCtx(), i = 0;
     function next() {
       if (i >= keys.length) return;
-      var k = keys[i++], a = aud && aud[k], fin = false;
-      function go() { if (fin) return; fin = true; setTimeout(next, 150); }
+      var k = keys[i++], b = bufs[k], fin = false;
       window.__playLog.push(k);
-      if (!a) { go(); return; }
-      try {
-        a.onended = go; a.onerror = go;
-        a.currentTime = 0;
-        var pr = a.play();
-        if (pr && pr.catch) pr.catch(go);
-      } catch (e) { go(); }
-      setTimeout(go, 9000);
+      function go() { if (fin) return; fin = true; setTimeout(next, 150); }
+      if (!b || !c) { go(); return; }
+      function start() {
+        try {
+          var src = c.createBufferSource();
+          src.buffer = b; src.connect(c.destination);
+          src.onended = go;
+          src.start(0);
+          setTimeout(go, (b.duration + 1) * 1000);
+        } catch (e) { go(); }
+      }
+      if (c.state === "running") start();
+      else { try { c.resume().then(start, start); } catch (e) { start(); } }
     }
     next();
   }
@@ -332,9 +346,13 @@ svg { width: 100%; height: auto; display: block; }
     done = true;
     var rate = Math.round(firstOk / TOTAL * 100);
     document.getElementById("rate").textContent = rate + "%";
-    document.getElementById("rtext").textContent = firstOk === TOTAL
-      ? "すごい！" + TOTAL + "音ぜんぶれんぞくせいかい！"
-      : (TOTAL - firstOk) + "音まちがえて、れんぞくせいかいは 最高 " + bestRun + "回だったよ！";
+    var miss = TOTAL - firstOk, tl = [];
+    if (miss === 0) tl.push("すごい！" + TOTAL + "音ぜんぶれんぞくせいかい！");
+    else {
+      tl.push(miss === 1 ? "あと1音でノーミスだったよ！" : "まちがえたのは" + miss + "音だったよ");
+      if (bestRun >= TOTAL * 0.8) tl.push("れんぞくせいかいは 最高 " + bestRun + "回！");   /* 多いときだけ つたえる */
+    }
+    document.getElementById("rtext").innerHTML = tl.join("<br>");
     /* タイム・ベスト・のびりつ */
     var el = Math.max(0, tEnd - t0), rec = getRec(level), cleared = firstOk >= needOf(level), lines = [];
     lines.push("タイム：<b>" + fmt(el) + "</b>");
@@ -422,12 +440,14 @@ svg { width: 100%; height: auto; display: block; }
     }
   }
 
+  loadFiles();
   ["pointerdown", "touchend", "click"].forEach(function (ev) { document.addEventListener(ev, tryUnlock, true); });
   document.getElementById("kb").addEventListener("pointerdown", function (e) {
     var b = e.target.closest ? e.target.closest(".key-btn") : null;
     if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
   });
   document.getElementById("again").addEventListener("click", start);
+  document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
   document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
