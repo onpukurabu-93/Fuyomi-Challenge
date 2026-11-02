@@ -1862,11 +1862,11 @@
 
   function showEventScreen() {
     var idx = activeProfileIndex, rows = "", anyT = false;
-    var cell = "border:1px solid #eadcc8;padding:6px 4px;text-align:center;";
+    var cell = "border:1px solid #eadcc8;padding:3px 4px;text-align:center;";
     for (var l = 1; l <= 4; l++) {
       var r = getEv(idx, l), rate = evRate(r);
       if (r.bestPerfect || rate) anyT = true;
-      rows += '<tr><td style="' + cell + '">レベル' + l + "<br><span style='font-size:11px'>" + LV[l - 1] + '音</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
+      rows += '<tr><td style="' + cell + '">レベル' + l + " <span style='font-size:11px'>(" + LV[l - 1] + '音)</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
     var c = makeEventCode(idx), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
@@ -1877,20 +1877,20 @@
       scr.style.cssText = "display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#fdf8ed;z-index:9000;overflow:auto;-webkit-overflow-scrolling:touch;color:#5b4636;";
       document.body.appendChild(scr);
     }
-    var th = "border:1px solid #eadcc8;padding:6px 4px;text-align:center;background:#f6ecd8;";
-    scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:14px 12px 30px;">' +
-      '<div style="font-size:20px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
-      '<div style="text-align:center;margin:4px 0 10px;font-size:14px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
-      '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:10px;text-align:center;font-size:15px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:30px;font-weight:900;color:#ff5722;">' + practiceDays(idx) + '</span> 日</div>' +
-      '<div style="margin-top:12px;font-size:14px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく（レジェンドへの みち）</div>' +
-      '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;"><tr><th style="' + th + '"></th><th style="' + th + '">ノーミスの ベスト</th><th style="' + th + '">のびた</th></tr>' + rows + '</table>' +
+    var th = "border:1px solid #eadcc8;padding:3px 4px;text-align:center;background:#f6ecd8;";
+    scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:10px 12px 14px;">' +
+      '<div style="font-size:18px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
+      '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
+      '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px;text-align:center;font-size:14px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:24px;font-weight:900;color:#ff5722;">' + practiceDays(idx) + '</span> 日</div>' +
+      '<div style="margin-top:8px;font-size:13px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく（レジェンドへの みち）</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0;"><tr><th style="' + th + '"></th><th style="' + th + '">ノーミスの ベスト</th><th style="' + th + '">のびた</th></tr>' + rows + '</table>' +
       (!isMaster(idx) && !anyT ? '<div style="font-size:12px;color:#806c5a;">ふよみマスターに なると、レジェンドへの みちの タイムも のせられるよ！</div>' : '') +
-      '<div style="font-size:12px;color:#806c5a;margin-top:6px;">きろくした日：' + when + '</div>' +
-      '<div style="font-size:12px;font-weight:800;margin-top:10px;">せんせいに おくる コード</div>' +
-      '<textarea id="fyEvCode" readonly style="width:100%;height:92px;font-size:11px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
-      '<button id="fyEvCopy" style="display:block;width:100%;border:none;border-radius:14px;padding:14px;font-size:17px;font-weight:800;background:#5c6bc0;color:#fff;margin-top:12px;">コードを コピー</button>' +
-      '<div style="font-size:13px;line-height:1.7;margin-top:10px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
-      '<button id="fyEvClose" style="display:block;width:100%;border:none;border-radius:14px;padding:14px;font-size:17px;font-weight:800;background:#f0efec;color:#3b2f27;margin-top:12px;">もどる</button>' +
+      '<div style="font-size:12px;color:#806c5a;margin-top:2px;">きろくした日：' + when + '</div>' +
+      '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
+      '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
+      '<button id="fyEvCopy" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#5c6bc0;color:#fff;margin-top:6px;">コードを コピー</button>' +
+      '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
+      '<button id="fyEvClose" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#f0efec;color:#3b2f27;margin-top:6px;">もどる</button>' +
       '</div>';
     scr.style.display = "block";
     scr.scrollTop = 0;
