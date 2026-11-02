@@ -35,7 +35,7 @@ h1 { font-size: 18px; text-align: center; margin: 4px 0 2px; }
     <div id="info">ピアノを ひいてみてね</div>
     <div class="meter"><i id="lv"></i></div>
   </div>
-  <div class="row"><span>びんかん</span><input type="range" id="sens" min="1" max="60" value="12"><span id="sensv"></span></div>
+  <div class="row"><span>びんかん</span><input type="range" id="sens" min="1" max="60" value="6"><span id="sensv"></span></div>
   <div class="cnt">ひいた かず：<span id="count">0</span>　<button id="clr" style="font-size:12px;padding:4px 10px;">リセット</button></div>
   <div id="log"></div>
   <div class="sub" style="margin-top:12px;">つかいかた：<br>ド レ ミ ファ ソ ラ シ を 1つずつ、ゆっくり ひきます。<br>おなじ 音を 2かい ならべて ひいても、2つ ならぶか みてね。<br>まちがって 出る 音が あれば、そのまま おしえてください。</div>
@@ -45,7 +45,7 @@ h1 { font-size: 18px; text-align: center; margin: 4px 0 2px; }
   var NAMES = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
   var ctx = null, an = null, buf = null, started = false;
   var N = 4096;
-  var count = 0, thr = 12;
+  var count = 0, thr = 6;
   var lastOnset = -1e9, pending = null, rmsHist = [];
   window.__events = [];
 
@@ -55,7 +55,7 @@ h1 { font-size: 18px; text-align: center; margin: 4px 0 2px; }
 
   /* YIN（音の たかさを みつける ほうほう） */
   function yin(data, sr) {
-    var W = 2048, maxTau = Math.floor(sr / 150), minTau = Math.floor(sr / 1100);
+    var W = 2048, maxTau = Math.floor(sr / 120), minTau = Math.floor(sr / 1100);
     var d = new Float32Array(maxTau + 1), cm = new Float32Array(maxTau + 1);
     for (var tau = 1; tau <= maxTau; tau++) {
       var sum = 0;
