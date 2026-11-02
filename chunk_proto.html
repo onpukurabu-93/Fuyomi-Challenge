@@ -48,6 +48,12 @@ svg { width: 100%; height: auto; display: block; }
 .btn.back { background: #f0efec; color: #3b2f27; }
 .ov .back { width: 78%; margin-top: 14px; padding: 14px; font-size: 17px; }
 .note { font-size: 11px; color: #806c5a; text-align: center; margin-top: 10px; line-height: 1.5; }
+#evScr{display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#fdf8ed;z-index:50;overflow:auto;-webkit-overflow-scrolling:touch}
+#evScr .in{max-width:420px;margin:0 auto;padding:14px 12px 30px;color:#5b4636}
+#evScr table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+#evScr th,#evScr td{border:1px solid #eadcc8;padding:6px 4px;text-align:center}
+#evScr th{background:#f6ecd8}
+#evCode{width:100%;height:92px;font-size:11px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -84,9 +90,11 @@ svg { width: 100%; height: auto; display: block; }
     <button class="key-btn key-la" data-k="ラ">ラ</button>
     <button class="key-btn key-si" data-k="シ">シ</button>
   </div>
+  <button class="btn back" id="evBtn" style="margin-top:14px;">🏆 イベントの きろく</button>
   <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
   <div class="note">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
+<div id="evScr"><div class="in" id="evIn"></div></div>
 <script>
 (function () {
   var LEVELS = [16, 32, 64, 96];   /* レベル1〜4 の おとの かず（レベル5は きょく） */
@@ -99,6 +107,44 @@ svg { width: 100%; height: auto; display: block; }
     var _p = JSON.parse(localStorage.getItem("onpu_profiles") || "[]");
     if (_p && _p[_i]) PNAME = String(_p[_i]);
   } catch (e) {}
+  /* ★ イベントの せってい（つぎの イベントからは、ここだけ 書きかえる） */
+  var EVENT = { id: "2027-01", title: "1月の ふよみイベント",
+                pStart: "2026-12-20", pEnd: "2026-12-31",    /* 練習期間：ハンコの日数を かぞえる */
+                start: "2027-01-01", end: "2027-01-31" };    /* イベント：ベストタイムと のびりつを きろくする */
+  var SALT = "fuyomi-2026", CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  function p2(n) { return (n < 10 ? "0" : "") + n; }
+  function todayStr() {
+    var d = window.__fakeDate ? new Date(window.__fakeDate) : new Date();
+    return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+  }
+  function evKey(l) { return "fy_chunk_ev_" + PID + "_" + EVENT.id + "_" + l; }
+  function getEv(l) { try { return JSON.parse(localStorage.getItem(evKey(l)) || "null") || {}; } catch (e) { return {}; } }
+  function setEv(l, r) { try { localStorage.setItem(evKey(l), JSON.stringify(r)); } catch (e) {} }
+  function inEvent() { var t = todayStr(); return t >= EVENT.start && t <= EVENT.end; }
+  function b64enc(str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function signOf(payload) {
+    var s = payload + "|" + SALT, h = 2166136261 >>> 0;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    var out = "";
+    for (var k = 0; k < 6; k++) { out += CODE_CHARS.charAt(h % CODE_CHARS.length); h = Math.floor(h / CODE_CHARS.length); }
+    return out;
+  }
+  function practiceDays() {
+    try {
+      var a = JSON.parse(localStorage.getItem("fy_hanko_" + PID) || "[]"), n = 0;
+      if (!Array.isArray(a)) return 0;
+      a.forEach(function (d) { if (d >= EVENT.pStart && d <= EVENT.pEnd) n++; });
+      return n;
+    } catch (e) { return 0; }
+  }
+  function evRate(r) { return (r.n >= 2 && r.first > 0 && r.bestClear < r.first) ? Math.round((r.first - r.bestClear) / r.first * 100) : 0; }
+  function makeEventCode() {
+    var d = new Date(), stamp = todayStr().replace(/-/g, "") + p2(d.getHours()) + p2(d.getMinutes());
+    var f = ["FYE1", PNAME, EVENT.id, stamp, String(practiceDays())];
+    for (var l = 1; l <= 4; l++) { var r = getEv(l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
+    var payload = f.join("|");
+    return { code: "FYE1." + b64enc(payload) + "." + signOf(payload), stamp: stamp };
+  }
   var KEY_MAX = "fy_chunk_max_" + PID;              /* ひらいている いちばん うえの レベル */
   function recKey(l) { return "fy_chunk_rec_" + PID + "_" + l; }
   function getRec(l) { try { return JSON.parse(localStorage.getItem(recKey(l)) || "null") || {}; } catch (e) { return {}; } }
@@ -468,6 +514,14 @@ svg { width: 100%; height: auto; display: block; }
         lines.push("さいしょの クリアより <b>" + Math.round((rec.first - rec.bestClear) / rec.first * 100) + "%</b> はやくなったよ！");
       }
       setRec(level, rec);
+      if (inEvent()) {
+        var ev = getEv(level);
+        if (!ev.first) ev.first = el;
+        if (!ev.bestClear || el < ev.bestClear) ev.bestClear = el;
+        ev.n = (ev.n || 0) + 1;
+        if (firstOk === TOTAL && (!ev.bestPerfect || el < ev.bestPerfect)) ev.bestPerfect = el;
+        setEv(level, ev);
+      }
     } else {
       lines.push("<span style=\"color:#806c5a;font-size:12px;\">（クリアした ときだけ ベストに きろくするよ）</span>");
     }
@@ -549,6 +603,37 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
+  function md(ds) { var p = ds.split("-"); return (+p[1]) + "月" + (+p[2]) + "日"; }
+  function showEvent() {
+    var rows = "";
+    for (var l = 1; l <= 4; l++) {
+      var r = getEv(l), rate = evRate(r);
+      rows += "<tr><td>レベル" + l + "<br><span style='font-size:11px'>" + LEVELS[l - 1] + "音</span></td><td>" + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + "</td><td>" + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
+    }
+    var c = makeEventCode(), t = c.stamp;
+    var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
+    document.getElementById("evIn").innerHTML =
+      '<div style="font-size:20px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
+      '<div style="text-align:center;margin:4px 0 10px;font-size:14px;">👤 ' + (PNAME || "") + ' さん</div>' +
+      '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:10px;text-align:center;font-size:15px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:30px;font-weight:900;color:#ff5722;">' + practiceDays() + '</span> 日</div>' +
+      '<div style="margin-top:12px;font-size:14px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく</div>' +
+      '<table><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr>' + rows + '</table>' +
+      '<div style="font-size:12px;color:#806c5a;">きろくした日：' + when + '</div>' +
+      '<div style="font-size:12px;font-weight:800;margin-top:10px;">せんせいに おくる コード</div>' +
+      '<textarea id="evCode" readonly>' + c.code + '</textarea>' +
+      '<button class="btn" id="evCopy" style="background:#5c6bc0;">コードを コピー</button>' +
+      '<div style="font-size:13px;line-height:1.7;margin-top:10px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
+      '<button class="btn back" id="evClose">もどる</button>';
+    document.getElementById("evScr").style.display = "block";
+    document.getElementById("evScr").scrollTop = 0;
+    document.getElementById("evClose").addEventListener("click", function () { document.getElementById("evScr").style.display = "none"; });
+    document.getElementById("evCopy").addEventListener("click", function () {
+      var ta = document.getElementById("evCode"), ok = false;
+      try { ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); ok = document.execCommand("copy"); } catch (e) {}
+      this.textContent = ok ? "コピーしました" : "コードを ながおしして コピーしてね";
+    });
+  }
+  document.getElementById("evBtn").addEventListener("click", showEvent);
   window.__chunk = { begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
