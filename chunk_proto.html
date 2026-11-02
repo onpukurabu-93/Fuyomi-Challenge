@@ -96,6 +96,21 @@ svg { width: 100%; height: auto; display: block; }
   function setRec(l, r) { try { localStorage.setItem(recKey(l), JSON.stringify(r)); } catch (e) {} }
   function fmt(ms) { var sec = ms / 1000; if (sec >= 60) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + "分" + (r < 10 ? "0" : "") + r.toFixed(1) + "秒"; } return sec.toFixed(1) + "秒"; }
   function needOf(l) { return Math.ceil(LEVELS[l - 1] * 9 / 10); }   /* 一発 せいかい 90%いじょう */
+  /* アプリと おなじ ハンコ（練習した日）。さいごまで やったときだけ おす */
+  function giveHanko() {
+    if (PID === "x") return null;
+    try {
+      var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+      var t = d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+      var k = "fy_hanko_" + PID, a = JSON.parse(localStorage.getItem(k) || "[]");
+      if (!Array.isArray(a)) a = [];
+      if (a.indexOf(t) !== -1) return "had";
+      a.push(t); a.sort();
+      if (a.length > 60) a = a.slice(a.length - 60);
+      localStorage.setItem(k, JSON.stringify(a));
+      return "new";
+    } catch (e) { return null; }
+  }
   function getMax() { try { var v = parseInt(localStorage.getItem(KEY_MAX), 10); return v >= 1 && v <= 5 ? v : 1; } catch (e) { return 1; } }
   function setMax(v) { try { localStorage.setItem(KEY_MAX, String(v)); } catch (e) {} }
   (function(){ var w=document.getElementById("who"); if(w) w.textContent = PNAME ? ("👤 "+PNAME+" さん") : ""; })();
@@ -395,6 +410,9 @@ svg { width: 100%; height: auto; display: block; }
     /* タイム・ベスト・のびりつ */
     var el = Math.max(0, tEnd - t0), rec = getRec(level), cleared = firstOk >= needOf(level), lines = [];
     lines.push("タイム：<b>" + fmt(el) + "</b>");
+    var hk = giveHanko();
+    if (hk === "new") lines.push("<b>💮 きょうの ハンコ ゲット！</b>");
+    else if (hk === "had") lines.push("きょうの ハンコは もう もらったよ！");
     if (cleared) {
       if (!rec.first) rec.first = el;
       if (!rec.bestClear || el < rec.bestClear) rec.bestClear = el;
