@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ピアノの 音 ききとり テスト</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: #fdf8ed; color: #5b4636; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+#app { max-width: 420px; margin: 0 auto; padding: 14px 12px 30px; }
+h1 { font-size: 18px; text-align: center; margin: 4px 0 2px; }
+.sub { text-align: center; font-size: 12px; color: #806c5a; margin-bottom: 10px; line-height: 1.6; }
+.btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; font-size: 17px; font-weight: 800; background: #ff7043; color: #fff; margin-top: 10px; cursor: pointer; }
+.btn.off { background: #f0efec; color: #3b2f27; }
+.big { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.08); text-align: center; padding: 14px 6px; margin-top: 12px; }
+#note { font-size: 84px; font-weight: 900; line-height: 1.1; color: #ff5722; min-height: 94px; transition: transform .1s; }
+#note.pop { transform: scale(1.12); }
+#info { font-size: 13px; color: #806c5a; min-height: 20px; }
+.meter { height: 10px; background: #efe5d2; border-radius: 5px; margin: 8px 14px 0; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: #78a9c8; }
+#log { background: #fff; border-radius: 14px; margin-top: 12px; padding: 8px 10px; font-size: 13px; line-height: 1.7; min-height: 60px; max-height: 190px; overflow: auto; }
+#log div { border-bottom: 1px dashed #eadcc8; }
+.row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 12px; }
+.row input { flex: 1; }
+.cnt { font-size: 14px; font-weight: 800; text-align: center; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>🎹 ピアノの 音 ききとり テスト</h1>
+  <div class="sub">マイクで ピアノの 音を ききとって、<br>音の なまえが ただしく 出るか ためします。</div>
+  <button class="btn" id="mic">マイクを つかう</button>
+  <div class="big">
+    <div id="note">—</div>
+    <div id="info">ピアノを ひいてみてね</div>
+    <div class="meter"><i id="lv"></i></div>
+  </div>
+  <div class="row"><span>びんかん</span><input type="range" id="sens" min="1" max="60" value="12"><span id="sensv"></span></div>
+  <div class="cnt">ひいた かず：<span id="count">0</span>　<button id="clr" style="font-size:12px;padding:4px 10px;">リセット</button></div>
+  <div id="log"></div>
+  <div class="sub" style="margin-top:12px;">つかいかた：<br>ド レ ミ ファ ソ ラ シ を 1つずつ、ゆっくり ひきます。<br>おなじ 音を 2かい ならべて ひいても、2つ ならぶか みてね。<br>まちがって 出る 音が あれば、そのまま おしえてください。</div>
+</div>
+<script>
+(function () {
+  var NAMES = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
+  var ctx = null, an = null, buf = null, started = false;
+  var N = 4096;
+  var count = 0, thr = 12;
+  var lastOnset = -1e9, pending = null, rmsHist = [];
+  window.__events = [];
+
+  var sens = document.getElementById("sens"), sensv = document.getElementById("sensv");
+  function setSens() { thr = +sens.value; sensv.textContent = thr; }
+  sens.addEventListener("input", setSens); setSens();
+
+  /* YIN（音の たかさを みつける ほうほう） */
+  function yin(data, sr) {
+    var W = 2048, maxTau = Math.floor(sr / 180), minTau = Math.floor(sr / 1100);
+    var d = new Float32Array(maxTau + 1), cm = new Float32Array(maxTau + 1);
+    for (var tau = 1; tau <= maxTau; tau++) {
+      var sum = 0;
+      for (var i = 0; i < W; i++) { var x = data[i] - data[i + tau]; sum += x * x; }
+      d[tau] = sum;
+    }
+    cm[0] = 1; var run = 0;
+    for (var t = 1; t <= maxTau; t++) { run += d[t]; cm[t] = run === 0 ? 1 : d[t] * t / run; }
+    var best = -1;
+    for (var t2 = minTau; t2 <= maxTau; t2++) {
+      if (cm[t2] < 0.15) {
+        while (t2 + 1 <= maxTau && cm[t2 + 1] < cm[t2]) t2++;
+        best = t2; break;
+      }
+    }
+    if (best < 0) return null;
+    var a = cm[best - 1] || cm[best], b = cm[best], c = cm[best + 1] || cm[best];
+    var den = a + c - 2 * b, shift = den ? (a - c) / (2 * den) : 0;
+    var f = sr / (best + shift);
+    return { f: f, conf: 1 - cm[best] };
+  }
+  function toMidi(f) { return 69 + 12 * Math.log(f / 440) / Math.LN2; }
+
+  function show(ev) {
+    var el = document.getElementById("note");
+    el.textContent = ev.name; el.classList.add("pop"); setTimeout(function () { el.classList.remove("pop"); }, 120);
+    document.getElementById("info").textContent = ev.hz.toFixed(1) + " Hz　（" + (ev.cents >= 0 ? "+" : "") + ev.cents + " セント）　" + ev.oct + "オクターブめ";
+    count++; document.getElementById("count").textContent = count;
+    var log = document.getElementById("log"), d = document.createElement("div");
+    d.textContent = count + "：" + ev.name + "（" + ev.hz.toFixed(0) + "Hz）";
+    log.insertBefore(d, log.firstChild);
+  }
+
+  function rms(data, n) { var s = 0; for (var i = 0; i < n; i++) s += data[i] * data[i]; return Math.sqrt(s / n); }
+
+  function loop() {
+    if (!started) return;
+    an.getFloatTimeDomainData(buf);
+    var now = performance.now(), sr = ctx.sampleRate;
+    var level = rms(buf, 1024) * 1000;      /* いまの 大きさ */
+    document.getElementById("lv").style.width = Math.min(100, level * 2) + "%";
+    rmsHist.push([now, level]);
+    while (rmsHist.length && now - rmsHist[0][0] > 400) rmsHist.shift();
+    var before = 0, k = 0;
+    rmsHist.forEach(function (h) { if (now - h[0] > 90 && now - h[0] < 300) { before = Math.max(before, h[1]); k++; } });
+    /* 音の でだし：大きさが きゅうに ふえた とき */
+    if (!pending && now - lastOnset > 180 && level > thr && level > before * 1.7 + 2) {
+      pending = { t: now, got: [] };
+      lastOnset = now;
+    }
+    if (pending) {
+      /* でだしから 70ms〜200ms の あいだに 何回か はかって、いちばん おおい 音を つかう */
+      var dt = now - pending.t;
+      if (dt > 70 && dt < 260) {
+        var r = yin(buf.subarray(0), sr);
+        if (r && r.conf > 0.8) pending.got.push(r.f);
+      }
+      if (dt >= 260) {
+        if (pending.got.length >= 2) {
+          var votes = {}, bestM = null, bestN = 0;
+          pending.got.forEach(function (f) { var m = Math.round(toMidi(f)); votes[m] = (votes[m] || 0) + 1; if (votes[m] > bestN) { bestN = votes[m]; bestM = m; } });
+          var fs = pending.got.filter(function (f) { return Math.round(toMidi(f)) === bestM; });
+          var hz = fs.reduce(function (a, b) { return a + b; }, 0) / fs.length;
+          var cents = Math.round((toMidi(hz) - bestM) * 100);
+          var ev = { midi: bestM, name: NAMES[((bestM % 12) + 12) % 12], hz: hz, cents: cents, oct: Math.floor(bestM / 12) - 1, t: Math.round(pending.t) };
+          window.__events.push(ev); show(ev);
+        }
+        pending = null;
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  document.getElementById("clr").addEventListener("click", function () { count = 0; window.__events = []; document.getElementById("count").textContent = 0; document.getElementById("log").innerHTML = ""; document.getElementById("note").textContent = "—"; });
+
+  document.getElementById("mic").addEventListener("click", function () {
+    var btn = this;
+    if (started) {
+      started = false; try { ctx.close(); } catch (e) {} ctx = null;
+      btn.textContent = "マイクを つかう"; btn.classList.remove("off"); return;
+    }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC();
+    if (ctx.state === "suspended") ctx.resume();
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
+      var src = ctx.createMediaStreamSource(stream);
+      an = ctx.createAnalyser(); an.fftSize = N * 2; buf = new Float32Array(an.fftSize);
+      src.connect(an);
+      started = true; rmsHist = []; pending = null;
+      btn.textContent = "マイクを とめる"; btn.classList.add("off");
+      document.getElementById("info").textContent = "きいています… ひいてみてね";
+      loop();
+    }).catch(function (e) {
+      document.getElementById("info").textContent = "マイクが つかえません（" + (e && e.name) + "）。せっていで マイクを ゆるしてください。";
+    });
+  });
+})();
+</script>
+</body>
+</html>
