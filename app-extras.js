@@ -1800,7 +1800,7 @@
       });
     }
     var ok = isMaster(activeProfileIndex);
-    b.innerHTML = "🎼 ふよみマスター以降" + (ok ? "" : ' <span class="lock-tag">🔒 ロック</span>');
+    b.innerHTML = "🎼 レジェンドへの みち" + (ok ? "" : ' <span class="lock-tag">🔒 ロック</span>');
     b.className = "select-button" + (ok ? "" : " locked");
   }
   var prev = window.initProfiles;
@@ -1822,7 +1822,7 @@
       if (r.n >= 2 && r.first > 0 && r.bestClear < r.first) t += "　のびた：" + Math.round((r.first - r.bestClear) / r.first * 100) + "%";
       lines.push(t);
     }
-    return G + "<b>🎼 ふよみマスター以降</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ はじめていません" : "ふよみマスターに なると ひらきます")) + "</div>";
+    return G + "<b>🎼 レジェンドへの みち</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ はじめていません" : "ふよみマスターに なると ひらきます")) + "</div>";
   };
 
   try { renderBtn(); } catch (e) {}
