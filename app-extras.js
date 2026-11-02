@@ -256,7 +256,7 @@
     master: { icon: "🎓", label: "ふよみマスター", bg: "#fff0f5", bd: "#e0527f", tx: "#7a2b4a", ac: "#e0527f", cbg: "#fff", ctx: "#7a2b4a" },
     legend: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
     legend5: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
-    maestro: { icon: "🎻", label: "ふよみマエストロ", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a" },
+    maestro: { icon: "🎹", label: "ふよみマエストロ", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a" },
     legend1000: { icon: "👑", label: "ふよみレジェンド", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
   };
   function infoOf(rec) {
@@ -405,7 +405,7 @@
   };
 
   /* 「きろくと コード」の一覧 */
-  var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"], ["legend5", "👑 ふよみレジェンド"], ["maestro", "🎻 ふよみマエストロ"]];
+  var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"], ["legend5", "👑 ふよみレジェンド"], ["maestro", "🎹 ふよみマエストロ"]];
 
   /* =========================================================
      記録の復元（先生が作った「復元コード」を、端末に貼ると、記録がもどる）
@@ -2106,4 +2106,44 @@
       t3.insertBefore(d, t3.firstChild);
     }
   } catch (e) {}
+})();
+
+/* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
+(function () {
+  /* ★ もとに もどしたい ときは、下の 1行を false に する */
+  var HIDE_OLD_LEGEND = true;
+  if (!HIDE_OLD_LEGEND) return;
+
+  /* 名前の前の 👑、トップの「100回達成」の行、金色の おいわい画面 */
+  window.legendMark = function () { return ""; };
+  window.showLegendModal = function () {};
+  try {
+    var st = document.createElement("style");
+    st.textContent = "#legendRecord{display:none !important;}";
+    document.head.appendChild(st);
+  } catch (e) {}
+
+  /* 先生ページ：100回れんぞく の 見本と、テスト用ボタン */
+  function hideTeacherLegend() {
+    try {
+      var all = document.querySelectorAll("#teacherSection div, #teacherSection button");
+      Array.prototype.forEach.call(all, function (el) {
+        var oc = el.getAttribute && (el.getAttribute("onclick") || "");
+        var own = "";
+        for (var i = 0; i < el.childNodes.length; i++) { if (el.childNodes[i].nodeType === 3) own += el.childNodes[i].nodeValue; }
+        if (oc.indexOf("setStreak99ForTest") >= 0 || oc.indexOf("resetLegendForTest") >= 0 ||
+            own.indexOf("100回目のテスト") >= 0 || own.indexOf("100回れんぞく 画面の見本") >= 0) {
+          el.style.display = "none";
+        }
+      });
+      var pv = document.getElementById("teacherLegendPreviewList");
+      if (pv) pv.style.display = "none";
+    } catch (e) {}
+  }
+  hideTeacherLegend();
+  var prevRender = window.renderTeacherView;
+  if (typeof prevRender === "function") {
+    window.renderTeacherView = function () { var r = prevRender.apply(this, arguments); hideTeacherLegend(); return r; };
+  }
+  try { initProfiles(); } catch (e) {}
 })();
