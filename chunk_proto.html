@@ -320,6 +320,26 @@ svg { width: 100%; height: auto; display: block; }
     ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ</div>';
     document.getElementById("go").addEventListener("click", beginCount);
   }
+  window.__beeps = [];
+  function beep(freq, dur, vol) {
+    window.__beeps.push(freq);
+    var c = ensureCtx();
+    if (!c) return;
+    function go() {
+      try {
+        var t = c.currentTime + 0.01, o = c.createOscillator(), g = c.createGain();
+        o.type = "sine"; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+        g.gain.setValueAtTime(vol, t + dur - 0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(c.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) {}
+    }
+    if (c.state === "running") go();
+    else { try { c.resume().then(go, go); } catch (e) { go(); } }
+  }
   function beginCount() {
     var my = ++token;
     phase = "count";
@@ -329,10 +349,12 @@ svg { width: 100%; height: auto; display: block; }
       if (my !== token) return;
       if (i < seq.length) {
         ov.innerHTML = '<div class="cd">' + seq[i++] + '</div>';
+        beep(880, 0.14, 0.3);                       /* ぴっ */
         setTimeout(step, 800);
       } else {
         ov.style.display = "none";
         notesG.style.visibility = "visible";
+        beep(1320, 0.55, 0.3);                      /* ぴーっ（スタート） */
         phase = "play";
         t0 = (window.__fakeNow ? window.__fakeNow() : performance.now());
       }
