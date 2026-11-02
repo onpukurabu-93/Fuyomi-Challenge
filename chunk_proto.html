@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -81,6 +82,7 @@ svg { width: 100%; height: auto; display: block; }
       <div id="rhanko"></div>
       <div id="rnext" style="font-size:14px;font-weight:800;margin-top:10px;color:#e65100;line-height:1.5;"></div>
       <button class="btn" id="nextBtn" style="display:none;">つぎの レベルへ</button>
+      <button class="btn" id="listenBtn" style="display:none;background:#7e57c2;">▶ きょくを もういちど きく</button>
       <button class="btn" id="again" style="background:#78a9c8;">もういちど</button>
       <button class="btn back" id="backBtn">もどる</button>
     </div>
@@ -187,9 +189,49 @@ svg { width: 100%; height: auto; display: block; }
   /* ===== レベル5：きょく（高さだけ つかう。音の ながさは かんけいなし） ===== */
   var SONGS = [
     /* アマリリス（H.ギース）。ミ=0 ファ=1 ソ=2 ラ=3 レ=-1 ド(した)=-2 ド(うえ)=5 */
-    { id: "amaryllis", title: "アマリリス", notes: [2,3, 2,5,2,3, 2,3,3, 2,3,2,1,0,-1, 0,-2,2,3, 2,5,2,3, 2,3,3, 2,3,2,1,0,-1, -2] }
+    { id: "amaryllis", title: "アマリリス", beat: 0.55,
+      seq: [[2,1],[3,1], [2,1],[5,1],[2,1],[3,1], [2,2],[3,1],[3,1], [2,1],[3,1],[2,.5],[1,.5],[0,.5],[-1,.5],
+            [0,1],[-2,1],[2,1],[3,1], [2,1],[5,1],[2,1],[3,1], [2,2],[3,1],[3,1], [2,1],[3,1],[2,.5],[1,.5],[0,.5],[-1,.5], [-2,2]] }
   ];
+  SONGS.forEach(function (x) { x.notes = x.seq.map(function (q) { return q[0]; }); });
   var song = SONGS[0];
+  /* ノーミスで クリアした きょくの つぎから じゅんばんに だす（ぜんぶ クリアずみなら 1きょくめ） */
+  function pickNextSong() {
+    var l = getJSON("fy_chunk_songs_legend_" + PID, []);
+    if (!Array.isArray(l)) l = [];
+    for (var i = 0; i < SONGS.length; i++) if (l.indexOf(SONGS[i].id) === -1) return SONGS[i];
+    return SONGS[0];
+  }
+  /* ---- 曲を ならす（おわってから「この曲は…」のとき） ---- */
+  var melodyOut = null;
+  function playMelody(sg) {
+    var c = ensureCtx();
+    if (!c || !sg) return;
+    function go() {
+      try {
+        if (melodyOut) { try { melodyOut.disconnect(); } catch (e) {} }
+        melodyOut = c.createGain(); melodyOut.gain.value = 1; melodyOut.connect(c.destination);
+        var t = c.currentTime + 0.1;
+        sg.seq.forEach(function (q) {
+          var dur = q[1] * sg.beat, f = 440 * Math.pow(2, (midiOf(q[0]) - 69) / 12);
+          var m = c.createGain(), hold = Math.max(dur * 1.4, 0.6);
+          m.gain.setValueAtTime(0.0001, t);
+          m.gain.exponentialRampToValueAtTime(0.45, t + 0.008);
+          m.gain.exponentialRampToValueAtTime(0.0001, t + hold);
+          m.connect(melodyOut);
+          [[1, 1], [2, 0.45], [3, 0.2], [4, 0.1]].forEach(function (h) {
+            var o = c.createOscillator(), g = c.createGain();
+            o.type = "sine"; o.frequency.value = f * h[0]; g.gain.value = h[1] * 0.5;
+            o.connect(g); g.connect(m); o.start(t); o.stop(t + hold + 0.05);
+          });
+          t += dur;
+        });
+        window.__melodyLog = (window.__melodyLog || 0) + 1;
+      } catch (e) {}
+    }
+    if (c.state === "running") go();
+    else { try { c.resume().then(go, go); } catch (e) { go(); } }
+  }
   function songRecKey(id) { return "fy_chunk_song_" + PID + "_" + id; }
   function getSongRec(id) { try { return JSON.parse(localStorage.getItem(songRecKey(id)) || "null") || {}; } catch (e) { return {}; } }
   function setSongRec(id, r) { try { localStorage.setItem(songRecKey(id), JSON.stringify(r)); } catch (e) {} }
@@ -283,10 +325,10 @@ svg { width: 100%; height: auto; display: block; }
     d.innerHTML = "音声ファイルの じょうたい<br>" + Object.keys(FILES).map(function (k) { return FILES[k] + "：" + status[k]; }).join("<br>");
   }
   window.__playLog = [];
-  function playSeq(keys) {
+  function playSeq(keys, cb) {
     var c = ensureCtx(), i = 0;
     function next() {
-      if (i >= keys.length) return;
+      if (i >= keys.length) { if (cb) { try { cb(); } catch (e) {} } return; }
       var k = keys[i++], b = bufs[k], fin = false;
       window.__playLog.push(k);
       function go() { if (fin) return; fin = true; setTimeout(next, 150); }
@@ -393,36 +435,11 @@ svg { width: 100%; height: auto; display: block; }
       b.innerHTML = "レベル" + i + "<br>" + (locked ? "🔒" : "") + (i <= 4 ? LEVELS[i - 1] + "音" : "きょく");
       if (i === level) b.className = "on";
       else if (locked) b.className = "off";
-      (function (lv, lk) { if (!lk) b.addEventListener("click", function () { level = lv; if (lv === 5) showSongList(); else start(); }); })(i, locked);
+      (function (lv, lk) { if (!lk) b.addEventListener("click", function () { level = lv; if (lv === 5) { song = pickNextSong(); } start(); }); })(i, locked);
       box.appendChild(b);
     }
   }
 
-  function showSongList() {
-    token++; phase = "ready"; level = 5;
-    renderLv();
-    document.getElementById("res").style.display = "none";
-    stage.style.display = "block";
-    document.querySelector(".prog").style.display = "flex";
-    document.querySelector(".bar").style.display = "block";
-    document.getElementById("kb").style.visibility = "visible";
-    if (!notesG) buildStage();
-    var cnt = songCount("legend"), h = '<div style="font-size:17px;font-weight:900;margin-bottom:8px;">きょくを えらんでね</div>';
-    SONGS.forEach(function (sg, i) {
-      var r = getSongRec(sg.id);
-      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:12px;font-size:16px;">🎼 ' + sg.title + '（' + sg.notes.length + '音）' + (r.bestPerfect ? '　✅' : '') + '</button>';
-    });
-    h += '<div style="font-size:13px;margin-top:12px;line-height:1.6;">ノーミスで クリアした きょく：<b>' + cnt + ' / ' + AWARD_N + '</b></div>' +
-         '<button class="btn back" id="songBack" style="margin-top:10px;padding:10px;font-size:15px;">もどる</button>';
-    var ov = document.getElementById("ov");
-    ov.style.display = "flex";
-    ov.style.background = "#fff";          /* うしろの 五線譜が すけないように */
-    ov.innerHTML = h;
-    Array.prototype.forEach.call(ov.querySelectorAll("button[data-i]"), function (b) {
-      b.addEventListener("click", function () { song = SONGS[+b.getAttribute("data-i")]; start(); });
-    });
-    document.getElementById("songBack").addEventListener("click", function () { location.href = "index.html"; });
-  }
   function start() {
     renderLv();
     queue = [];
@@ -456,7 +473,10 @@ svg { width: 100%; height: auto; display: block; }
     var ov = document.getElementById("ov");
     ov.style.display = "flex";
     ov.style.background = "";
-    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ</div><button class="btn back" id="backBtn2">もどる</button>';
+    var tx = level === 5
+      ? '🎼 どんな きょくかは ひみつ！<br>さいごまで ひけたら、<br>きょくの なまえを おしえるよ<br>ノーミスの きょく：' + songCount("legend") + ' / ' + AWARD_N
+      : 'おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ';
+    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">' + tx + '</div><button class="btn back" id="backBtn2">もどる</button>';
     document.getElementById("go").addEventListener("click", beginCount);
     document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
   }
@@ -580,7 +600,7 @@ svg { width: 100%; height: auto; display: block; }
         if (getMax() < nextLv) { setMax(nextLv); newlyOpened = true; msg = nextLv === 5 ? "🎉 レベル5（きょく）が ひらいたよ！ いよいよ きょくに ちょうせん！" : "🎉 レベル" + nextLv + " が ひらいたよ！"; }
         else msg = "レベル" + level + " クリア！";
       } else {
-        msg = "「" + song.title + "」 クリア！";
+        msg = "クリア！";
       }
     } else {
       msg = level === 5 ? needOf(5) + "音 いっぱつで せいかい すると クリアだよ" :
@@ -594,20 +614,23 @@ svg { width: 100%; height: auto; display: block; }
         msg += "<br>ノーミスで クリアすると、100きょくの かずに はいるよ（いま " + songCount("legend") + " / " + AWARD_N + "）";
       }
     }
+    if (level === 5) msg = "🎵 この きょくは 「" + song.title + "」 でした！<br>" + msg;
     document.getElementById("rnext").innerHTML = msg;
     var seq = [];
     if (firstOk === TOTAL) seq = ["sugoi", "fanfare"];
     else if (firstOk >= needOf(level)) seq = ["osi", "fanfare"];
     else seq = ["ganbatte"];
     if (newlyOpened) { seq.push("levelOpen"); if (level === 4) seq.push("level5"); }
-    playSeq(seq);
-    var nb = document.getElementById("nextBtn");
+    playSeq(seq, level === 5 ? function () { playMelody(song); } : null);
+    var nb = document.getElementById("nextBtn"), lb = document.getElementById("listenBtn");
+    lb.style.display = level === 5 ? "block" : "none";
+    lb.onclick = function () { playMelody(song); };
     if (level === 5) {
-      nb.style.display = "block"; nb.textContent = "ほかの きょくへ";
-      nb.onclick = function () { showSongList(); };
+      nb.style.display = SONGS.length > 1 ? "block" : "none"; nb.textContent = "つぎの きょくへ";
+      nb.onclick = function () { var k = SONGS.indexOf(song); song = SONGS[(k + 1) % SONGS.length]; start(); };
     } else {
       nb.style.display = nextLv ? "block" : "none"; nb.textContent = "つぎの レベルへ";
-      nb.onclick = function () { level = nextLv; if (nextLv === 5) showSongList(); else start(); };
+      nb.onclick = function () { level = nextLv; if (nextLv === 5) song = pickNextSong(); start(); };
     }
     stage.style.display = "none";
     document.querySelector(".prog").style.display = "none";
@@ -761,7 +784,7 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("evBtn").addEventListener("click", showEvent);
   document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
   document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
-  window.__chunk = { showSongList: showSongList, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
