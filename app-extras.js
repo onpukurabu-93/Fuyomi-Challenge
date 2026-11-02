@@ -1,3 +1,4 @@
+
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
@@ -475,7 +476,99 @@
     Storage.set("fy_ach_" + idx, a);
     return true;
   }
+  /* ---- レジェンドへの みち ＋ ハンコ の「うつしコード」（生徒が 古い端末で つくる） ---- */
+  function chunkKeys(idx) {
+    var keys = [], pre = ["fy_chunk_rec_" + idx + "_", "fy_chunk_ev_" + idx + "_"];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k) continue;
+      for (var j = 0; j < pre.length; j++) if (k.indexOf(pre[j]) === 0) keys.push([k, pre[j]]);
+    }
+    return keys;
+  }
+  function makeChunkBackup(idx) {
+    var o = { n: profiles[idx] || "", r: {}, m: 0, h: [] };
+    chunkKeys(idx).forEach(function (kp) {
+      try {
+        var v = JSON.parse(localStorage.getItem(kp[0]) || "null");
+        if (v) o.r[(kp[1].indexOf("_rec_") > 0 ? "rec_" : "ev_") + kp[0].slice(kp[1].length)] = v;
+      } catch (e) {}
+    });
+    o.m = Storage.getNumber("fy_chunk_max_" + idx, 0);
+    o.h = getHankoList(idx).map(function (d) { return d.replace(/-/g, ""); });
+    var payload = "FYC1|" + JSON.stringify(o);
+    return "FYC1." + b64enc(payload) + "." + signOf(payload);
+  }
+  function getHankoList(idx) {
+    var a = Storage.get("fy_hanko_" + idx, []);
+    return Array.isArray(a) ? a : [];
+  }
+  function mergeRec(cur, add) {
+    cur = cur || {};
+    var out = {};
+    ["first", "bestClear", "bestPerfect"].forEach(function (f) {
+      var x = cur[f], y = add[f];
+      if (x && y) out[f] = (f === "first") ? x : Math.min(x, y);
+      else if (x || y) out[f] = x || y;
+    });
+    out.n = Math.max(cur.n || 0, add.n || 0);
+    return out;
+  }
+  function applyChunkRestore(raw, idx) {
+    var code = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+    var parts = code.split(".");
+    if (parts.length !== 3 || parts[0] !== "FYC1") return { ok: false, msg: "コードの形が正しくありません。" };
+    var payload;
+    try { payload = b64dec(parts[1]); } catch (e) { return { ok: false, msg: "コードを読めませんでした。最後まで、全部コピーしましたか？" }; }
+    if (signOf(payload) !== parts[2]) return { ok: false, msg: "コードが正しくありません。途中で切れていないか、確かめてください。" };
+    var o;
+    try { o = JSON.parse(payload.slice(5)); } catch (e) { return { ok: false, msg: "コードの中みが正しくありません。" }; }
+    var cur = profiles[idx] || "";
+    if (cleanName(o.n) !== cleanName(cur)) {
+      return { ok: false, msg: "このコードは「" + o.n + "」さん用です。いまのプレイヤーは「" + cur + "」さんです。プレイヤーを選びなおしてください。" };
+    }
+    var done = [];
+    Object.keys(o.r || {}).forEach(function (k) {
+      var key = (k.indexOf("rec_") === 0 ? "fy_chunk_rec_" : "fy_chunk_ev_") + idx + "_" + k.replace(/^(rec_|ev_)/, "");
+      var before = localStorage.getItem(key), cur0 = null;
+      try { cur0 = JSON.parse(before || "null"); } catch (e) {}
+      var merged = mergeRec(cur0, o.r[k]);
+      if (JSON.stringify(merged) !== JSON.stringify(cur0 || {})) { try { localStorage.setItem(key, JSON.stringify(merged)); } catch (e) {} done.push(k.indexOf("rec_") === 0 ? "レジェンドへの みち（レベル" + k.slice(4) + "）" : "イベントの きろく"); }
+    });
+    var mk = "fy_chunk_max_" + idx;
+    if ((o.m | 0) > Storage.getNumber(mk, 0)) { Storage.set(mk, o.m | 0); done.push("ひらいている レベル"); }
+    var list = getHankoList(idx), have = {};
+    list.forEach(function (d) { have[d] = 1; });
+    var added = 0;
+    (o.h || []).forEach(function (d) {
+      if (!/^\d{8}$/.test(d)) return;
+      var ds = d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8);
+      if (!have[ds]) { list.push(ds); have[ds] = 1; added++; }
+    });
+    if (added) { list.sort(); if (list.length > 60) list = list.slice(list.length - 60); Storage.set("fy_hanko_" + idx, list); done.push("ハンコ " + added + "日ぶん"); }
+    try { initProfiles(); } catch (e) {}
+    if (!done.length) return { ok: true, msg: "この端末には、すでに同じか、それ以上の記録があります。新しく書き込む記録は、ありませんでした。" };
+    var uniq = done.filter(function (x, i) { return done.indexOf(x) === i; });
+    return { ok: true, msg: "復元しました。\n・" + uniq.join("\n・") };
+  }
+  window.fyShowBackup = function () {
+    var idx = activeProfileIndex, code = makeChunkBackup(idx);
+    openOverlay(
+      '<div style="font-size:18px;font-weight:900;margin-bottom:6px;">📤 きろくを うつす コード</div>' +
+      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">あたらしい たんまつに かえる ときに つかいます。<br>「レジェンドへの みち」の きろくと、ハンコの 日を うつせます。<br>プレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
+      '<textarea id="fyBkCode" readonly style="width:100%;height:110px;font-size:10px;padding:6px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;word-break:break-all;-webkit-user-select:text;user-select:text;">' + code + '</textarea>' +
+      '<button id="fyBkCopy" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#5c6bc0;color:#fff;">コードを コピー</button>' +
+      '<div style="font-size:12px;line-height:1.6;color:#806c5a;margin:8px 0;">コピーして、じぶんに LINE などで おくっておくと、あたらしい たんまつで「🔁 記録の復元」に はれます。</div>'
+    );
+    document.getElementById("fyBkCopy").addEventListener("click", function () {
+      var ta = document.getElementById("fyBkCode"), ok = false;
+      try { ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); ok = document.execCommand("copy"); } catch (e) {}
+      this.textContent = ok ? "コピーしました" : "コードを ながおしして コピーしてね";
+    });
+  };
+
   function applyRestore(raw, idx) {
+    if (/^FYC1\./.test(String(raw || "").normalize("NFKC").replace(/\s+/g, ""))) return applyChunkRestore(raw, idx);
     var p = parseRestoreCode(raw);
     if (p.err) return { ok: false, msg: p.err };
     var cur = profiles[idx] || "";
@@ -503,7 +596,7 @@
     var idx = activeProfileIndex;
     openOverlay(
       '<div style="font-size:18px;font-weight:900;margin-bottom:6px;">🔁 記録の復元</div>' +
-      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">先生から届いた「復元コード」を、貼ってください。<br>いまのプレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
+      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">先生から届いた「復元コード」、または 前の たんまつで つくった「うつすコード」を、貼ってください。<br>いまのプレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
       '<textarea id="fyRestoreIn" style="width:100%;height:90px;font-size:13px;padding:8px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;-webkit-user-select:text;user-select:text;" placeholder="FY1.…"></textarea>' +
       '<button id="fyRestoreGo" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#ff7043;color:#fff;">復元する</button>' +
       '<div id="fyRestoreMsg" style="font-size:13px;line-height:1.6;margin:8px 0;white-space:pre-line;text-align:left;"></div>'
@@ -551,9 +644,12 @@
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
     html += '<button id="fyRestoreBtn" style="width:100%;margin:2px 0 4px;padding:8px;font-size:12px;font-weight:700;border:1px dashed #b0a090;border-radius:10px;background:#fff;color:#806c5a;">🔁 記録の復元（先生から コードが 届いたとき）</button>';
+    html += '<button id="fyBackupBtn" style="width:100%;margin:2px 0 4px;padding:8px;font-size:12px;font-weight:700;border:1px dashed #b0a090;border-radius:10px;background:#fff;color:#806c5a;">📤 きろくを うつす コードを つくる（きかい へんこう）</button>';
     openOverlay(html);
     var rbtn = document.getElementById("fyRestoreBtn");
     if (rbtn) rbtn.addEventListener("click", showRestoreForm);
+    var bbtn = document.getElementById("fyBackupBtn");
+    if (bbtn) bbtn.addEventListener("click", function () { window.fyShowBackup(); });
   };
 
   /* トップ画面：スタンプの表示は やめて、「きろくと コード」のボタンだけ */
@@ -1464,6 +1560,7 @@
   /* ---- トップ画面の ハンコ ---- */
   var voice1Done = {};   /* きょう この 起動で、声を 鳴らした 枠 */
 
+  var glowWait = null;
   function renderTop() {
     var anchor = document.getElementById("stampMiniBox");
     if (!anchor || !anchor.parentNode) return;
@@ -1484,8 +1581,29 @@
     var d = daysIn(stamps, ws);
 
     var glowToday = false;
+    /* かたまり読み（別ページ）で ハンコを おしたあと、トップに もどったとき 1回だけ 光らせる */
+    /* トップが ほんとうに 見えている ときだけ 光らせる（合言葉の 画面や おしらせの うらで 光り終わらないように） */
+    var topVisible = false;
+    try {
+      var selE = document.getElementById("selectScreen");
+      topVisible = !!(selE && !selE.classList.contains("hidden") && !gateVisible() && !noticeOpen);
+    } catch (e) {}
+    try {
+      var fk = "fy_hanko_new_" + idx, fv = parseInt(localStorage.getItem(fk), 10);
+      if (fv) {
+        if (Date.now() - fv >= 600000) localStorage.removeItem(fk);
+        else if (topVisible) { localStorage.removeItem(fk); justStamped[idx] = { t: 0 }; }
+        else if (!glowWait) {   /* まだ 見えていないので、見えるまで まつ */
+          glowWait = setInterval(function () {
+            var s2 = document.getElementById("selectScreen");
+            if (s2 && !s2.classList.contains("hidden") && !gateVisible() && !noticeOpen) { clearInterval(glowWait); glowWait = null; try { renderTop(); } catch (e) {} }
+          }, 400);
+          setTimeout(function () { if (glowWait) { clearInterval(glowWait); glowWait = null; } }, 30000);
+        }
+      }
+    } catch (e) {}
     var js = justStamped[idx];
-    if (js) {
+    if (js && (topVisible || js.t)) {
       if (!js.t) js.t = Date.now();
       if (Date.now() - js.t < 5000) glowToday = true; else delete justStamped[idx];
     }
