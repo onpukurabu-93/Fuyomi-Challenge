@@ -35,7 +35,7 @@ h1{font-size:19px;margin:6px 0 2px;text-align:center}
 <script>
 (function(){
 var NAMES=["ミ","ファ","ソ","ラ","シ","ド","レ"],OFFS=[0,1,3,5,7,8,10];
-function nameOf(n){var b=NAMES[((n%7)+7)%7];if(n===-2)return"ド↓";if(n===5)return"ド↑";if(n===12)return"ド↑↑";if(n===-9)return"ド";return b}
+function nameOf(n){var b=NAMES[((n%7)+7)%7];if(n===-2)return"ド↓";if(n===5)return"ド↑";if(n===12)return"ド↑↑";if(n===-3)return"シ↓";if(n===-4)return"ラ↓";if(n===-9)return"ド";return b}
 function midiOf(n){return 64+12*Math.floor(n/7)+OFFS[((n%7)+7)%7]}
 var cur=0,ctx=null,timers=[];
 function build(){
