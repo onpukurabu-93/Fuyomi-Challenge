@@ -321,20 +321,26 @@ svg { width: 100%; height: auto; display: block; }
     document.getElementById("go").addEventListener("click", beginCount);
   }
   window.__beeps = [];
+  var beepBufs = {};
   function beep(freq, dur, vol) {
     window.__beeps.push(freq);
     var c = ensureCtx();
     if (!c) return;
     function go() {
       try {
-        var t = c.currentTime + 0.01, o = c.createOscillator(), g = c.createGain();
-        o.type = "sine"; o.frequency.value = freq;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-        g.gain.setValueAtTime(vol, t + dur - 0.05);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        o.connect(g); g.connect(c.destination);
-        o.start(t); o.stop(t + dur + 0.02);
+        var key = freq + "_" + dur, b = beepBufs[key];
+        if (!b) {
+          var sr = c.sampleRate, n = Math.floor(sr * dur);
+          b = c.createBuffer(1, n, sr);
+          var d = b.getChannelData(0), a = Math.floor(sr * 0.01), r = Math.floor(sr * 0.05);
+          for (var k = 0; k < n; k++) {
+            var env = k < a ? k / a : (k > n - r ? (n - k) / r : 1);
+            d[k] = Math.sin(2 * Math.PI * freq * k / sr) * vol * env;
+          }
+          beepBufs[key] = b;
+        }
+        var src = c.createBufferSource();
+        src.buffer = b; src.connect(c.destination); src.start(0);
       } catch (e) {}
     }
     if (c.state === "running") go();
