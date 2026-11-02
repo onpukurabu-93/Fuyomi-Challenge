@@ -45,13 +45,15 @@ svg { width: 100%; height: auto; display: block; }
 .fy-big-pon{display:inline-block;font-size:76px;line-height:1;animation:fyBig .6s cubic-bezier(.2,.8,.3,1) both}
 .fy-ring{position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;border:4px solid #ff8a65;opacity:0;animation:fyRing .7s ease-out .25s both;pointer-events:none}
 #rhanko{background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:8px 10px;margin:10px auto 0;width:92%;text-align:center;color:#5b4636;display:none}
+.btn.back { background: #f0efec; color: #3b2f27; }
+.ov .back { width: 78%; margin-top: 14px; padding: 14px; font-size: 17px; }
 .note { font-size: 11px; color: #806c5a; text-align: center; margin-top: 10px; line-height: 1.5; }
 </style>
 </head>
 <body>
 <div id="app">
   <h1>🎼 レジェンドへの みち</h1>
-  <div style="font-size:13px;"><a href="index.html" style="color:#806c5a;text-decoration:none;font-weight:800;">← トップへ もどる</a></div>
+  <div style="font-size:13px;"><a href="index.html" style="display:inline-block;padding:10px 14px 10px 4px;color:#806c5a;text-decoration:none;font-weight:800;">← トップへ もどる</a></div>
   <div class="sub" id="who"></div>
   <div class="sub">ト音記号　3つの おとを ひとまとまりで よもう</div>
   <div class="lv" id="lv"></div>
@@ -70,6 +72,7 @@ svg { width: 100%; height: auto; display: block; }
       <div id="rnext" style="font-size:14px;font-weight:800;margin-top:10px;color:#e65100;line-height:1.5;"></div>
       <button class="btn" id="nextBtn" style="display:none;">つぎの レベルへ</button>
       <button class="btn" id="again" style="background:#78a9c8;">もういちど</button>
+      <button class="btn back" id="backBtn">もどる</button>
     </div>
   </div>
   <div class="keyboard" id="kb">
@@ -362,8 +365,9 @@ svg { width: 100%; height: auto; display: block; }
     notesG.style.visibility = "hidden";
     var ov = document.getElementById("ov");
     ov.style.display = "flex";
-    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ</div>';
+    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ</div><button class="btn back" id="backBtn2">もどる</button>';
     document.getElementById("go").addEventListener("click", beginCount);
+    document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
   }
   window.__beeps = [];
   var beepBufs = {};
@@ -542,6 +546,7 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
   document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
+  document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
   window.__chunk = { begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
