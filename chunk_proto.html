@@ -550,12 +550,12 @@ svg { width: 100%; height: auto; display: block; }
       if (my !== token) return;
       if (i < seq.length) {
         ov.innerHTML = '<div class="cd">' + seq[i++] + '</div>';
-        beep(880, 0.14, 0.3);                       /* ぴっ */
+        beep(932, 0.14, 0.3);                       /* ぴっ */
         setTimeout(step, 800);
       } else {
         ov.style.display = "none";
         notesG.style.visibility = "visible";
-        beep(1320, 0.55, 0.3);                      /* ぴーっ（スタート） */
+        beep(1245, 0.55, 0.3);                      /* ぴーっ（スタート） */
         phase = "play";
         t0 = (window.__fakeNow ? window.__fakeNow() : performance.now());
       }
@@ -712,7 +712,7 @@ svg { width: 100%; height: auto; display: block; }
 
   /* ===== ピアノで こたえる（マイクで おとを きく） ===== */
   var pianoOn = false, pAn = null, pBuf = null, pStream = null, pSrc = null, pRun = false;
-  var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1;
+  var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1, pReadyAt = 0;
   var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
   function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; }
   var NM12 = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
@@ -747,7 +747,8 @@ svg { width: 100%; height: auto; display: block; }
     while (pHist.length && now - pHist[0][0] > 400) pHist.shift();
     var before = 0;
     pHist.forEach(function (h) { if (now - h[0] > 90 && now - h[0] < 300) before = Math.max(before, h[1]); });
-    var listening = phase === "play" && !done;
+    if (phase !== "play") pReadyAt = now;
+    var listening = phase === "play" && !done && now - pReadyAt > 700;
     /* つなげて ひいた とき：音の たかさが かわって、しばらく おなじなら あたらしい 音 */
     pFrame++;
     if (!listening || level_ < pThr) { pStab = null; if (level_ < pThr * 0.5) pLastPc = -1; }
