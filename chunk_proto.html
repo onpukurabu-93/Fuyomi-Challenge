@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -95,6 +94,15 @@ svg { width: 100%; height: auto; display: block; }
     <button class="key-btn key-so" data-k="ソ">ソ</button>
     <button class="key-btn key-la" data-k="ラ">ラ</button>
     <button class="key-btn key-si" data-k="シ">シ</button>
+  </div>
+  <div id="pianoBox" style="display:none;margin-top:12px;text-align:center;">
+    <button class="btn" id="pianoBtn" style="background:#5c6bc0;">🎹 ピアノで こたえる</button>
+    <div id="pianoOpt" style="display:none;font-size:13px;margin-top:8px;color:#806c5a;">
+      マイクの びんかん：
+      <select id="pianoSens" style="font-size:15px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select>
+      <div id="pianoSt" style="margin-top:6px;min-height:18px;"></div>
+      <div style="font-size:12px;margin-top:4px;">ピアノの 音を マイクで きいて こたえます。<br>ピアノの ちかくに おいてね。シャープ（くろい けんばん）は むしします。<br>どの オクターブでも だいじょうぶ。</div>
+    </div>
   </div>
   <button class="btn back" id="evBtn" style="margin-top:14px;">🏆 イベントの きろく</button>
   <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tLeg" style="color:#806c5a;">せんせい用：レジェンド表彰テスト</a>　<a href="#" id="tMae" style="color:#806c5a;">せんせい用：マエストロ表彰テスト</a><br><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
@@ -203,6 +211,26 @@ svg { width: 100%; height: auto; display: block; }
     return SONGS[0];
   }
   /* ---- 曲を ならす（おわってから「この曲は…」のとき） ---- */
+  function seenList() { var l = getJSON("fy_chunk_songs_seen_" + PID, []); return Array.isArray(l) ? l : []; }
+  function markSeen(id) {
+    var l = seenList();
+    if (l.indexOf(id) === -1) { l.push(id); try { localStorage.setItem("fy_chunk_songs_seen_" + PID, JSON.stringify(l)); } catch (e) {} }
+  }
+  /* 「いままでの きょく」：いちど ちょうせんして 曲名を 知った きょく */
+  function showSeenList() {
+    var ov = document.getElementById("ov"), l = seenList(), h = '<div style="font-size:17px;font-weight:900;margin-bottom:6px;">📖 いままでの きょく</div>';
+    SONGS.forEach(function (sg, i) {
+      if (l.indexOf(sg.id) === -1) return;
+      var r = getSongRec(sg.id);
+      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:11px;font-size:15px;">🎼 ' + sg.title + (r.bestPerfect ? '　✅ ' + fmt(r.bestPerfect) : '') + '</button>';
+    });
+    h += '<button class="btn back" id="seenBack" style="margin-top:10px;padding:10px;font-size:15px;">もどる</button>';
+    ov.style.display = "flex"; ov.style.background = "#fff"; ov.innerHTML = h;
+    Array.prototype.forEach.call(ov.querySelectorAll("button[data-i]"), function (b) {
+      b.addEventListener("click", function () { song = SONGS[+b.getAttribute("data-i")]; start(); });
+    });
+    document.getElementById("seenBack").addEventListener("click", function () { showReady(); });
+  }
   var melodyOut = null;
   function playMelody(sg) {
     var c = ensureCtx();
@@ -463,6 +491,7 @@ svg { width: 100%; height: auto; display: block; }
     buildStage();
     render();
     showReady();
+    pianoUi();
   }
 
   /* ---- スタートボタン と カウントダウン ---- */
@@ -474,9 +503,15 @@ svg { width: 100%; height: auto; display: block; }
     ov.style.display = "flex";
     ov.style.background = "";
     var tx = level === 5
-      ? '🎼 どんな きょくかは ひみつ！<br>さいごまで ひけたら、<br>きょくの なまえを おしえるよ<br>ノーミスの きょく：' + songCount("legend") + ' / ' + AWARD_N
+      ? (seenList().indexOf(song.id) !== -1
+          ? '🎼 「' + song.title + '」に ちょうせん！<br>ノーミスの きょく：' + songCount("legend") + ' / ' + AWARD_N
+          : '🎼 どんな きょくかは ひみつ！<br>さいごまで ひけたら、<br>きょくの なまえを おしえるよ<br>ノーミスの きょく：' + songCount("legend") + ' / ' + AWARD_N)
       : 'おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ';
-    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">' + tx + '</div><button class="btn back" id="backBtn2">もどる</button>';
+    var sn = level === 5 ? seenList().length : 0;
+    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">' + tx + '</div>' +
+      (sn ? '<button class="btn" id="seenBtn" style="background:#7e57c2;width:78%;margin-top:10px;padding:12px;font-size:15px;">📖 いままでの きょく（' + sn + '）</button>' : '') +
+      '<button class="btn back" id="backBtn2">もどる</button>';
+    if (sn) document.getElementById("seenBtn").addEventListener("click", showSeenList);
     document.getElementById("go").addEventListener("click", beginCount);
     document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
   }
@@ -614,6 +649,7 @@ svg { width: 100%; height: auto; display: block; }
         msg += "<br>ノーミスで クリアすると、100きょくの かずに はいるよ（いま " + songCount("legend") + " / " + AWARD_N + "）";
       }
     }
+    if (level === 5) markSeen(song.id);
     if (level === 5) msg = "🎵 この きょくは 「" + song.title + "」 でした！<br>" + msg;
     document.getElementById("rnext").innerHTML = msg;
     var seq = [];
@@ -644,7 +680,7 @@ svg { width: 100%; height: auto; display: block; }
     if (busy || done || phase !== "play") return;
     var n = queue[idx];
     if (nameOf(n) === key) {
-      playNote(n);
+      if (!pianoOn) playNote(n);
       if (!missed) { firstOk++; run++; if (run > bestRun) bestRun = run; }
       missed = false;
       idx++;
@@ -672,6 +708,91 @@ svg { width: 100%; height: auto; display: block; }
       c.classList.remove("shake", "flash"); void c.offsetWidth; c.classList.add("shake", "flash");
     }
   }
+
+
+  /* ===== ピアノで こたえる（マイクで おとを きく） ===== */
+  var pianoOn = false, pAn = null, pBuf = null, pStream = null, pSrc = null, pRun = false;
+  var pPend = null, pLast = -1e9, pHist = [], pThr = 6;
+  var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
+  function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; }
+  function pianoUi() {
+    var box = document.getElementById("pianoBox");
+    if (!box) return;
+    box.style.display = (level === 5 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "block" : "none";
+    if (level !== 5 && pianoOn) pianoStop();
+  }
+  function yin(data, sr) {
+    var W = 2048, maxTau = Math.floor(sr / 120), minTau = Math.floor(sr / 1100);
+    var d = new Float32Array(maxTau + 1), cm = new Float32Array(maxTau + 1);
+    for (var tau = 1; tau <= maxTau; tau++) { var sum = 0; for (var i = 0; i < W; i++) { var x = data[i] - data[i + tau]; sum += x * x; } d[tau] = sum; }
+    cm[0] = 1; var run = 0;
+    for (var t = 1; t <= maxTau; t++) { run += d[t]; cm[t] = run === 0 ? 1 : d[t] * t / run; }
+    var best = -1;
+    for (var t2 = minTau; t2 <= maxTau; t2++) { if (cm[t2] < 0.15) { while (t2 + 1 <= maxTau && cm[t2 + 1] < cm[t2]) t2++; best = t2; break; } }
+    if (best < 0) return null;
+    var a = cm[best - 1] || cm[best], b = cm[best], c = cm[best + 1] || cm[best];
+    var den = a + c - 2 * b, sh = den ? (a - c) / (2 * den) : 0;
+    return { f: sr / (best + sh), conf: 1 - cm[best] };
+  }
+  function pLoop() {
+    if (!pRun) return;
+    pAn.getFloatTimeDomainData(pBuf);
+    var now = performance.now(), sr = actx.sampleRate, s = 0;
+    for (var i = 0; i < 1024; i++) s += pBuf[i] * pBuf[i];
+    var level_ = Math.sqrt(s / 1024) * 1000;
+    pHist.push([now, level_]);
+    while (pHist.length && now - pHist[0][0] > 400) pHist.shift();
+    var before = 0;
+    pHist.forEach(function (h) { if (now - h[0] > 90 && now - h[0] < 300) before = Math.max(before, h[1]); });
+    var listening = phase === "play" && !done;
+    if (!listening) { pPend = null; }
+    else if (!pPend && now - pLast > 180 && level_ > pThr && level_ > before * 1.7 + 2) { pPend = { t: now, got: [] }; pLast = now; }
+    if (pPend) {
+      var dt = now - pPend.t;
+      if (dt > 70 && dt < 170) { var r = yin(pBuf, sr); if (r && r.conf > 0.8) pPend.got.push(r.f); }
+      if (dt >= 170) {
+        if (pPend.got.length >= 2) {
+          var votes = {}, bm = null, bn = 0;
+          pPend.got.forEach(function (f) { var m = Math.round(69 + 12 * Math.log(f / 440) / Math.LN2); votes[m] = (votes[m] || 0) + 1; if (votes[m] > bn) { bn = votes[m]; bm = m; } });
+          var nm = PC[((bm % 12) + 12) % 12];
+          window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(bm);
+          if (nm) press(nm);
+        }
+        pPend = null;
+      }
+    }
+    requestAnimationFrame(pLoop);
+  }
+  function pianoStart() {
+    var c = ensureCtx();
+    if (!c) { pSt("音が つかえません"); return; }
+    try { if (c.state !== "running") c.resume(); } catch (e) {}
+    pSt("マイクを じゅんび中…");
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
+      pStream = stream; pSrc = c.createMediaStreamSource(stream);
+      pAn = c.createAnalyser(); pAn.fftSize = 8192; pBuf = new Float32Array(pAn.fftSize);
+      pSrc.connect(pAn);
+      pianoOn = true; pRun = true; pHist = []; pPend = null;
+      var b = document.getElementById("pianoBtn"); b.textContent = "🎹 ピアノで こたえる：オン（おすと オフ）"; b.style.background = "#2e7d32";
+      document.getElementById("pianoOpt").style.display = "block";
+      pSt("きいています。ピアノで こたえてね");
+      pLoop();
+    }).catch(function (e) {
+      pSt("マイクが つかえません。せっていで マイクを ゆるしてください。");
+      document.getElementById("pianoOpt").style.display = "block";
+    });
+  }
+  function pianoStop() {
+    pRun = false; pianoOn = false; pPend = null;
+    try { if (pSrc) pSrc.disconnect(); if (pStream) pStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    pSrc = null; pStream = null;
+    var b = document.getElementById("pianoBtn"); if (b) { b.textContent = "🎹 ピアノで こたえる"; b.style.background = "#5c6bc0"; }
+    var o = document.getElementById("pianoOpt"); if (o) o.style.display = "none";
+  }
+  try { var sv = localStorage.getItem("fy_piano_sens"); if (sv) { document.getElementById("pianoSens").value = sv; pThr = +sv; } } catch (e) {}
+  document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
+  document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) pianoStop(); else pianoStart(); });
+  window.__piano = { on: function () { return pianoOn; } };
 
   loadFiles();
   ["pointerdown", "touchend", "click"].forEach(function (ev) { document.addEventListener(ev, tryUnlock, true); });
