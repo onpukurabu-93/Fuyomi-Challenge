@@ -86,45 +86,70 @@ svg { width: 100%; height: auto; display: block; }
   function rnd() { return N_MIN + Math.floor(Math.random() * (N_MAX - N_MIN + 1)); }
 
   /* ---- 音：せいかいの ときだけ、その おんの たかさで ピアノふうの おとを ならす ---- */
-  var actx = null;
   var OFFS = [0, 1, 3, 5, 7, 8, 10];            /* ミ ファ ソ ラ シ ド レ の ミからの 半音 */
   function midiOf(n) { return 64 + 12 * Math.floor(n / 7) + OFFS[((n % 7) + 7) % 7]; }
   function playNote(n) {
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      if (!actx) actx = new AC();
-      if (actx.state === "suspended") actx.resume();
-      var f = 440 * Math.pow(2, (midiOf(n) - 69) / 12), t = actx.currentTime;
-      var master = actx.createGain();
-      master.gain.setValueAtTime(0.0001, t);
-      master.gain.exponentialRampToValueAtTime(0.5, t + 0.008);
-      master.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
-      master.connect(actx.destination);
-      [[1, 1], [2, 0.45], [3, 0.2], [4, 0.1]].forEach(function (h) {
-        var o = actx.createOscillator(), g = actx.createGain();
-        o.type = "sine"; o.frequency.value = f * h[0];
-        g.gain.value = h[1] * 0.5;
-        o.connect(g); g.connect(master);
-        o.start(t); o.stop(t + 1.15);
-      });
-    } catch (e) {}
+    var c = ensureCtx();
+    if (!c) return;
+    function sched() {
+      try {
+        var f = 440 * Math.pow(2, (midiOf(n) - 69) / 12), t = c.currentTime + 0.01;
+        var master = c.createGain();
+        master.gain.setValueAtTime(0.0001, t);
+        master.gain.exponentialRampToValueAtTime(0.5, t + 0.008);
+        master.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+        master.connect(c.destination);
+        [[1, 1], [2, 0.45], [3, 0.2], [4, 0.1]].forEach(function (h) {
+          var o = c.createOscillator(), g = c.createGain();
+          o.type = "sine"; o.frequency.value = f * h[0];
+          g.gain.value = h[1] * 0.5;
+          o.connect(g); g.connect(master);
+          o.start(t); o.stop(t + 1.15);
+        });
+      } catch (e) {}
+    }
+    /* iPhone：まだ あいていなければ、あくのを まってから ならす（さいしょの 1〜3おとが ならない もんだいの たいさく） */
+    if (c.state === "running") sched();
+    else { try { c.resume().then(sched, sched); } catch (e) { sched(); } }
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3" };
-  var aud = null;
-  function unlockAudio() {
-    if (aud) return;
-    aud = {};
-    Object.keys(FILES).forEach(function (k) {
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3" };
+  var aud = null, audOK = false;
+  var actx = null;
+  function ensureCtx() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!actx) actx = new AC();
+      return actx;
+    } catch (e) { return null; }
+  }
+  /* タッチのたびに、まだ あいていなければ あける（iPhoneは どの タッチで あくか きまっていないので、何回か ためす） */
+  function tryUnlock() {
+    var c = ensureCtx();
+    if (c) {
       try {
-        var a = new Audio(FILES[k]); a.preload = "auto"; aud[k] = a;
-        a.muted = true;
-        var pr = a.play();
-        if (pr && pr.then) pr.then(function () { a.pause(); a.currentTime = 0; a.muted = false; }).catch(function () { a.muted = false; });
+        if (c.state !== "running") c.resume();
+        var buf = c.createBuffer(1, 1, 22050), src = c.createBufferSource();
+        src.buffer = buf; src.connect(c.destination); src.start(0);
       } catch (e) {}
-    });
+    }
+    if (!audOK) {
+      if (!aud) {
+        aud = {};
+        Object.keys(FILES).forEach(function (k) { try { var a = new Audio(FILES[k]); a.preload = "auto"; aud[k] = a; } catch (e) {} });
+      }
+      var tried = 0;
+      Object.keys(aud).forEach(function (k) {
+        var a = aud[k];
+        try {
+          a.muted = true;
+          var pr = a.play();
+          if (pr && pr.then) pr.then(function () { a.pause(); a.currentTime = 0; a.muted = false; audOK = true; }).catch(function () { a.muted = false; });
+        } catch (e) { a.muted = false; }
+      });
+    }
   }
   window.__playLog = [];
   function playSeq(keys) {
@@ -279,7 +304,7 @@ svg { width: 100%; height: auto; display: block; }
     document.getElementById("rnext").textContent = msg;
     var seq = [];
     if (firstOk === TOTAL) seq = ["sugoi", "fanfare"];
-    else if (firstOk >= needOf(level)) seq = ["fanfare"];
+    else if (firstOk >= needOf(level)) seq = ["osi", "fanfare"];
     else seq = ["ganbatte"];
     if (newlyOpened) seq.push("levelOpen");
     playSeq(seq);
@@ -327,7 +352,7 @@ svg { width: 100%; height: auto; display: block; }
     }
   }
 
-  document.addEventListener("pointerdown", unlockAudio, { once: true, capture: true });
+  ["pointerdown", "touchend", "click"].forEach(function (ev) { document.addEventListener(ev, tryUnlock, true); });
   document.getElementById("kb").addEventListener("pointerdown", function (e) {
     var b = e.target.closest ? e.target.closest(".key-btn") : null;
     if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
