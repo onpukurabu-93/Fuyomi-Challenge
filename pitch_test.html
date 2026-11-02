@@ -55,7 +55,7 @@ h1 { font-size: 18px; text-align: center; margin: 4px 0 2px; }
 
   /* YIN（音の たかさを みつける ほうほう） */
   function yin(data, sr) {
-    var W = 2048, maxTau = Math.floor(sr / 180), minTau = Math.floor(sr / 1100);
+    var W = 2048, maxTau = Math.floor(sr / 150), minTau = Math.floor(sr / 1100);
     var d = new Float32Array(maxTau + 1), cm = new Float32Array(maxTau + 1);
     for (var tau = 1; tau <= maxTau; tau++) {
       var sum = 0;
