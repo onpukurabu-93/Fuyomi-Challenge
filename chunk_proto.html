@@ -712,7 +712,7 @@ svg { width: 100%; height: auto; display: block; }
 
   /* ===== ピアノで こたえる（マイクで おとを きく） ===== */
   var pianoOn = false, pAn = null, pBuf = null, pStream = null, pSrc = null, pRun = false;
-  var pPend = null, pLast = -1e9, pHist = [], pThr = 6;
+  var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1;
   var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
   function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; }
   function pianoUi() {
@@ -745,6 +745,21 @@ svg { width: 100%; height: auto; display: block; }
     var before = 0;
     pHist.forEach(function (h) { if (now - h[0] > 90 && now - h[0] < 300) before = Math.max(before, h[1]); });
     var listening = phase === "play" && !done;
+    /* つなげて ひいた とき：音の たかさが かわって、しばらく おなじなら あたらしい 音 */
+    pFrame++;
+    if (!listening || level_ < pThr) { pStab = null; if (level_ < pThr * 0.5) pLastPc = -1; }
+    else if (!pPend && pFrame % 2 === 0) {
+      var r2 = yin(pBuf, sr);
+      if (r2 && r2.conf > 0.85) {
+        var m2 = Math.round(69 + 12 * Math.log(r2.f / 440) / Math.LN2), pc2 = ((m2 % 12) + 12) % 12;
+        if (pStab && pStab.pc === pc2) pStab.n++; else pStab = { pc: pc2, n: 1 };
+        if (pStab.n >= 4 && pc2 !== pLastPc && pLastPc !== -1 && now - pLast > 200) {
+          pLastPc = pc2; pLast = now; pStab = null;
+          window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(m2);
+          if (PC[pc2]) press(PC[pc2]);
+        } else if (pLastPc === -1 && pStab.n >= 4) { pLastPc = pc2; }
+      } else { pStab = null; }
+    }
     if (!listening) { pPend = null; }
     else if (!pPend && now - pLast > 180 && level_ > pThr && level_ > before * 1.7 + 2) { pPend = { t: now, got: [] }; pLast = now; }
     if (pPend) {
@@ -756,6 +771,7 @@ svg { width: 100%; height: auto; display: block; }
           pPend.got.forEach(function (f) { var m = Math.round(69 + 12 * Math.log(f / 440) / Math.LN2); votes[m] = (votes[m] || 0) + 1; if (votes[m] > bn) { bn = votes[m]; bm = m; } });
           var nm = PC[((bm % 12) + 12) % 12];
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(bm);
+          pLastPc = ((bm % 12) + 12) % 12; pStab = null;
           if (nm) press(nm);
         }
         pPend = null;
