@@ -30,6 +30,13 @@ svg { width: 100%; height: auto; display: block; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
 .flash { animation: flash .35s; }
 @keyframes flash { 0%{background:#fff} 30%{background:#ffe3df} 100%{background:#fff} }
+.card { position: relative; }
+.ov { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(255,255,255,.93); border-radius: 16px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; }
+.ov .go { width: 78%; font-size: 24px; padding: 18px; border-radius: 18px; }
+.ov .tx { font-size: 13px; color: #806c5a; margin-top: 12px; line-height: 1.6; }
+.cd { font-size: 96px; font-weight: 900; color: #ff5722; line-height: 1; animation: cdpop .8s ease-out both; }
+@keyframes cdpop { 0%{transform:scale(1.9);opacity:0} 35%{transform:scale(1);opacity:1} 100%{transform:scale(.9);opacity:.9} }
+.tmline { font-size: 14px; line-height: 1.8; margin-top: 8px; color: #5b4636; }
 .res { display: none; text-align: center; padding: 18px 10px; }
 .res .big { font-size: 40px; font-weight: 900; color: #ff5722; margin: 4px 0; }
 .btn { display: block; width: 100%; border: none; border-radius: 14px; padding: 14px; font-size: 17px; font-weight: 800; background: #ff7043; color: #fff; margin-top: 12px; cursor: pointer; }
@@ -42,6 +49,7 @@ svg { width: 100%; height: auto; display: block; }
   <div class="sub">ト音記号　3つの おとを ひとまとまりで よもう</div>
   <div class="lv" id="lv"></div>
   <div class="card" id="card">
+    <div class="ov" id="ov" style="display:none;"></div>
     <div class="prog"><span id="pq">1 / 16</span><span id="pm"></span></div>
     <div class="bar"><i id="pb"></i></div>
     <div id="stage"></div>
@@ -50,6 +58,7 @@ svg { width: 100%; height: auto; display: block; }
       <div style="font-size:13px;color:#806c5a;margin-top:6px;">いっぱつ せいかいりつ</div>
       <div class="big" id="rate">0%</div>
       <div id="rtext" style="font-size:14px;"></div>
+      <div id="rtime" class="tmline"></div>
       <div id="rnext" style="font-size:14px;font-weight:800;margin-top:10px;color:#e65100;line-height:1.5;"></div>
       <button class="btn" id="nextBtn" style="display:none;">つぎの レベルへ</button>
       <button class="btn" id="again" style="background:#78a9c8;">もういちど</button>
@@ -72,6 +81,10 @@ svg { width: 100%; height: auto; display: block; }
   var LEVELS = [16, 32, 64, 96];   /* レベル1〜4 の おとの かず（レベル5は きょく） */
   var level = 1, TOTAL = 16;
   var KEY_MAX = "fy_chunk_max";                     /* ひらいている いちばん うえの レベル */
+  function recKey(l) { return "fy_chunk_rec_" + l; }
+  function getRec(l) { try { return JSON.parse(localStorage.getItem(recKey(l)) || "null") || {}; } catch (e) { return {}; } }
+  function setRec(l, r) { try { localStorage.setItem(recKey(l), JSON.stringify(r)); } catch (e) {} }
+  function fmt(ms) { var sec = ms / 1000; if (sec >= 60) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + "分" + (r < 10 ? "0" : "") + r.toFixed(1) + "秒"; } return sec.toFixed(1) + "秒"; }
   function needOf(l) { return Math.ceil(LEVELS[l - 1] * 9 / 10); }   /* 一発 せいかい 90%いじょう */
   function getMax() { try { var v = parseInt(localStorage.getItem(KEY_MAX), 10); return v >= 1 && v <= 5 ? v : 1; } catch (e) { return 1; } }
   function setMax(v) { try { localStorage.setItem(KEY_MAX, String(v)); } catch (e) {} }
@@ -171,6 +184,7 @@ svg { width: 100%; height: auto; display: block; }
     next();
   }
 
+  var phase = "ready", t0 = 0, tEnd = 0, token = 0;
   var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false, run = 0, bestRun = 0, missCount = 0;
 
   var stage = document.getElementById("stage");
@@ -279,7 +293,40 @@ svg { width: 100%; height: auto; display: block; }
     document.getElementById("kb").style.visibility = "visible";
     buildStage();
     render();
+    showReady();
   }
+
+  /* ---- スタートボタン と カウントダウン ---- */
+  function showReady() {
+    token++;
+    phase = "ready";
+    notesG.style.visibility = "hidden";
+    var ov = document.getElementById("ov");
+    ov.style.display = "flex";
+    ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">おして、3・2・1 のあと<br>おとが でてくるよ<br>タイムを はかるよ</div>';
+    document.getElementById("go").addEventListener("click", beginCount);
+  }
+  function beginCount() {
+    var my = ++token;
+    phase = "count";
+    var ov = document.getElementById("ov");
+    var seq = ["3", "2", "1"], i = 0;
+    function step() {
+      if (my !== token) return;
+      if (i < seq.length) {
+        ov.innerHTML = '<div class="cd">' + seq[i++] + '</div>';
+        setTimeout(step, 800);
+      } else {
+        ov.style.display = "none";
+        notesG.style.visibility = "visible";
+        phase = "play";
+        t0 = (window.__fakeNow ? window.__fakeNow() : performance.now());
+      }
+    }
+    step();
+  }
+
+  function ov_hide() { document.getElementById("ov").style.display = "none"; notesG.style.visibility = "visible"; phase = "play"; t0 = (window.__fakeNow ? window.__fakeNow() : performance.now()); }
 
   function finish() {
     done = true;
@@ -288,6 +335,29 @@ svg { width: 100%; height: auto; display: block; }
     document.getElementById("rtext").textContent = firstOk === TOTAL
       ? "すごい！" + TOTAL + "音ぜんぶれんぞくせいかい！"
       : (TOTAL - firstOk) + "音まちがえて、れんぞくせいかいは 最高 " + bestRun + "回だったよ！";
+    /* タイム・ベスト・のびりつ */
+    var el = Math.max(0, tEnd - t0), rec = getRec(level), cleared = firstOk >= needOf(level), lines = [];
+    lines.push("タイム：<b>" + fmt(el) + "</b>");
+    if (cleared) {
+      if (!rec.first) rec.first = el;
+      if (!rec.bestClear || el < rec.bestClear) rec.bestClear = el;
+      rec.n = (rec.n || 0) + 1;
+      if (firstOk === TOTAL) {
+        var newBest = !rec.bestPerfect || el < rec.bestPerfect;
+        if (newBest) rec.bestPerfect = el;
+        lines.push("ノーミスの ベスト：<b>" + fmt(rec.bestPerfect) + "</b>" + (newBest ? " 🎉 ベスト こうしん！" : ""));
+      } else if (rec.bestPerfect) {
+        lines.push("ノーミスの ベスト：" + fmt(rec.bestPerfect));
+      }
+      if (rec.n >= 2 && rec.first > 0 && rec.bestClear < rec.first) {
+        lines.push("さいしょの クリアより <b>" + Math.round((rec.first - rec.bestClear) / rec.first * 100) + "%</b> はやくなったよ！");
+      }
+      setRec(level, rec);
+    } else {
+      lines.push("<span style=\"color:#806c5a;font-size:12px;\">（クリアした ときだけ ベストに きろくするよ）</span>");
+    }
+    document.getElementById("rtime").innerHTML = lines.join("<br>");
+
     /* 鍵：90%いじょうで、つぎの レベルが ひらく */
     var msg = "", nextLv = 0, newlyOpened = false;
     if (firstOk >= needOf(level)) {
@@ -320,7 +390,7 @@ svg { width: 100%; height: auto; display: block; }
   }
 
   function press(key) {
-    if (busy || done) return;
+    if (busy || done || phase !== "play") return;
     var n = queue[idx];
     if (nameOf(n) === key) {
       playNote(n);
@@ -328,7 +398,7 @@ svg { width: 100%; height: auto; display: block; }
       missed = false;
       idx++;
       document.getElementById("pb").style.width = (idx / TOTAL * 100) + "%";
-      if (idx >= TOTAL) { busy = true; setTimeout(finish, 280); return; }
+      if (idx >= TOTAL) { tEnd = (window.__fakeNow ? window.__fakeNow() : performance.now()); busy = true; setTimeout(finish, 280); return; }
       busy = true;
       /* ぜんぶを 1こ ひだりへ ながす */
       notesG.style.transform = "translateX(" + (-SLOT_DX) + "px)";
@@ -359,9 +429,9 @@ svg { width: 100%; height: auto; display: block; }
   });
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
-  document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); level = 1; start(); });
+  document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
-  window.__chunk = { playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
