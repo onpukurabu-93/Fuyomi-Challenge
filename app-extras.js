@@ -1,3 +1,4 @@
+
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
@@ -481,7 +482,7 @@
   }
   /* ---- レジェンドへの みち ＋ ハンコ の「うつしコード」（生徒が 古い端末で つくる） ---- */
   function chunkKeys(idx) {
-    var keys = [], pre = ["fy_chunk_rec_" + idx + "_", "fy_chunk_ev_" + idx + "_"];
+    var keys = [], pre = ["fy_chunk_rec_" + idx + "_", "fy_chunk_ev_" + idx + "_", "fy_chunk_song_" + idx + "_"];
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
       if (!k) continue;
@@ -494,10 +495,15 @@
     chunkKeys(idx).forEach(function (kp) {
       try {
         var v = JSON.parse(localStorage.getItem(kp[0]) || "null");
-        if (v) o.r[(kp[1].indexOf("_rec_") > 0 ? "rec_" : "ev_") + kp[0].slice(kp[1].length)] = v;
+        if (v) o.r[kp[1].slice("fy_chunk_".length, kp[1].indexOf("_" + idx + "_")) + "_" + kp[0].slice(kp[1].length)] = v;
       } catch (e) {}
     });
     o.m = Storage.getNumber("fy_chunk_max_" + idx, 0);
+    o.s = {};
+    ["legend", "maestro"].forEach(function (kd) {
+      var l = Storage.get("fy_chunk_songs_" + kd + "_" + idx, []);
+      if (Array.isArray(l) && l.length) o.s[kd] = l;
+    });
     o.h = getHankoList(idx).map(function (d) { return d.replace(/-/g, ""); });
     var payload = "FYC1|" + JSON.stringify(o);
     return "FYC1." + b64enc(payload) + "." + signOf(payload);
@@ -532,11 +538,20 @@
     }
     var done = [];
     Object.keys(o.r || {}).forEach(function (k) {
-      var key = (k.indexOf("rec_") === 0 ? "fy_chunk_rec_" : "fy_chunk_ev_") + idx + "_" + k.replace(/^(rec_|ev_)/, "");
+      var tag = k.slice(0, k.indexOf("_")), rest = k.slice(k.indexOf("_") + 1);
+      var key = "fy_chunk_" + tag + "_" + idx + "_" + rest;
       var before = localStorage.getItem(key), cur0 = null;
       try { cur0 = JSON.parse(before || "null"); } catch (e) {}
       var merged = mergeRec(cur0, o.r[k]);
-      if (JSON.stringify(merged) !== JSON.stringify(cur0 || {})) { try { localStorage.setItem(key, JSON.stringify(merged)); } catch (e) {} done.push(k.indexOf("rec_") === 0 ? "レジェンドへの みち（レベル" + k.slice(4) + "）" : "イベントの きろく"); }
+      if (JSON.stringify(merged) !== JSON.stringify(cur0 || {})) { try { localStorage.setItem(key, JSON.stringify(merged)); } catch (e) {} done.push(tag === "rec" ? "レジェンドへの みち（レベル" + rest + "）" : (tag === "song" ? "きょくの きろく" : "イベントの きろく")); }
+    });
+    Object.keys(o.s || {}).forEach(function (kd) {
+      if (kd !== "legend" && kd !== "maestro") return;
+      var sk = "fy_chunk_songs_" + kd + "_" + idx, cur1 = Storage.get(sk, []);
+      if (!Array.isArray(cur1)) cur1 = [];
+      var added1 = 0;
+      (o.s[kd] || []).forEach(function (id) { if (typeof id === "string" && cur1.indexOf(id) === -1) { cur1.push(id); added1++; } });
+      if (added1) { Storage.set(sk, cur1); done.push("ノーミスの きょく " + cur1.length + "きょく"); }
     });
     var mk = "fy_chunk_max_" + idx;
     if ((o.m | 0) > Storage.getNumber(mk, 0)) { Storage.set(mk, o.m | 0); done.push("ひらいている レベル"); }
@@ -1945,6 +1960,11 @@
       if (r.n >= 2 && r.first > 0 && r.bestClear < r.first) t += "　のびた：" + Math.round((r.first - r.bestClear) / r.first * 100) + "%";
       lines.push(t);
     }
+    try {
+      var sl = JSON.parse(localStorage.getItem("fy_chunk_songs_legend_" + idx) || "[]");
+      var sc = Array.isArray(sl) ? sl.length : 0;
+      if (sc > 0) { any = true; lines.push("きょく：ノーミス " + sc + " / 100きょく"); }
+    } catch (e) {}
     return G + "<b>🎼 レジェンドへの みち</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ はじめていません" : "ふよみマスターに なると ひらきます")) + "</div>";
   };
 
