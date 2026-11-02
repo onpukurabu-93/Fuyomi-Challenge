@@ -46,6 +46,8 @@ svg { width: 100%; height: auto; display: block; }
 <body>
 <div id="app">
   <h1>かたまり読み（ためし版）</h1>
+  <div style="font-size:13px;"><a href="index.html" style="color:#806c5a;text-decoration:none;font-weight:800;">← トップへ もどる</a></div>
+  <div class="sub" id="who"></div>
   <div class="sub">ト音記号　3つの おとを ひとまとまりで よもう</div>
   <div class="lv" id="lv"></div>
   <div class="card" id="card">
@@ -80,14 +82,23 @@ svg { width: 100%; height: auto; display: block; }
 (function () {
   var LEVELS = [16, 32, 64, 96];   /* レベル1〜4 の おとの かず（レベル5は きょく） */
   var level = 1, TOTAL = 16;
-  var KEY_MAX = "fy_chunk_max";                     /* ひらいている いちばん うえの レベル */
-  function recKey(l) { return "fy_chunk_rec_" + l; }
+  /* いまの プレイヤー（トップ画面で えらんだ人）。同じ アドレスなので、アプリの きろくを そのまま 読める */
+  var PID = "x", PNAME = "";
+  try {
+    var _i = parseInt(JSON.parse(localStorage.getItem("onpu_active_profile")), 10);
+    if (!isNaN(_i)) PID = String(_i);
+    var _p = JSON.parse(localStorage.getItem("onpu_profiles") || "[]");
+    if (_p && _p[_i]) PNAME = String(_p[_i]);
+  } catch (e) {}
+  var KEY_MAX = "fy_chunk_max_" + PID;              /* ひらいている いちばん うえの レベル */
+  function recKey(l) { return "fy_chunk_rec_" + PID + "_" + l; }
   function getRec(l) { try { return JSON.parse(localStorage.getItem(recKey(l)) || "null") || {}; } catch (e) { return {}; } }
   function setRec(l, r) { try { localStorage.setItem(recKey(l), JSON.stringify(r)); } catch (e) {} }
   function fmt(ms) { var sec = ms / 1000; if (sec >= 60) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + "分" + (r < 10 ? "0" : "") + r.toFixed(1) + "秒"; } return sec.toFixed(1) + "秒"; }
   function needOf(l) { return Math.ceil(LEVELS[l - 1] * 9 / 10); }   /* 一発 せいかい 90%いじょう */
   function getMax() { try { var v = parseInt(localStorage.getItem(KEY_MAX), 10); return v >= 1 && v <= 5 ? v : 1; } catch (e) { return 1; } }
   function setMax(v) { try { localStorage.setItem(KEY_MAX, String(v)); } catch (e) {} }
+  (function(){ var w=document.getElementById("who"); if(w) w.textContent = PNAME ? ("👤 "+PNAME+" さん") : ""; })();
   var NAMES = ["ミ", "ファ", "ソ", "ラ", "シ", "ド", "レ"];   /* n=0 が ミ(E4) */
   var N_MIN = -2, N_MAX = 9;                                   /* ド(C4) 〜 ソ(G5) */
   var SLOT_X = 112, SLOT_DX = 68, VISIBLE = 5;
