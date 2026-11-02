@@ -49,11 +49,11 @@ svg { width: 100%; height: auto; display: block; }
 .ov .back { width: 78%; margin-top: 14px; padding: 14px; font-size: 17px; }
 .note { font-size: 11px; color: #806c5a; text-align: center; margin-top: 10px; line-height: 1.5; }
 #evScr{display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#fdf8ed;z-index:50;overflow:auto;-webkit-overflow-scrolling:touch}
-#evScr .in{max-width:420px;margin:0 auto;padding:14px 12px 30px;color:#5b4636}
-#evScr table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
-#evScr th,#evScr td{border:1px solid #eadcc8;padding:6px 4px;text-align:center}
+#evScr .in{max-width:420px;margin:0 auto;padding:10px 12px 14px;color:#5b4636}
+#evScr table{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}
+#evScr th,#evScr td{border:1px solid #eadcc8;padding:3px 4px;text-align:center}
 #evScr th{background:#f6ecd8}
-#evCode{width:100%;height:92px;font-size:11px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
+#evCode{width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -608,22 +608,22 @@ svg { width: 100%; height: auto; display: block; }
     var rows = "";
     for (var l = 1; l <= 4; l++) {
       var r = getEv(l), rate = evRate(r);
-      rows += "<tr><td>レベル" + l + "<br><span style='font-size:11px'>" + LEVELS[l - 1] + "音</span></td><td>" + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + "</td><td>" + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
+      rows += "<tr><td>レベル" + l + " <span style='font-size:11px'>(" + LEVELS[l - 1] + "音)</span></td><td>" + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + "</td><td>" + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
     var c = makeEventCode(), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     document.getElementById("evIn").innerHTML =
-      '<div style="font-size:20px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
-      '<div style="text-align:center;margin:4px 0 10px;font-size:14px;">👤 ' + (PNAME || "") + ' さん</div>' +
-      '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:10px;text-align:center;font-size:15px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:30px;font-weight:900;color:#ff5722;">' + practiceDays() + '</span> 日</div>' +
-      '<div style="margin-top:12px;font-size:14px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく</div>' +
+      '<div style="font-size:18px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
+      '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + (PNAME || "") + ' さん</div>' +
+      '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px;text-align:center;font-size:14px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:24px;font-weight:900;color:#ff5722;">' + practiceDays() + '</span> 日</div>' +
+      '<div style="margin-top:8px;font-size:13px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく</div>' +
       '<table><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr>' + rows + '</table>' +
       '<div style="font-size:12px;color:#806c5a;">きろくした日：' + when + '</div>' +
-      '<div style="font-size:12px;font-weight:800;margin-top:10px;">せんせいに おくる コード</div>' +
+      '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="evCode" readonly>' + c.code + '</textarea>' +
-      '<button class="btn" id="evCopy" style="background:#5c6bc0;">コードを コピー</button>' +
-      '<div style="font-size:13px;line-height:1.7;margin-top:10px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
-      '<button class="btn back" id="evClose">もどる</button>';
+      '<button class="btn" id="evCopy" style="background:#5c6bc0;padding:10px;font-size:15px;margin-top:6px;">コードを コピー</button>' +
+      '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
+      '<button class="btn back" id="evClose" style="padding:10px;font-size:15px;margin-top:6px;">もどる</button>';
     document.getElementById("evScr").style.display = "block";
     document.getElementById("evScr").scrollTop = 0;
     document.getElementById("evClose").addEventListener("click", function () { document.getElementById("evScr").style.display = "none"; });
