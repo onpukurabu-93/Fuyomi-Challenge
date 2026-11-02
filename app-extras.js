@@ -1017,6 +1017,7 @@
         BL + '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
         BL + '<b>🏅 トレーニングポイント</b> ' + ((typeof window.fyParentTP === "function") ? window.fyParentTP(idx) : "") + '</div>' +
         BL + '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '</div>' +
+        ((typeof window.fyParentChunk === "function") ? window.fyParentChunk(idx) : '') +
         GR + '<b>💮 今週のハンコ</b> ' + ((typeof window.fyParentStamps === "function") ? window.fyParentStamps(idx) : "") + '</div>' +
         GR + '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') + '</div>' +
         '</div>';
@@ -1762,4 +1763,67 @@
 
   /* はじめの 表示 */
   try { initProfiles(); } catch (e) {}
+})();
+
+
+/* ===== ふよみマスター以降（かたまり読み）とのドッキング ===== */
+(function () {
+  var PAGE = "chunk_proto.html";
+  var LV = [16, 32, 64, 96];
+
+  function isMaster(idx) {
+    try {
+      if (Storage.get("onpu_debug_unlocked_" + idx)) return true;
+      var a = Storage.get("fy_ach_" + idx, []);
+      if (!Array.isArray(a)) return false;
+      for (var i = 0; i < a.length; i++) { if (a[i] && a[i].type === "master") return true; }
+    } catch (e) {}
+    return false;
+  }
+  function fmt(ms) { var sec = ms / 1000; if (sec >= 60) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + "分" + (r < 10 ? "0" : "") + r.toFixed(1) + "秒"; } return sec.toFixed(1) + "秒"; }
+  function getRec(idx, l) { try { return JSON.parse(localStorage.getItem("fy_chunk_rec_" + idx + "_" + l) || "null") || {}; } catch (e) { return {}; } }
+
+  /* トップ画面のボタン */
+  function renderBtn() {
+    var all = document.getElementById("btnAll");
+    if (!all || !all.parentNode) return;
+    var b = document.getElementById("fyChunkBtn");
+    if (!b) {
+      b = document.createElement("button");
+      b.id = "fyChunkBtn";
+      b.className = "select-button";
+      b.style.cssText = "background:#7e57c2;color:#fff;position:relative;";
+      all.parentNode.insertBefore(b, all.nextSibling);
+      b.addEventListener("click", function () {
+        if (!isMaster(activeProfileIndex)) { alert("ふよみマスターに なると ひらくよ！"); return; }
+        location.href = PAGE;
+      });
+    }
+    var ok = isMaster(activeProfileIndex);
+    b.innerHTML = "🎼 ふよみマスター以降" + (ok ? "" : ' <span class="lock-tag">🔒 ロック</span>');
+    b.className = "select-button" + (ok ? "" : " locked");
+  }
+  var prev = window.initProfiles;
+  window.initProfiles = function () {
+    var r = prev.apply(this, arguments);
+    try { renderBtn(); } catch (e) {}
+    return r;
+  };
+
+  /* 保護者ページ */
+  window.fyParentChunk = function (idx) {
+    var G = '<div style="color:#1565c0;margin-bottom:4px;">';
+    var lines = [], any = false;
+    for (var l = 1; l <= 4; l++) {
+      var r = getRec(idx, l);
+      if (!r.first) continue;
+      any = true;
+      var t = "レベル" + l + "（" + LV[l - 1] + "音）クリア済み　ノーミスの ベスト：" + (r.bestPerfect ? fmt(r.bestPerfect) : "まだ");
+      if (r.n >= 2 && r.first > 0 && r.bestClear < r.first) t += "　のびた：" + Math.round((r.first - r.bestClear) / r.first * 100) + "%";
+      lines.push(t);
+    }
+    return G + "<b>🎼 ふよみマスター以降</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ はじめていません" : "ふよみマスターに なると ひらきます")) + "</div>";
+  };
+
+  try { renderBtn(); } catch (e) {}
 })();
