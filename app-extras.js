@@ -1,4 +1,3 @@
-
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
@@ -256,6 +255,8 @@
     bass:   { icon: "🎼", label: "ヘ音記号マスター", bg: "#eafaf0", bd: "#2fa862", tx: "#1f5a3a", ac: "#2fa862", cbg: "#fff", ctx: "#1f5a3a" },
     master: { icon: "🎓", label: "ふよみマスター", bg: "#fff0f5", bd: "#e0527f", tx: "#7a2b4a", ac: "#e0527f", cbg: "#fff", ctx: "#7a2b4a" },
     legend: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
+    legend5: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
+    maestro: { icon: "🎻", label: "ふよみマエストロ", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a" },
     legend1000: { icon: "👑", label: "ふよみレジェンド", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
   };
   function infoOf(rec) {
@@ -270,6 +271,8 @@
   function subOf(rec) {
     if (rec.type === "stamp") return "かんせい！";
     if (rec.type === "legend") return "パーフェクト " + rec.n + "回 れんぞく！";
+    if (rec.type === "legend5") return "ノーミス 100曲 たっせい！";
+    if (rec.type === "maestro") return "ながい曲 100曲 たっせい！";
     return "おめでとう！";
   }
 
@@ -402,7 +405,7 @@
   };
 
   /* 「きろくと コード」の一覧 */
-  var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"]];
+  var ACH_LINES = [["treble", "🎼 ト音記号マスター"], ["bass", "🎼 ヘ音記号マスター"], ["master", "🎓 ふよみマスター"], ["legend5", "👑 ふよみレジェンド"], ["maestro", "🎻 ふよみマエストロ"]];
 
   /* =========================================================
      記録の復元（先生が作った「復元コード」を、端末に貼ると、記録がもどる）
@@ -1191,6 +1194,8 @@
             '<option value="treble">ト音記号マスター</option>' +
             '<option value="bass">ヘ音記号マスター</option>' +
             '<option value="master">ふよみマスター</option>' +
+            '<option value="legend5">ふよみレジェンド（100曲）</option>' +
+            '<option value="maestro">ふよみマエストロ（100曲）</option>' +
             '<option value="exchange">ポイント こうかん</option>' +
           '</select>' +
           '<input id="fcDate" class="modal-input" type="date">' +
