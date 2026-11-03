@@ -66,7 +66,7 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   <h1>🎼 レジェンドへの みち</h1>
   <div style="font-size:13px;"><a href="index.html" style="display:inline-block;padding:10px 14px 10px 4px;color:#806c5a;text-decoration:none;font-weight:800;">← トップへ もどる</a></div>
   <div class="sub" id="who"></div>
-  <div class="sub">ト音記号　3つの おとを ひとまとまりで よもう</div>
+  <div class="sub" id="subTx">ト音記号　3つの おとを ひとまとまりで よもう</div>
   <div class="lv" id="lv"></div>
   <div id="songScr" style="display:none;"></div>
   <div class="card" id="card">
@@ -109,7 +109,7 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   </div>
   <button class="btn back" id="evBtn" style="margin-top:14px;">🏆 イベントの きろく</button>
   <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tLeg" style="color:#806c5a;">せんせい用：レジェンド表彰テスト</a>　<a href="#" id="tMae" style="color:#806c5a;">せんせい用：マエストロ表彰テスト</a><br><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
-  <div class="note">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
+  <div class="note" id="howTx">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <div id="evScr"><div class="in" id="evIn"></div></div>
 <script>
@@ -676,6 +676,8 @@ function renderScore(bars, beatsPerBar, opt) {
     document.getElementById("card").style.display = "none";
     document.getElementById("kb").style.display = "none";
     document.getElementById("pianoBox").style.display = "none";
+    document.getElementById("howTx").style.display = "none";
+    document.getElementById("subTx").textContent = "ト音記号　がくふを みて ひいてみよう";
     var sc = document.getElementById("songScr");
     sc.style.display = "block";
     var ps = getPass();
@@ -780,6 +782,7 @@ function renderScore(bars, beatsPerBar, opt) {
   function start() {
     if (level === 5) { showLevel5(); return; }
     scStop(); var bar1 = document.getElementById("scBar"); if (bar1) bar1.remove();
+    document.getElementById("howTx").style.display = ""; document.getElementById("subTx").textContent = "ト音記号　3つの おとを ひとまとまりで よもう";
     document.getElementById("card").style.display = "";
     document.getElementById("kb").style.display = "";
     document.getElementById("songScr").style.display = "none";
