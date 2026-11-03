@@ -22,6 +22,7 @@ svg { width: 100%; height: auto; display: block; }
 #notes { transition: transform .28s ease-out; }
 .nt { transition: opacity .28s ease-out; }
 .keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 6px 4px 4px; background: #e0d0ba; border-radius: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); margin-top: 10px; }
+html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 .key-btn { border: none; border-radius: 8px; min-height: 64px; color: #fff; font-size: 16px; font-weight: 900; cursor: pointer; position: relative; box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 5px 6px rgba(0,0,0,0.15); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; transition: transform .05s ease, box-shadow .05s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); touch-action: manipulation; }
 .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 2px 3px rgba(0,0,0,.1); }
 .key-do { background: #e99595; } .key-re { background: #e6b26a; } .key-mi { background: #d6c45d; }
@@ -99,7 +100,7 @@ svg { width: 100%; height: auto; display: block; }
     <button class="btn" id="pianoBtn" style="background:#5c6bc0;">🎹 ピアノで こたえる</button>
     <div id="pianoOpt" style="display:none;font-size:13px;margin-top:8px;color:#806c5a;">
       マイクの びんかん：
-      <select id="pianoSens" style="font-size:15px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select>
+      <select id="pianoSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select>
       <div id="pianoSt" style="margin-top:6px;min-height:18px;"></div>
       <div style="font-size:12px;margin-top:4px;">ピアノの 音を マイクで きいて こたえます。<br>ピアノの ちかくに おいてね。シャープ（くろい けんばん）は むしします。<br>どの オクターブでも だいじょうぶ。</div>
     </div>
@@ -834,6 +835,10 @@ svg { width: 100%; height: auto; display: block; }
   document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) pianoStop(); else pianoStart(); });
   window.__piano = { on: function () { return pianoOn; } };
 
+  /* iPhone：ゆびで 画面が かくだいされるのを ふせぐ */
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }); });
+  var lastTE = 0;
+  document.addEventListener("touchend", function (e) { var t = Date.now(); if (t - lastTE < 350) e.preventDefault(); lastTE = t; }, { passive: false });
   loadFiles();
   ["pointerdown", "touchend", "click"].forEach(function (ev) { document.addEventListener(ev, tryUnlock, true); });
   document.getElementById("kb").addEventListener("pointerdown", function (e) {
