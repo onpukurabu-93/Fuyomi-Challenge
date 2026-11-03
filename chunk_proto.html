@@ -99,6 +99,7 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   </div>
   <div id="pianoBox" style="display:none;margin-top:12px;text-align:center;">
     <button class="btn" id="pianoBtn" style="background:#5c6bc0;">🎹 ピアノで こたえる</button>
+    <div id="pianoPad" style="display:none;font-size:12px;margin-top:6px;color:#b26a00;font-weight:800;line-height:1.5;"></div>
     <div id="pianoOpt" style="display:none;font-size:13px;margin-top:8px;color:#806c5a;">
       マイクの びんかん：
       <select id="pianoSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select>
@@ -671,7 +672,7 @@ function renderScore(bars, beatsPerBar, opt) {
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, {}) + '</div>' +
-      '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
+      '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:96px;">もどる</button>' +
       '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
       '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
@@ -961,6 +962,9 @@ function renderScore(bars, beatsPerBar, opt) {
   var pianoOn = false, pAn = null, pBuf = null, pStream = null, pSrc = null, pRun = false;
   var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1, pReadyAt = 0;
   var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
+  var IS_IPAD = /iPad/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var PAD_MSG = "⚠ iPad は おとが きこえにくい ことが あります。<br>「とても びんかん」に して、iPad を ピアノの ちかくに おいてね。<br>iPhone の ほうが よく きこえます。";
+  (function () { var e = document.getElementById("pianoPad"); if (e && IS_IPAD) { e.innerHTML = PAD_MSG; e.style.display = "block"; } })();
   var follow = { on: false, i: 0, notes: [] };
   function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; var e2 = document.getElementById("scSt"); if (e2) e2.textContent = t; }
   function heard(name, legato) {
