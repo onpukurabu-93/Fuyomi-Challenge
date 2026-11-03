@@ -507,7 +507,7 @@ function renderScore(bars, beatsPerBar, opt) {
     cur.push(x); cw += x.w;
   });
   if (cur.length) lines.push(cur);
-  var H = TOP + lines.length * SYSH, out = "", barNo = 0;
+  var H = TOP + lines.length * SYSH, out = "", barNo = 0, noteIdx = 0, pos = [];
   lines.forEach(function (ln, li) {
     var base = TOP + li * SYSH + 60;
     var x0 = LEFT + 52 + (li === 0 ? 20 : 0);
@@ -540,6 +540,7 @@ function renderScore(bars, beatsPerBar, opt) {
       groups.forEach(function (gp) { if (gp.length >= 2) gp.forEach(function (o) { o.grp = gp; }); });
       var done = {};
       objs.forEach(function (o) {
+        pos[noteIdx++] = { x: o.nx, base: base };
         var n = o.n, d = o.d, nx = o.nx, y = o.y, g = "";
         for (var l = -2; l >= n && l >= -12; l -= 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(l, base), y2: yOf(l, base), stroke: "#5b4636", "stroke-width": 1.3 });
         for (var u = 10; u <= n && u <= 20; u += 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(u, base), y2: yOf(u, base), stroke: "#5b4636", "stroke-width": 1.3 });
@@ -603,12 +604,17 @@ function renderScore(bars, beatsPerBar, opt) {
       out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": fin ? 3.4 : 1.2 });
     });
   });
+  renderScore.pos = pos; renderScore.GAP = GAP;
+  var hit = ns("rect", { id: "sc-cur", x: 0, y: 0, width: 28, height: 4 * GAP + 56, rx: 8, fill: "rgba(255,112,67,0.30)", stroke: "#ff7043", "stroke-width": 1.5, style: "display:none;pointer-events:none" });
+  pos.forEach(function (p, i) { hit += ns("rect", { "class": "sn", "data-i": i, x: p.x - 12, y: p.base - 4 * GAP - 28, width: 24, height: 4 * GAP + 56, fill: "transparent", style: "cursor:pointer" }); });
+  out += hit;
   return ns("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "楽譜" }, out);
 }
 
   /* ===== レベル5：がくふを みて ひく ===== */
   function showLevel5() {
-    token++;
+    token++; if (typeof scStop === "function") scStop();
+    var bar0 = document.getElementById("scBar"); if (bar0) bar0.remove();
     if (pianoOn) pianoStop();
     renderLv();
     document.getElementById("card").style.display = "none";
@@ -626,17 +632,87 @@ function renderScore(bars, beatsPerBar, opt) {
       b.addEventListener("click", function () { showScore(SONGS[+b.getAttribute("data-i")]); });
     });
   }
+  var demoTimers = [];
+  function curMove(i, noScroll) {
+    var cur = document.getElementById("sc-cur"), p = renderScore.pos && renderScore.pos[i];
+    if (!cur || !p) { if (cur) cur.style.display = "none"; return; }
+    cur.setAttribute("x", p.x - 14); cur.setAttribute("y", p.base - 4 * renderScore.GAP - 28);
+    cur.style.display = "";
+    if (!noScroll) {
+      var r = cur.getBoundingClientRect(), want = r.top + window.pageYOffset - window.innerHeight * 0.28;
+      if (r.top < 70 || r.bottom > window.innerHeight - 130) { try { window.scrollTo({ top: Math.max(0, want), behavior: "smooth" }); } catch (e) { window.scrollTo(0, Math.max(0, want)); } }
+    }
+  }
+  function scStop() {
+    if (!follow) return;
+    demoTimers.forEach(function (t) { clearTimeout(t); }); demoTimers = [];
+    if (follow.on || pianoOn) { follow.on = false; pianoStop(); }
+    follow.on = false;
+    try { if (melodyOut) melodyOut.disconnect(); } catch (e) {}
+    var f = document.getElementById("scFollow"); if (f) { f.textContent = "🎹 ひいてみる"; f.style.background = "#5c6bc0"; }
+    var d = document.getElementById("scDemo"); if (d) { d.textContent = "▶ おてほん"; d.style.background = "#7e57c2"; }
+  }
+  function followHeard(name) {
+    if (!follow.on || follow.i >= follow.notes.length) return;
+    if (name === nameOf(follow.notes[follow.i])) {
+      follow.i++;
+      if (follow.i >= follow.notes.length) {
+        curMove(follow.notes.length - 1);
+        var st = document.getElementById("scSt"); if (st) st.textContent = "🎉 さいごまで ひけたね！";
+        var cur = document.getElementById("sc-cur"); if (cur) cur.style.display = "none";
+        follow.on = false; scStop(); var st2 = document.getElementById("scSt"); if (st2) st2.textContent = "🎉 さいごまで ひけたね！";
+        return;
+      }
+      curMove(follow.i);
+    }
+  }
   function showScore(sg) {
+    scStop();
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
-      '<div style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, {}) + '</div>' +
-      '<button class="btn back" id="scBack" style="margin-top:12px;">もどる</button>';
-    document.getElementById("scBack").addEventListener("click", showLevel5);
+      '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, {}) + '</div>' +
+      '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
+      '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:96px;">もどる</button>' +
+      '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
+      '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
+      '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 4px;font-size:15px;flex:1;">🎹 ひいてみる</button>' +
+      '<button class="btn" id="scDemo" style="background:#7e57c2;margin:0;padding:11px 4px;font-size:15px;flex:1;">▶ おてほん</button></div>' +
+      '<div id="scSt" style="font-size:13px;min-height:18px;margin-top:5px;color:#5b4636;text-align:center;"></div></div>';
+    var sens = document.getElementById("scSens"); sens.value = String(pThr === 3 || pThr === 1.5 ? pThr : 6);
+    sens.addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
+    var notes = sg.seq.map(function (q) { return q[0]; });
+    Array.prototype.forEach.call(sc.querySelectorAll(".sn"), function (r) {
+      r.addEventListener("click", function () { follow.i = +r.getAttribute("data-i"); curMove(follow.i, true); var st = document.getElementById("scSt"); if (st && !follow.on) st.textContent = "ここから ひいてね"; });
+    });
+    document.getElementById("scFollow").addEventListener("click", function () {
+      if (follow.on) { scStop(); document.getElementById("scSt").textContent = ""; return; }
+      scStop();
+      follow.notes = notes; if (follow.i >= notes.length) follow.i = 0;
+      follow.on = true; pReadyAt = performance.now();
+      curMove(follow.i);
+      this.textContent = "🎹 きいてるよ（とめる）"; this.style.background = "#2e7d32";
+      pianoStart();
+    });
+    document.getElementById("scDemo").addEventListener("click", function () {
+      if (demoTimers.length) { scStop(); document.getElementById("scSt").textContent = ""; return; }
+      scStop();
+      this.textContent = "■ とめる"; this.style.background = "#8d6e63";
+      playMelody(sg);
+      var t = 0.1 * 1000, k = 0;
+      sg.seq.forEach(function (q, idx) {
+        (function (idx2, at) { demoTimers.push(setTimeout(function () { curMove(idx2); }, at)); })(idx, t);
+        t += q[1] * sg.beat * 1000;
+      });
+      demoTimers.push(setTimeout(function () { scStop(); var c = document.getElementById("sc-cur"); if (c) c.style.display = "none"; }, t + 400));
+    });
+    follow.i = 0;
+    document.getElementById("scBack").addEventListener("click", function () { scStop(); showLevel5(); });
     window.scrollTo(0, 0);
   }
 
   function start() {
     if (level === 5) { showLevel5(); return; }
+    scStop(); var bar1 = document.getElementById("scBar"); if (bar1) bar1.remove();
     document.getElementById("card").style.display = "";
     document.getElementById("kb").style.display = "";
     document.getElementById("songScr").style.display = "none";
@@ -885,7 +961,12 @@ function renderScore(bars, beatsPerBar, opt) {
   var pianoOn = false, pAn = null, pBuf = null, pStream = null, pSrc = null, pRun = false;
   var pPend = null, pLast = -1e9, pHist = [], pThr = 6, pFrame = 0, pStab = null, pLastPc = -1, pReadyAt = 0;
   var PC = ["ド", "", "レ", "", "ミ", "ファ", "", "ソ", "", "ラ", "", "シ"];
-  function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; }
+  var follow = { on: false, i: 0, notes: [] };
+  function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; var e2 = document.getElementById("scSt"); if (e2) e2.textContent = t; }
+  function heard(name, legato) {
+    if (follow.on) { followHeard(name); return; }
+    if (legato) { if (expectName() === name) press(name); } else press(name);
+  }
   var NM12 = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
   function pShow(pc, m, tag) { pSt("きこえた：" + NM12[pc] + (tag ? "（" + tag + "）" : "")); }
   function expectName() { return queue[idx] === undefined ? null : nameOf(queue[idx]); }
@@ -918,8 +999,8 @@ function renderScore(bars, beatsPerBar, opt) {
     while (pHist.length && now - pHist[0][0] > 400) pHist.shift();
     var before = 0;
     pHist.forEach(function (h) { if (now - h[0] > 90 && now - h[0] < 300) before = Math.max(before, h[1]); });
-    if (phase !== "play") pReadyAt = now;
-    var listening = phase === "play" && !done && now - pReadyAt > 700;
+    if (!follow.on && phase !== "play") pReadyAt = now;
+    var listening = (follow.on || (phase === "play" && !done)) && now - pReadyAt > 700;
     /* つなげて ひいた とき：音の たかさが かわって、しばらく おなじなら あたらしい 音 */
     pFrame++;
     if (!listening || level_ < pThr) { pStab = null; if (level_ < pThr * 0.5) pLastPc = -1; }
@@ -932,7 +1013,7 @@ function renderScore(bars, beatsPerBar, opt) {
           pLastPc = pc2; pLast = now; pStab = null;
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(m2);
           pShow(pc2, m2, "つなげ");
-          if (PC[pc2] && expectName() === PC[pc2]) press(PC[pc2]);
+          if (PC[pc2]) heard(PC[pc2], true);
         } else if (pLastPc === -1 && pStab.n >= 4) { pLastPc = pc2; }
       } else { pStab = null; }
     }
@@ -949,7 +1030,7 @@ function renderScore(bars, beatsPerBar, opt) {
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(bm);
           pLastPc = ((bm % 12) + 12) % 12; pStab = null;
           pShow(((bm % 12) + 12) % 12, bm, "");
-          if (nm) press(nm);
+          if (nm) heard(nm, false);
         }
         pPend = null;
       }
@@ -985,6 +1066,7 @@ function renderScore(bars, beatsPerBar, opt) {
   try { var sv = localStorage.getItem("fy_piano_sens"); if (sv) { document.getElementById("pianoSens").value = sv; pThr = +sv; } } catch (e) {}
   document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
   document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) pianoStop(); else pianoStart(); });
+  window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, nameOf: nameOf };
   window.__piano = { on: function () { return pianoOn; } };
 
   /* iPhone：ゆびで 画面が かくだいされるのを ふせぐ */
