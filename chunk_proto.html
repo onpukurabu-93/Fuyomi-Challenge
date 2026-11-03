@@ -68,6 +68,7 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   <div class="sub" id="who"></div>
   <div class="sub">ト音記号　3つの おとを ひとまとまりで よもう</div>
   <div class="lv" id="lv"></div>
+  <div id="songScr" style="display:none;"></div>
   <div class="card" id="card">
     <div class="ov" id="ov" style="display:none;"></div>
     <div class="prog"><span id="pq">1 / 16</span><span id="pm"></span></div>
@@ -198,26 +199,26 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   /* ===== レベル5：きょく（高さだけ つかう。音の ながさは かんけいなし） ===== */
   var SONGS = [
     /* アマリリス（H.ギース）。ミ=0 ファ=1 ソ=2 ラ=3 レ=-1 ド(した)=-2 ド(うえ)=5 */
-    { id: "amaryllis", no: 1, title: "アマリリス", beat: 0.55,
+    { id: "amaryllis", bp: 4, bars: [[[2,1],[3,1]],[[2,1],[5,1],[2,1],[3,1]],[[2,2],[3,1],[3,1]],[[2,1],[3,1],[2,0.5],[1,0.5],[0,0.5],[-1,0.5]],[[0,1],[-2,1],[2,1],[3,1]],[[2,1],[5,1],[2,1],[3,1]],[[2,2],[3,1],[3,1]],[[2,1],[3,1],[2,0.5],[1,0.5],[0,0.5],[-1,0.5]],[[-2,2]]], no: 1, title: "アマリリス", beat: 0.55,
       seq: [[2,1],[3,1], [2,1],[5,1],[2,1],[3,1], [2,2],[3,1],[3,1], [2,1],[3,1],[2,.5],[1,.5],[0,.5],[-1,.5],
             [0,1],[-2,1],[2,1],[3,1], [2,1],[5,1],[2,1],[3,1], [2,2],[3,1],[3,1], [2,1],[3,1],[2,.5],[1,.5],[0,.5],[-1,.5], [-2,2]] },
-    { id: "kuri", no: 2, title: "おおきな くりの きの したで", beat: .45,
+    { id: "kuri", bp: 2, bars: [[[-2,1],[-2,0.5],[-1,0.5]],[[0,0.5],[0,0.5],[2,1]],[[0,0.5],[0,0.5],[-1,0.5],[-1,0.5]],[[-2,2]],[[0,1],[0,0.5],[1,0.5]],[[2,1],[5,1]],[[3,1],[5,1]],[[2,2]],[[5,1],[5,1]],[[4,1],[2,1]],[[3,0.5],[3,0.5],[3,0.5],[3,0.5]],[[2,2]],[[-2,1],[-2,0.5],[-1,0.5]],[[0,0.5],[0,0.5],[2,1]],[[0,0.5],[0,0.5],[-1,0.5],[-1,0.5]],[[-2,2]]], no: 2, title: "おおきな くりの きの したで", beat: .45,
       seq: [[-2,1],[-2,.5],[-1,.5],[0,.5],[0,.5],[2,1],[0,.5],[0,.5],[-1,.5],[-1,.5],[-2,2],[0,1],[0,.5],[1,.5],[2,1],[5,1],[3,1],[5,1],[2,2],[5,1],[5,1],[4,1],[2,1],[3,.5],[3,.5],[3,.5],[3,.5],[2,2],[-2,1],[-2,.5],[-1,.5],[0,.5],[0,.5],[2,1],[0,.5],[0,.5],[-1,.5],[-1,.5],[-2,2]] },
-    { id: "ogawa", no: 3, title: "はるの おがわ", beat: .58,
+    { id: "ogawa", bp: 4, bars: [[[0,1],[2,1],[3,1],[2,1]],[[0,1],[2,1],[5,1],[5,1]],[[3,1],[3,1],[2,1],[0,1]],[[-2,1],[-1,1],[0,2]],[[0,1],[2,1],[3,1],[2,1]],[[0,1],[2,1],[5,1],[5,1]],[[3,1],[3,1],[2,1],[0,1]],[[-1,1],[0,1],[-2,2]],[[-1,1],[0,1],[-1,1],[2,1]],[[3,1],[3,1],[2,1],[3,1]],[[5,1],[5,1],[4,1],[3,1]],[[2,1],[2,1],[0,2]],[[0,1],[2,1],[3,1],[2,1]],[[0,1],[2,1],[5,1],[5,1]],[[3,1],[3,1],[2,1],[0,1]],[[-1,1],[0,1],[-2,2]]], no: 3, title: "はるの おがわ", beat: .58,
       seq: [[0,1],[2,1],[3,1],[2,1],[0,1],[2,1],[5,1],[5,1],[3,1],[3,1],[2,1],[0,1],[-2,1],[-1,1],[0,2],[0,1],[2,1],[3,1],[2,1],[0,1],[2,1],[5,1],[5,1],[3,1],[3,1],[2,1],[0,1],[-1,1],[0,1],[-2,2],[-1,1],[0,1],[-1,1],[2,1],[3,1],[3,1],[2,1],[3,1],[5,1],[5,1],[4,1],[3,1],[2,1],[2,1],[0,2],[0,1],[2,1],[3,1],[2,1],[0,1],[2,1],[5,1],[5,1],[3,1],[3,1],[2,1],[0,1],[-1,1],[0,1],[-2,2]] },
-    { id: "harugakita", no: 4, title: "はるが きた", beat: .55,
+    { id: "harugakita", bp: 4, bars: [[[2,1],[0,0.5],[1,0.5],[2,1],[3,1]],[[2,1],[0,0.5],[1,0.5],[2,1],[5,1]],[[3,1],[2,1],[0,1.5],[-2,0.5]],[[-1,4]],[[2,1],[3,0.5],[2,0.5],[0,1],[2,1]],[[5,1],[6,0.5],[5,0.5],[3,1],[5,1]],[[2,1],[7,1],[6,1.5],[2,0.5]],[[5,4]]], no: 4, title: "はるが きた", beat: .55,
       seq: [[2,1],[0,.5],[1,.5],[2,1],[3,1],[2,1],[0,.5],[1,.5],[2,1],[5,1],[3,1],[2,1],[0,1.5],[-2,.5],[-1,4],[2,1],[3,.5],[2,.5],[0,1],[2,1],[5,1],[6,.5],[5,.5],[3,1],[5,1],[2,1],[7,1],[6,1.5],[2,.5],[5,4]] },
-    { id: "amekon", no: 5, title: "あめ こんこん", beat: .45,
+    { id: "amekon", bp: 2, bars: [[[3,0.5],[3,0.5],[4,1]],[[3,2]],[[3,0.5],[3,0.5],[4,1]],[[3,2]],[[0,0.5],[0,0.5],[0,0.5],[0,0.5]],[[3,1],[2,0.5],[2,0.5]],[[3,1],[4,0.5],[4,0.5]],[[3,2]],[[0,0.5],[0,0.5],[0,0.5],[0,0.5]],[[3,1],[2,0.5],[2,0.5]],[[3,1],[4,0.5],[4,0.5]],[[3,2]],[[3,0.5],[3,0.5],[4,1]],[[3,2]],[[3,0.5],[3,0.5],[4,1]],[[3,2]]], no: 5, title: "あめ こんこん", beat: .45,
       seq: [[3,.5],[3,.5],[4,1],[3,2],[3,.5],[3,.5],[4,1],[3,2],[0,.5],[0,.5],[0,.5],[0,.5],[3,1],[2,.5],[2,.5],[3,1],[4,.5],[4,.5],[3,2],[0,.5],[0,.5],[0,.5],[0,.5],[3,1],[2,.5],[2,.5],[3,1],[4,.5],[4,.5],[3,2],[3,.5],[3,.5],[4,1],[3,2],[3,.5],[3,.5],[4,1],[3,2]] },
-    { id: "ikenokoi", no: 6, title: "いけの こい", beat: .45,
+    { id: "ikenokoi", bp: 2, bars: [[[4,0.75],[3,0.25],[2,0.5],[-1,0.5]],[[4,0.75],[3,0.25],[2,0.5],[-1,0.5]],[[2,0.75],[3,0.25],[4,0.5],[5,0.5]],[[3,2]],[[2,1],[3,0.5],[4,0.5]],[[3,0.5],[3,0.5],[2,0.5],[0,0.5]],[[-1,0.5],[-1,0.5],[-1,0.5],[-1,0.5]],[[0,0.5],[-1,0.5],[-1,1]],[[6,0.75],[6,0.25],[6,0.5],[4,0.5]],[[2,1],[2,0.5],[3,0.5]],[[4,0.25],[4,0.25],[4,0.25],[4,0.25],[6,1]],[[3,0.25],[3,0.25],[3,0.25],[3,0.25],[2,1]]], no: 6, title: "いけの こい", beat: .45,
       seq: [[4,.75],[3,.25],[2,.5],[-1,.5],[4,.75],[3,.25],[2,.5],[-1,.5],[2,.75],[3,.25],[4,.5],[5,.5],[3,2],[2,1],[3,.5],[4,.5],[3,.5],[3,.5],[2,.5],[0,.5],[-1,.5],[-1,.5],[-1,.5],[-1,.5],[0,.5],[-1,.5],[-1,1],[6,.75],[6,.25],[6,.5],[4,.5],[2,1],[2,.5],[3,.5],[4,.25],[4,.25],[4,.25],[4,.25],[6,1],[3,.25],[3,.25],[3,.25],[3,.25],[2,1]] },
-    { id: "fujisan", no: 7, title: "ふじさん", beat: .6,
+    { id: "fujisan", bp: 4, bars: [[[2,1.5],[2,0.5],[3,1],[2,1]],[[0,1],[-2,0.5],[-1,0.5],[0,2]],[[-1,1.5],[2,0.5],[2,1],[1,0.5],[0,0.5]],[[-1,4]],[[2,1.5],[2,0.5],[0,1],[-2,1]],[[3,1.5],[4,0.5],[5,1],[3,1]],[[2,1.5],[3,0.5],[2,0.5],[1,0.5],[0,0.5],[-1,0.5]],[[-2,4]],[[-1,1.5],[-1,0.5],[-1,1],[-1,1]],[[-2,0.5],[-1,0.5],[0,0.5],[1,0.5],[2,2]],[[3,1.5],[4,0.5],[5,1],[3,1]],[[2,4]],[[5,2],[3,1],[1,1]],[[0,1.5],[0,0.5],[3,1],[2,1]],[[1,1],[0,1],[-1,1.5],[-2,0.5]],[[-2,4]]], no: 7, title: "ふじさん", beat: .6,
       seq: [[2,1.5],[2,.5],[3,1],[2,1],[0,1],[-2,.5],[-1,.5],[0,2],[-1,1.5],[2,.5],[2,1],[1,.5],[0,.5],[-1,4],[2,1.5],[2,.5],[0,1],[-2,1],[3,1.5],[4,.5],[5,1],[3,1],[2,1.5],[3,.5],[2,.5],[1,.5],[0,.5],[-1,.5],[-2,4],[-1,1.5],[-1,.5],[-1,1],[-1,1],[-2,.5],[-1,.5],[0,.5],[1,.5],[2,2],[3,1.5],[4,.5],[5,1],[3,1],[2,4],[5,2],[3,1],[1,1],[0,1.5],[0,.5],[3,1],[2,1],[1,1],[0,1],[-1,1.5],[-2,.5],[-2,4]] },
-    { id: "london", no: 8, title: "ロンドンばし", beat: .5,
+    { id: "london", bp: 2, bars: [[[2,0.5],[3,0.5],[2,0.5],[1,0.5]],[[0,0.5],[1,0.5],[2,1]],[[-1,0.5],[0,0.5],[1,1]],[[0,0.5],[1,0.5],[2,1]],[[2,0.5],[3,0.5],[2,0.5],[1,0.5]],[[0,0.5],[1,0.5],[2,1]],[[-1,1],[2,1]],[[0,0.5],[-2,1.5]]], no: 8, title: "ロンドンばし", beat: .5,
       seq: [[2,.5],[3,.5],[2,.5],[1,.5],[0,.5],[1,.5],[2,1],[-1,.5],[0,.5],[1,1],[0,.5],[1,.5],[2,1],[2,.5],[3,.5],[2,.5],[1,.5],[0,.5],[1,.5],[2,1],[-1,1],[2,1],[0,.5],[-2,1.5]] },
-    { id: "kinkon", no: 9, title: "きんこんしき", beat: .5,
+    { id: "kinkon", bp: 4, bars: [[[0,1]],[[3,1],[7,1],[7,1],[7,1]],[[7,1],[6,0.5],[7,0.5],[8,2]],[[3,1],[7,1],[7,1],[7,1]],[[7,1],[6,0.5],[7,0.5],[8,2]],[[10,1],[9,0.5],[8,0.5],[7,1],[6,1]],[[5,1],[4,0.5],[3,0.5],[4,1],[5,1]],[[4,3.5],[3,0.5]],[[4,3],[0,1]],[[3,1],[7,1],[7,1],[7,1]],[[7,1],[6,0.5],[7,0.5],[8,2]],[[3,1],[7,1],[7,1],[7,1]],[[7,1],[6,0.5],[7,0.5],[8,2]],[[10,1],[9,0.5],[8,0.5],[7,1],[6,1]],[[5,1],[4,0.5],[3,0.5],[4,1],[5,1]],[[4,3.5],[3,0.5]],[[3,4]]], no: 9, title: "きんこんしき", beat: .5,
       seq: [[0,1],[3,1],[7,1],[7,1],[7,1],[7,1],[6,.5],[7,.5],[8,2],[3,1],[7,1],[7,1],[7,1],[7,1],[6,.5],[7,.5],[8,2],[10,1],[9,.5],[8,.5],[7,1],[6,1],[5,1],[4,.5],[3,.5],[4,1],[5,1],[4,3.5],[3,.5],[4,3],[0,1],[3,1],[7,1],[7,1],[7,1],[7,1],[6,.5],[7,.5],[8,2],[3,1],[7,1],[7,1],[7,1],[7,1],[6,.5],[7,.5],[8,2],[10,1],[9,.5],[8,.5],[7,1],[6,1],[5,1],[4,.5],[3,.5],[4,1],[5,1],[4,3.5],[3,.5],[3,4]] },
-    { id: "yuuyake", no: 10, title: "ゆうやけ こやけ", beat: .5,
+    { id: "yuuyake", bp: 2, bars: [[[2,0.5],[2,0.5],[2,0.5],[3,0.5]],[[2,0.5],[2,0.5],[2,0.5],[0,0.5]],[[-2,0.5],[-2,0.5],[-1,0.5],[0,0.5]],[[-1,2]],[[0,1],[0,0.5],[2,0.5]],[[3,0.5],[5,0.5],[5,0.5],[3,0.5]],[[2,0.5],[2,0.5],[3,0.5],[2,0.5]],[[5,2]],[[5,0.75],[6,0.25],[5,0.5],[3,0.5]],[[5,0.5],[5,0.5],[2,0.5],[2,0.5]],[[3,0.5],[2,0.5],[3,0.5],[2,0.5]],[[0,2]],[[2,0.5],[0,0.5],[-1,0.5],[-2,0.5]],[[-1,0.5],[-1,0.5],[-2,0.5],[-1,0.5]],[[0,0.5],[2,0.5],[3,0.5],[2,0.5]],[[5,2]]], no: 10, title: "ゆうやけ こやけ", beat: .5,
       seq: [[2,.5],[2,.5],[2,.5],[3,.5],[2,.5],[2,.5],[2,.5],[0,.5],[-2,.5],[-2,.5],[-1,.5],[0,.5],[-1,2],[0,1],[0,.5],[2,.5],[3,.5],[5,.5],[5,.5],[3,.5],[2,.5],[2,.5],[3,.5],[2,.5],[5,2],[5,.75],[6,.25],[5,.5],[3,.5],[5,.5],[5,.5],[2,.5],[2,.5],[3,.5],[2,.5],[3,.5],[2,.5],[0,2],[2,.5],[0,.5],[-1,.5],[-2,.5],[-1,.5],[-1,.5],[-2,.5],[-1,.5],[0,.5],[2,.5],[3,.5],[2,.5],[5,2]] }
   ];
   SONGS.forEach(function (x) { x.notes = x.seq.map(function (q) { return q[0]; }); });
@@ -487,7 +488,158 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
     }
   }
 
+/* 楽譜を SVG で かく（ハ長調・ト音記号・メロディだけ）。n: E4=0 */
+var SCORE_CLEF = CLEF_D;
+function renderScore(bars, beatsPerBar, opt) {
+  opt = opt || {};
+  var W = 400, GAP = 9, LEFT = 14, RIGHT = 388, SYSH = 120, TOP = 52;
+  function yOf(n, base) { return base - n * GAP / 2; }
+  function ns(tag, a, kids) { var s = "<" + tag; for (var k in a) s += " " + k + '="' + a[k] + '"'; return s + (kids === undefined ? "/>" : ">" + kids + "</" + tag + ">"); }
+  function nw(d) { return 12 + 11 * Math.sqrt(d / 0.5); }
+  var info = bars.map(function (b) {
+    var w = 10; b.forEach(function (q) { w += nw(q[1]); });
+    return { b: b, w: w };
+  });
+  var lines = [], cur = [], cw = 0;
+  info.forEach(function (x) {
+    var avail = RIGHT - LEFT - 52 - (lines.length === 0 ? 20 : 0);
+    if (cur.length && cw + x.w > avail) { lines.push(cur); cur = []; cw = 0; }
+    cur.push(x); cw += x.w;
+  });
+  if (cur.length) lines.push(cur);
+  var H = TOP + lines.length * SYSH, out = "", barNo = 0;
+  lines.forEach(function (ln, li) {
+    var base = TOP + li * SYSH + 60;
+    var x0 = LEFT + 52 + (li === 0 ? 20 : 0);
+    var avail = RIGHT - x0, tot = 0; ln.forEach(function (x) { tot += x.w; });
+    var sc = (li === lines.length - 1 && tot < avail * 0.8) ? 1 : avail / tot;
+    var xEnd = (li === lines.length - 1 && sc === 1) ? Math.min(RIGHT, x0 + tot + 8) : RIGHT;
+    for (var i = 0; i < 5; i++) out += ns("line", { x1: LEFT, x2: xEnd, y1: base - i * GAP, y2: base - i * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
+    out += ns("path", { d: SCORE_CLEF, fill: "#5b4636", transform: "translate(" + (LEFT + 4) + "," + (base + 15.9) + ") scale(0.056,-0.056) translate(-120,291)" });
+    if (li === 0) {
+      out += ns("text", { x: LEFT + 56, y: base - 2 * GAP - 2, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, String(beatsPerBar));
+      out += ns("text", { x: LEFT + 56, y: base - 1, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, "4");
+    }
+    var x = x0;
+    ln.forEach(function (bx) {
+      barNo++;
+      if (opt.barNums) out += ns("text", { x: x + 2, y: base - 4 * GAP - 14, "font-size": 9, fill: "#a08c74" }, String(barNo));
+      var cx = x + 8 * sc, tt = 0, objs = [];
+      bx.b.forEach(function (q) {
+        var d = q[1], w = nw(d) * sc;
+        objs.push({ n: q[0], d: d, nx: cx + w / 2 - 4, y: yOf(q[0], base), t: tt, grp: null });
+        cx += w; tt += d;
+      });
+      /* 連桁：おなじ 1ぱく の なかの 8分・16分音符を つなぐ */
+      var groups = [], gcur = [];
+      objs.forEach(function (o) {
+        if (o.d < 1 && (!gcur.length || Math.floor(gcur[0].t + 1e-6) === Math.floor(o.t + 1e-6))) gcur.push(o);
+        else { if (gcur.length) groups.push(gcur); gcur = o.d < 1 ? [o] : []; }
+      });
+      if (gcur.length) groups.push(gcur);
+      groups.forEach(function (gp) { if (gp.length >= 2) gp.forEach(function (o) { o.grp = gp; }); });
+      var done = {};
+      objs.forEach(function (o) {
+        var n = o.n, d = o.d, nx = o.nx, y = o.y, g = "";
+        for (var l = -2; l >= n && l >= -12; l -= 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(l, base), y2: yOf(l, base), stroke: "#5b4636", "stroke-width": 1.3 });
+        for (var u = 10; u <= n && u <= 20; u += 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(u, base), y2: yOf(u, base), stroke: "#5b4636", "stroke-width": 1.3 });
+        var hollow = d >= 2;
+        g += ns("ellipse", { cx: nx, cy: y, rx: 5.6, ry: 4.1, fill: hollow ? "none" : "#3d2c20", stroke: "#3d2c20", "stroke-width": hollow ? 1.6 : 0.5, transform: "rotate(-20 " + nx + " " + y + ")" });
+        var dots = (d === 0.75 || d === 1.5 || d === 3) ? 1 : (d === 3.5 ? 2 : 0);
+        for (var k = 0; k < dots; k++) g += ns("circle", { cx: nx + 10 + k * 5, cy: (n % 2 === 0 ? y - GAP / 2 : y), r: 1.6, fill: "#3d2c20" });
+        out += g;
+      });
+      /* 符尾（ぼう）と 連桁 */
+      objs.forEach(function (o) {
+        if (o.d >= 4) return;
+        var gp = o.grp, up, g = "";
+        if (gp) { var sum = 0; gp.forEach(function (z) { sum += z.n - 4; }); up = sum / gp.length < 0; } else up = o.n < 4;
+        o.up = up;
+        if (!gp) {
+          var sx = up ? o.nx + 5.2 : o.nx - 5.2, sy2 = up ? o.y - 28 : o.y + 28;
+          g += ns("line", { x1: sx, x2: sx, y1: o.y + (up ? -1 : 1), y2: sy2, stroke: "#3d2c20", "stroke-width": 1.4 });
+          var fl = o.d <= 0.25 ? 2 : (o.d <= 0.75 ? 1 : 0);
+          for (var f = 0; f < fl; f++) {
+            var fy = sy2 + (up ? 1 : -1) * f * 5;
+            g += ns("path", { d: up ? "M" + sx + " " + fy + " q 8 4 6 13" : "M" + sx + " " + fy + " q 8 -4 6 -13", fill: "none", stroke: "#3d2c20", "stroke-width": 1.6 });
+          }
+          out += g;
+        }
+      });
+      groups.forEach(function (gp) {
+        if (gp.length < 2) return;
+        var sum = 0; gp.forEach(function (z) { sum += z.n - 4; });
+        var up = sum / gp.length < 0, dir = up ? -1 : 1;
+        function sxOf(o) { return up ? o.nx + 5.2 : o.nx - 5.2; }
+        var f = gp[0], la = gp[gp.length - 1];
+        var y1 = f.y + dir * 28, y2 = la.y + dir * 28, dy = Math.max(-8, Math.min(8, y2 - y1));
+        var mid = (y1 + y2) / 2; y1 = mid - dy / 2; y2 = mid + dy / 2;
+        /* ぼうが みじかく ならない ように ずらす */
+        var shift = 0;
+        gp.forEach(function (o) {
+          var by = y1 + (y2 - y1) * (sxOf(o) - sxOf(f)) / ((sxOf(la) - sxOf(f)) || 1);
+          var len = Math.abs(by - o.y); if (len < 24) shift = Math.max(shift, 24 - len);
+        });
+        y1 += dir * shift; y2 += dir * shift;
+        function by(x) { return y1 + (y2 - y1) * (x - sxOf(f)) / ((sxOf(la) - sxOf(f)) || 1); }
+        var g = "";
+        gp.forEach(function (o) { g += ns("line", { x1: sxOf(o), x2: sxOf(o), y1: o.y + (up ? -1 : 1), y2: by(sxOf(o)), stroke: "#3d2c20", "stroke-width": 1.4 }); });
+        g += ns("line", { x1: sxOf(f) - 0.7, x2: sxOf(la) + 0.7, y1: y1, y2: y2, stroke: "#3d2c20", "stroke-width": 3.6 });
+        /* 2本め：16分音符 */
+        var off = -dir * 5.5;
+        for (var i = 0; i < gp.length; i++) {
+          var o = gp[i];
+          if (o.d > 0.25) continue;
+          var nxt = gp[i + 1], prv = gp[i - 1];
+          if (nxt && nxt.d <= 0.25) g += ns("line", { x1: sxOf(o), x2: sxOf(nxt), y1: by(sxOf(o)) + off, y2: by(sxOf(nxt)) + off, stroke: "#3d2c20", "stroke-width": 3.2 });
+          else if (!prv || prv.d > 0.25) { var tx = nxt ? sxOf(o) + 8 : sxOf(o) - 8; g += ns("line", { x1: sxOf(o), x2: tx, y1: by(sxOf(o)) + off, y2: by(tx) + off, stroke: "#3d2c20", "stroke-width": 3.2 }); }
+          else if (prv && prv.d <= 0.25) { /* つながっている（まえで かいた） */ }
+        }
+        out += g;
+      });
+      x += bx.w * sc;
+      var fin = (li === lines.length - 1 && bx === ln[ln.length - 1]);
+      if (fin) out += ns("line", { x1: x - 5, x2: x - 5, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
+      out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": fin ? 3.4 : 1.2 });
+    });
+  });
+  return ns("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "楽譜" }, out);
+}
+
+  /* ===== レベル5：がくふを みて ひく ===== */
+  function showLevel5() {
+    token++;
+    if (pianoOn) pianoStop();
+    renderLv();
+    document.getElementById("card").style.display = "none";
+    document.getElementById("kb").style.display = "none";
+    document.getElementById("pianoBox").style.display = "none";
+    var sc = document.getElementById("songScr");
+    sc.style.display = "block";
+    var h = '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう</div>' +
+            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに きいてもらおう。</div>';
+    SONGS.forEach(function (sg, i) {
+      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:12px;font-size:16px;text-align:left;">' + sg.no + '．' + sg.title + '</button>';
+    });
+    sc.innerHTML = h;
+    Array.prototype.forEach.call(sc.querySelectorAll("button[data-i]"), function (b) {
+      b.addEventListener("click", function () { showScore(SONGS[+b.getAttribute("data-i")]); });
+    });
+  }
+  function showScore(sg) {
+    var sc = document.getElementById("songScr");
+    sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
+      '<div style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, {}) + '</div>' +
+      '<button class="btn back" id="scBack" style="margin-top:12px;">もどる</button>';
+    document.getElementById("scBack").addEventListener("click", showLevel5);
+    window.scrollTo(0, 0);
+  }
+
   function start() {
+    if (level === 5) { showLevel5(); return; }
+    document.getElementById("card").style.display = "";
+    document.getElementById("kb").style.display = "";
+    document.getElementById("songScr").style.display = "none";
     renderLv();
     queue = [];
     if (level === 5) {
@@ -740,8 +892,8 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
   function pianoUi() {
     var box = document.getElementById("pianoBox");
     if (!box) return;
-    box.style.display = (level === 5 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "block" : "none";
-    if (level !== 5 && pianoOn) pianoStop();
+    box.style.display = (level !== 5 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "block" : "none";
+    if (level === 5 && pianoOn) pianoStop();
   }
   function yin(data, sr) {
     var W = 2048, maxTau = Math.floor(sr / 120), minTau = Math.floor(sr / 1100);
