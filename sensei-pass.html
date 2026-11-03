@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>せんせい用 ごうかくコード</title>
+<style>
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf8ec;color:#5b4636;margin:0;padding:14px;max-width:520px;margin:0 auto}
+h1{font-size:19px;margin:6px 0}
+label{display:block;font-size:14px;font-weight:800;margin:12px 0 4px}
+input[type=text]{font-size:16px;padding:10px;width:100%;box-sizing:border-box;border:2px solid #e0d0ba;border-radius:8px}
+.songs label{display:flex;align-items:center;gap:8px;font-weight:700;margin:4px 0;padding:8px;background:#fff;border-radius:8px}
+.songs input{width:22px;height:22px}
+button{font-size:17px;font-weight:900;border:none;border-radius:12px;padding:13px;margin:8px 0;width:100%;color:#fff;background:#ff7043}
+button.s{background:#7e8aa0;font-size:15px;padding:10px}
+.out{background:#fff;border-radius:10px;padding:10px;margin:8px 0;font-size:14px;white-space:pre-wrap;word-break:break-all}
+.note{font-size:12px;color:#806c5a;margin-top:10px;line-height:1.6}
+</style></head><body>
+<h1>🔑 せんせい用：ごうかくコード</h1>
+<label for="nm">生徒の なまえ（アプリに でている なまえと おなじに）</label>
+<input type="text" id="nm" placeholder="例：たろう">
+<div id="saved" class="note"></div>
+<label>ごうかくした きょく</label>
+<div class="songs" id="songs"></div>
+<button id="mk">コードを つくる</button>
+<div id="res"></div>
+<div class="note">
+・つくった メッセージを LINE に はりつけて おくります。せいとが リンクを タップすると、その きょくに ✅ が つきます。<br>
+・リンクは、その せいとの なまえの アプリでしか ひらけません（ほかの子の アプリでは つかえません）。<br>
+・このページの アドレスは、せいとには おしえないでね。
+</div>
+<script>
+var APP = "https://onpukurabu-93.github.io/Fuyomi-Challenge/chunk_proto.html";
+var SALT = "fuyomi-2026", CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+var SONGS = [["01","アマリリス"],["02","おおきな くりの きの したで"],["03","はるの おがわ"],["04","はるが きた"],["05","あめ こんこん"],["06","いけの こい"],["07","ふじさん"],["08","ロンドンばし"],["09","きんこんしき"],["10","ゆうやけ こやけ"],["11","かえるの がっしょう"]];
+function signOf(payload) {
+  var s = payload + "|" + SALT, h = 2166136261 >>> 0;
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  var out = "";
+  for (var k = 0; k < 6; k++) { out += CODE_CHARS.charAt(h % CODE_CHARS.length); h = Math.floor(h / CODE_CHARS.length); }
+  return out;
+}
+function normName(s) { return String(s || "").normalize("NFKC").replace(/\s+/g, ""); }
+function codeOf(name, c) { return c + "-" + signOf("PASS|" + normName(name) + "|" + c); }
+var sd = document.getElementById("songs");
+SONGS.forEach(function (s) {
+  var l = document.createElement("label");
+  l.innerHTML = '<input type="checkbox" value="' + s[0] + '"> ' + Number(s[0]) + '．' + s[1];
+  sd.appendChild(l);
+});
+function names() { try { return JSON.parse(localStorage.getItem("sensei_names") || "[]"); } catch (e) { return []; } }
+function showNames() {
+  var n = names(), box = document.getElementById("saved"); box.innerHTML = "";
+  if (!n.length) return;
+  box.appendChild(document.createTextNode("つかった なまえ："));
+  n.forEach(function (x) {
+    var b = document.createElement("button"); b.className = "s"; b.style.cssText = "display:inline-block;width:auto;margin:2px;padding:6px 10px;font-size:13px";
+    b.textContent = x; b.addEventListener("click", function () { document.getElementById("nm").value = x; });
+    box.appendChild(b);
+  });
+}
+showNames();
+document.getElementById("mk").addEventListener("click", function () {
+  var name = document.getElementById("nm").value.trim(), res = document.getElementById("res"); res.innerHTML = "";
+  if (!name) { res.innerHTML = '<div class="out">なまえを いれてね</div>'; return; }
+  var picked = Array.prototype.slice.call(document.querySelectorAll(".songs input:checked")).map(function (x) { return x.value; });
+  if (!picked.length) { res.innerHTML = '<div class="out">きょくを えらんでね</div>'; return; }
+  var n = names(); if (n.indexOf(name) === -1) { n.push(name); try { localStorage.setItem("sensei_names", JSON.stringify(n)); } catch (e) {} showNames(); }
+  picked.forEach(function (c) {
+    var title = ""; SONGS.forEach(function (s) { if (s[0] === c) title = s[1]; });
+    var code = codeOf(name, c), url = APP + "?pass=" + code;
+    var text = name + " さん、「" + title + "」 ごうかく！🎉\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）";
+    var div = document.createElement("div"); div.className = "out"; div.textContent = text; res.appendChild(div);
+    var cp = document.createElement("button"); cp.textContent = "📋 コピー"; cp.addEventListener("click", function () {
+      var done = function () { cp.textContent = "✅ コピーした！"; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+      else fallback();
+      function fallback() { var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); done(); } catch (e) {} t.remove(); }
+    });
+    res.appendChild(cp);
+    var ln = document.createElement("a"); ln.href = "https://line.me/R/msg/text/?" + encodeURIComponent(text); ln.target = "_blank";
+    ln.innerHTML = '<button style="background:#06c755">LINE で おくる</button>'; res.appendChild(ln);
+  });
+});
+</script></body></html>
