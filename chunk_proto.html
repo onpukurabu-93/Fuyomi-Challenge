@@ -653,6 +653,8 @@ function renderScore(bars, beatsPerBar, opt) {
     try { localStorage.setItem("fy_pass_" + PID, JSON.stringify(p)); } catch (e) {}
     return { ok: true, msg: "🎉 「" + sg.title + "」 ごうかく！" + (nw ? "" : "（もう ごうかくしているよ）"), song: sg };
   }
+  /* 保護者ページが 曲の なまえを よめるように、曲の いちらんを のこしておく */
+  try { localStorage.setItem("fy_song_list", JSON.stringify(SONGS.map(function (s) { return { c: s.c, title: s.title }; }))); } catch (e) {}
   /* LINE の リンク（?pass=…）から ひらいたとき */
   var passBanner = "";
   try {
