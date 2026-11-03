@@ -82,7 +82,7 @@ function renderScore(bars, beatsPerBar, opt) {
     var x0 = LEFT + 52 + (li === 0 ? 20 : 0);
     var avail = RIGHT - x0, tot = 0; ln.forEach(function (x) { tot += x.w; });
     var sc = (li === lines.length - 1 && tot < avail * 0.8) ? 1 : avail / tot;
-    var xEnd = (li === lines.length - 1 && sc === 1) ? Math.min(RIGHT, x0 + tot + 6) : RIGHT;
+    var xEnd = (li === lines.length - 1 && sc === 1) ? Math.min(RIGHT, x0 + tot + 8) : RIGHT;
     for (var i = 0; i < 5; i++) out += ns("line", { x1: LEFT, x2: xEnd, y1: base - i * GAP, y2: base - i * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
     out += ns("path", { d: SCORE_CLEF, fill: "#5b4636", transform: "translate(" + (LEFT + 4) + "," + (base + 15.9) + ") scale(0.056,-0.056) translate(-120,291)" });
     if (li === 0) {
@@ -167,7 +167,9 @@ function renderScore(bars, beatsPerBar, opt) {
         out += g;
       });
       x += bx.w * sc;
-      out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": (li === lines.length - 1 && bx === ln[ln.length - 1]) ? 3 : 1.2 });
+      var fin = (li === lines.length - 1 && bx === ln[ln.length - 1]);
+      if (fin) out += ns("line", { x1: x - 5, x2: x - 5, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
+      out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": fin ? 3.4 : 1.2 });
     });
   });
   return ns("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "楽譜" }, out);
