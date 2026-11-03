@@ -1,0 +1,184 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>がくふ テスト</title>
+<style>body{font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf8ec;color:#5b4636;margin:0;padding:12px}
+h2{font-size:16px;margin:14px 0 2px}.c{background:#fff;border-radius:12px;padding:6px 4px}</style></head><body>
+<h1 style="font-size:18px">🎼 がくふ テスト</h1>
+<div id="o"></div>
+<script>/* n: E4=0。B3=-3 A3=-4 C4=-2 D4=-1 E4=0 F4=1 G4=2 A4=3 B4=4 C5=5 D5=6 E5=7 F5=8 G5=9。長さ：1=4分音符（休符は前の音にたす） */
+var CHECK_SONGS = [
+ { id:"kuri", title:"大きな栗の木の下で（5〜20小節）", beat:0.45,
+   bars:[
+    [[-2,1],[-2,.5],[-1,.5]], [[0,.5],[0,.5],[2,1]], [[0,.5],[0,.5],[-1,.5],[-1,.5]], [[-2,2]],
+    [[0,1],[0,.5],[1,.5]], [[2,1],[5,1]], [[3,1],[5,1]], [[2,2]], [[5,1],[5,1]], [[4,1],[2,1]],
+    [[3,.5],[3,.5],[3,.5],[3,.5]], [[2,2]],
+    [[-2,1],[-2,.5],[-1,.5]], [[0,.5],[0,.5],[2,1]], [[0,.5],[0,.5],[-1,.5],[-1,.5]], [[-2,2]] ] },
+ { id:"ogawa", title:"春の小川（歌の4段ぶん・16小節）", beat:0.58,
+   bars:[
+    [[0,1],[2,1],[3,1],[2,1]], [[0,1],[2,1],[5,1],[5,1]], [[3,1],[3,1],[2,1],[0,1]], [[-2,1],[-1,1],[0,2]],
+    [[0,1],[2,1],[3,1],[2,1]], [[0,1],[2,1],[5,1],[5,1]], [[3,1],[3,1],[2,1],[0,1]], [[-1,1],[0,1],[-2,2]],
+    [[-1,1],[0,1],[-1,1],[2,1]], [[3,1],[3,1],[2,1],[3,1]], [[5,1],[5,1],[4,1],[3,1]], [[2,1],[2,1],[0,2]],
+    [[0,1],[2,1],[3,1],[2,1]], [[0,1],[2,1],[5,1],[5,1]], [[3,1],[3,1],[2,1],[0,1]], [[-1,1],[0,1],[-2,2]] ] },
+ { id:"harugakita", title:"春が来た（歌の2段ぶん・8小節）", beat:0.55,
+   bars:[
+    [[2,1],[0,.5],[1,.5],[2,1],[3,1]], [[2,1],[0,.5],[1,.5],[2,1],[5,1]], [[3,1],[2,1],[0,1.5],[-2,.5]], [[-1,4]],
+    [[2,1],[3,.5],[2,.5],[0,1],[2,1]], [[5,1],[6,.5],[5,.5],[3,1],[5,1]], [[2,1],[7,1],[6,1.5],[2,.5]], [[5,4]] ] },
+ { id:"amekon", title:"雨こんこん（歌のところ・16小節）", beat:0.45,
+   bars:[
+    [[3,.5],[3,.5],[4,1]], [[3,2]], [[3,.5],[3,.5],[4,1]], [[3,2]],
+    [[0,.5],[0,.5],[0,.5],[0,.5]], [[3,1],[2,.5],[2,.5]], [[3,1],[4,.5],[4,.5]], [[3,2]],
+    [[0,.5],[0,.5],[0,.5],[0,.5]], [[3,1],[2,.5],[2,.5]], [[3,1],[4,.5],[4,.5]], [[3,2]],
+    [[3,.5],[3,.5],[4,1]], [[3,2]], [[3,.5],[3,.5],[4,1]], [[3,2]] ] },
+ { id:"ikenokoi", title:"池の鯉（歌のところ・12小節）", beat:0.45,
+   bars:[
+    [[4,.75],[3,.25],[2,.5],[-1,.5]], [[4,.75],[3,.25],[2,.5],[-1,.5]], [[2,.75],[3,.25],[4,.5],[5,.5]], [[3,2]],
+    [[2,1],[3,.5],[4,.5]], [[3,.5],[3,.5],[2,.5],[0,.5]], [[-1,.5],[-1,.5],[-1,.5],[-1,.5]], [[0,.5],[-1,.5],[-1,1]],
+    [[6,.75],[6,.25],[6,.5],[4,.5]], [[2,1],[2,.5],[3,.5]], [[4,.25],[4,.25],[4,.25],[4,.25],[6,1]], [[3,.25],[3,.25],[3,.25],[3,.25],[2,1]] ] },
+ { id:"fujisan", title:"ふじ山（16小節）", beat:0.6,
+   bars:[
+    [[2,1.5],[2,.5],[3,1],[2,1]], [[0,1],[-2,.5],[-1,.5],[0,2]], [[-1,1.5],[2,.5],[2,1],[1,.5],[0,.5]], [[-1,4]],
+    [[2,1.5],[2,.5],[0,1],[-2,1]], [[3,1.5],[4,.5],[5,1],[3,1]], [[2,1.5],[3,.5],[2,.5],[1,.5],[0,.5],[-1,.5]], [[-2,4]],
+    [[-1,1.5],[-1,.5],[-1,1],[-1,1]], [[-2,.5],[-1,.5],[0,.5],[1,.5],[2,2]], [[3,1.5],[4,.5],[5,1],[3,1]], [[2,4]],
+    [[5,2],[3,1],[1,1]], [[0,1.5],[0,.5],[3,1],[2,1]], [[1,1],[0,1],[-1,1.5],[-2,.5]], [[-2,4]] ] },
+ { id:"london", title:"ロンドン橋（8小節）", beat:0.5,
+   bars:[
+    [[2,.5],[3,.5],[2,.5],[1,.5]], [[0,.5],[1,.5],[2,1]], [[-1,.5],[0,.5],[1,1]], [[0,.5],[1,.5],[2,1]],
+    [[2,.5],[3,.5],[2,.5],[1,.5]], [[0,.5],[1,.5],[2,1]], [[-1,1],[2,1]], [[0,.5],[-2,1.5]] ] },
+ { id:"kinkon", title:"金婚式（リピートして2番かっこまで・トリルなし）", beat:0.5,
+   bars:[
+    [[0,1]],
+    [[3,1],[7,1],[7,1],[7,1]], [[7,1],[6,.5],[7,.5],[8,2]], [[3,1],[7,1],[7,1],[7,1]], [[7,1],[6,.5],[7,.5],[8,2]],
+    [[10,1],[9,.5],[8,.5],[7,1],[6,1]], [[5,1],[4,.5],[3,.5],[4,1],[5,1]], [[4,3.5],[3,.5]], [[4,3],[0,1]],
+    [[3,1],[7,1],[7,1],[7,1]], [[7,1],[6,.5],[7,.5],[8,2]], [[3,1],[7,1],[7,1],[7,1]], [[7,1],[6,.5],[7,.5],[8,2]],
+    [[10,1],[9,.5],[8,.5],[7,1],[6,1]], [[5,1],[4,.5],[3,.5],[4,1],[5,1]], [[4,3.5],[3,.5]], [[3,4]] ] },
+ { id:"yuuyake", title:"ゆうやけこやけ（歌のところ・16小節）", beat:0.5,
+   bars:[
+    [[2,.5],[2,.5],[2,.5],[3,.5]], [[2,.5],[2,.5],[2,.5],[0,.5]], [[-2,.5],[-2,.5],[-1,.5],[0,.5]], [[-1,2]],
+    [[0,1],[0,.5],[2,.5]], [[3,.5],[5,.5],[5,.5],[3,.5]], [[2,.5],[2,.5],[3,.5],[2,.5]], [[5,2]],
+    [[5,.75],[6,.25],[5,.5],[3,.5]], [[5,.5],[5,.5],[2,.5],[2,.5]], [[3,.5],[2,.5],[3,.5],[2,.5]], [[0,2]],
+    [[2,.5],[0,.5],[-1,.5],[-2,.5]], [[-1,.5],[-1,.5],[-2,.5],[-1,.5]], [[0,.5],[2,.5],[3,.5],[2,.5]], [[5,2]] ] },
+];
+</script><script>/* 楽譜を SVG で かく（ハ長調・ト音記号・メロディだけ）。n: E4=0 */
+var SCORE_CLEF = "M434 2Q464 -103 464 -170Q464 -223 427.0 -257.0Q390 -291 337 -291Q287 -291 250.0 -261.5Q213 -232 213 -190Q213 -160 233.5 -133.5Q254 -107 283.5 -107.0Q313 -107 331.5 -128.5Q350 -150 350 -178Q350 -240 280 -240Q298 -268 338 -268Q353 -268 368.5 -263.5Q384 -259 401.0 -248.0Q418 -237 428.5 -213.5Q439 -190 439 -157Q439 -136 411 -6Q389 -12 356 -12Q259 -12 189.5 60.0Q120 132 120 232Q120 267 131.5 303.0Q143 339 157.5 366.5Q172 394 200.5 428.5Q229 463 248.5 483.5Q268 504 303 539Q280 621 280 689Q280 779 313.0 839.5Q346 900 379 900Q389 900 401.5 887.0Q414 874 426.0 851.0Q438 828 446.5 790.5Q455 753 455 710Q455 551 342 447L368 329Q384 332 397 332Q458 332 500.0 282.5Q542 233 542 162Q542 44 434 2ZM426 746Q426 801 394 801Q358 801 333.0 748.0Q308 695 308 630Q308 588 321 557Q359 580 392.5 639.5Q426 699 426 746ZM498 128Q498 183 466.0 216.0Q434 249 383 249L428 23Q498 52 498 128ZM407 17 361 247Q334 241 311.5 214.0Q289 187 289 158Q289 143 295.0 128.5Q301 114 309.5 104.0Q318 94 327.0 86.0Q336 78 342.0 74.5Q348 71 348 71L340 66Q307 75 277.5 106.0Q248 137 248 184Q248 231 277.5 270.5Q307 310 343 323L325 430Q168 299 168 177Q168 104 223.0 55.0Q278 6 348 6Q365 6 407 17Z";
+function renderScore(bars, beatsPerBar, opt) {
+  opt = opt || {};
+  var W = 400, GAP = 9, LEFT = 14, RIGHT = 388, SYSH = 120, TOP = 52;
+  function yOf(n, base) { return base - n * GAP / 2; }
+  function ns(tag, a, kids) { var s = "<" + tag; for (var k in a) s += " " + k + '="' + a[k] + '"'; return s + (kids === undefined ? "/>" : ">" + kids + "</" + tag + ">"); }
+  function nw(d) { return 12 + 11 * Math.sqrt(d / 0.5); }
+  var info = bars.map(function (b) {
+    var w = 10; b.forEach(function (q) { w += nw(q[1]); });
+    return { b: b, w: w };
+  });
+  var lines = [], cur = [], cw = 0;
+  info.forEach(function (x) {
+    var avail = RIGHT - LEFT - 52 - (lines.length === 0 ? 20 : 0);
+    if (cur.length && cw + x.w > avail) { lines.push(cur); cur = []; cw = 0; }
+    cur.push(x); cw += x.w;
+  });
+  if (cur.length) lines.push(cur);
+  var H = TOP + lines.length * SYSH, out = "", barNo = 0;
+  lines.forEach(function (ln, li) {
+    var base = TOP + li * SYSH + 60;
+    var x0 = LEFT + 52 + (li === 0 ? 20 : 0);
+    var avail = RIGHT - x0, tot = 0; ln.forEach(function (x) { tot += x.w; });
+    var sc = (li === lines.length - 1 && tot < avail * 0.8) ? 1 : avail / tot;
+    var xEnd = (li === lines.length - 1 && sc === 1) ? Math.min(RIGHT, x0 + tot + 6) : RIGHT;
+    for (var i = 0; i < 5; i++) out += ns("line", { x1: LEFT, x2: xEnd, y1: base - i * GAP, y2: base - i * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
+    out += ns("path", { d: SCORE_CLEF, fill: "#5b4636", transform: "translate(" + (LEFT + 4) + "," + (base + 15.9) + ") scale(0.056,-0.056) translate(-120,291)" });
+    if (li === 0) {
+      out += ns("text", { x: LEFT + 56, y: base - 2 * GAP - 2, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, String(beatsPerBar));
+      out += ns("text", { x: LEFT + 56, y: base - 1, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, "4");
+    }
+    var x = x0;
+    ln.forEach(function (bx) {
+      barNo++;
+      if (opt.barNums) out += ns("text", { x: x + 2, y: base - 4 * GAP - 14, "font-size": 9, fill: "#a08c74" }, String(barNo));
+      var cx = x + 8 * sc, tt = 0, objs = [];
+      bx.b.forEach(function (q) {
+        var d = q[1], w = nw(d) * sc;
+        objs.push({ n: q[0], d: d, nx: cx + w / 2 - 4, y: yOf(q[0], base), t: tt, grp: null });
+        cx += w; tt += d;
+      });
+      /* 連桁：おなじ 1ぱく の なかの 8分・16分音符を つなぐ */
+      var groups = [], gcur = [];
+      objs.forEach(function (o) {
+        if (o.d < 1 && (!gcur.length || Math.floor(gcur[0].t + 1e-6) === Math.floor(o.t + 1e-6))) gcur.push(o);
+        else { if (gcur.length) groups.push(gcur); gcur = o.d < 1 ? [o] : []; }
+      });
+      if (gcur.length) groups.push(gcur);
+      groups.forEach(function (gp) { if (gp.length >= 2) gp.forEach(function (o) { o.grp = gp; }); });
+      var done = {};
+      objs.forEach(function (o) {
+        var n = o.n, d = o.d, nx = o.nx, y = o.y, g = "";
+        for (var l = -2; l >= n && l >= -12; l -= 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(l, base), y2: yOf(l, base), stroke: "#5b4636", "stroke-width": 1.3 });
+        for (var u = 10; u <= n && u <= 20; u += 2) g += ns("line", { x1: nx - 11, x2: nx + 11, y1: yOf(u, base), y2: yOf(u, base), stroke: "#5b4636", "stroke-width": 1.3 });
+        var hollow = d >= 2;
+        g += ns("ellipse", { cx: nx, cy: y, rx: 5.6, ry: 4.1, fill: hollow ? "none" : "#3d2c20", stroke: "#3d2c20", "stroke-width": hollow ? 1.6 : 0.5, transform: "rotate(-20 " + nx + " " + y + ")" });
+        var dots = (d === 0.75 || d === 1.5 || d === 3) ? 1 : (d === 3.5 ? 2 : 0);
+        for (var k = 0; k < dots; k++) g += ns("circle", { cx: nx + 10 + k * 5, cy: (n % 2 === 0 ? y - GAP / 2 : y), r: 1.6, fill: "#3d2c20" });
+        out += g;
+      });
+      /* 符尾（ぼう）と 連桁 */
+      objs.forEach(function (o) {
+        if (o.d >= 4) return;
+        var gp = o.grp, up, g = "";
+        if (gp) { var sum = 0; gp.forEach(function (z) { sum += z.n - 4; }); up = sum / gp.length < 0; } else up = o.n < 4;
+        o.up = up;
+        if (!gp) {
+          var sx = up ? o.nx + 5.2 : o.nx - 5.2, sy2 = up ? o.y - 28 : o.y + 28;
+          g += ns("line", { x1: sx, x2: sx, y1: o.y + (up ? -1 : 1), y2: sy2, stroke: "#3d2c20", "stroke-width": 1.4 });
+          var fl = o.d <= 0.25 ? 2 : (o.d <= 0.75 ? 1 : 0);
+          for (var f = 0; f < fl; f++) {
+            var fy = sy2 + (up ? 1 : -1) * f * 5;
+            g += ns("path", { d: up ? "M" + sx + " " + fy + " q 8 4 6 13" : "M" + sx + " " + fy + " q 8 -4 6 -13", fill: "none", stroke: "#3d2c20", "stroke-width": 1.6 });
+          }
+          out += g;
+        }
+      });
+      groups.forEach(function (gp) {
+        if (gp.length < 2) return;
+        var sum = 0; gp.forEach(function (z) { sum += z.n - 4; });
+        var up = sum / gp.length < 0, dir = up ? -1 : 1;
+        function sxOf(o) { return up ? o.nx + 5.2 : o.nx - 5.2; }
+        var f = gp[0], la = gp[gp.length - 1];
+        var y1 = f.y + dir * 28, y2 = la.y + dir * 28, dy = Math.max(-8, Math.min(8, y2 - y1));
+        var mid = (y1 + y2) / 2; y1 = mid - dy / 2; y2 = mid + dy / 2;
+        /* ぼうが みじかく ならない ように ずらす */
+        var shift = 0;
+        gp.forEach(function (o) {
+          var by = y1 + (y2 - y1) * (sxOf(o) - sxOf(f)) / ((sxOf(la) - sxOf(f)) || 1);
+          var len = Math.abs(by - o.y); if (len < 24) shift = Math.max(shift, 24 - len);
+        });
+        y1 += dir * shift; y2 += dir * shift;
+        function by(x) { return y1 + (y2 - y1) * (x - sxOf(f)) / ((sxOf(la) - sxOf(f)) || 1); }
+        var g = "";
+        gp.forEach(function (o) { g += ns("line", { x1: sxOf(o), x2: sxOf(o), y1: o.y + (up ? -1 : 1), y2: by(sxOf(o)), stroke: "#3d2c20", "stroke-width": 1.4 }); });
+        g += ns("line", { x1: sxOf(f) - 0.7, x2: sxOf(la) + 0.7, y1: y1, y2: y2, stroke: "#3d2c20", "stroke-width": 3.6 });
+        /* 2本め：16分音符 */
+        var off = -dir * 5.5;
+        for (var i = 0; i < gp.length; i++) {
+          var o = gp[i];
+          if (o.d > 0.25) continue;
+          var nxt = gp[i + 1], prv = gp[i - 1];
+          if (nxt && nxt.d <= 0.25) g += ns("line", { x1: sxOf(o), x2: sxOf(nxt), y1: by(sxOf(o)) + off, y2: by(sxOf(nxt)) + off, stroke: "#3d2c20", "stroke-width": 3.2 });
+          else if (!prv || prv.d > 0.25) { var tx = nxt ? sxOf(o) + 8 : sxOf(o) - 8; g += ns("line", { x1: sxOf(o), x2: tx, y1: by(sxOf(o)) + off, y2: by(tx) + off, stroke: "#3d2c20", "stroke-width": 3.2 }); }
+          else if (prv && prv.d <= 0.25) { /* つながっている（まえで かいた） */ }
+        }
+        out += g;
+      });
+      x += bx.w * sc;
+      out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": (li === lines.length - 1 && bx === ln[ln.length - 1]) ? 3 : 1.2 });
+    });
+  });
+  return ns("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "楽譜" }, out);
+}
+</script>
+<script>
+var T={kuri:"おおきな くりの きの したで",ogawa:"はるの おがわ",harugakita:"はるが きた",amekon:"あめ こんこん",ikenokoi:"いけの こい",fujisan:"ふじさん",london:"ロンドンばし",kinkon:"きんこんしき",yuuyake:"ゆうやけ こやけ"};
+var h="";
+CHECK_SONGS.forEach(function(s){
+  var bp=s.bars.some(function(b){return b.reduce(function(a,q){return a+q[1]},0)===4})?4:2;
+  h+="<h2>"+T[s.id]+"（"+bp+"/4）</h2><div class='c'>"+renderScore(s.bars,bp,{barNums:true})+"</div>";
+});
+document.getElementById("o").innerHTML=h;
+</script></body></html>
