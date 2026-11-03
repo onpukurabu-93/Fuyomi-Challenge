@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>こえ テスト</title>
+<style>
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf8ec;color:#5b4636;margin:0;padding:14px;text-align:center}
+h1{font-size:19px;margin:6px 0}
+button{font-size:18px;font-weight:900;border:none;border-radius:12px;padding:14px;margin:6px 0;width:100%;color:#fff;background:#ff7043}
+button.s{background:#7e8aa0}
+#big{font-size:84px;font-weight:900;margin:8px 0;min-height:100px}
+#heard{font-size:20px;min-height:30px}
+#res{font-size:22px;font-weight:900;min-height:34px}
+table{margin:10px auto;border-collapse:collapse;font-size:16px}
+td,th{border:1px solid #d9c9aa;padding:4px 10px}
+#log{font-size:13px;text-align:left;background:#fff;border-radius:8px;padding:8px;max-height:200px;overflow:auto;white-space:pre-wrap}
+</style></head><body>
+<h1>🎤 こえで ドレミ テスト</h1>
+<div id="msg" style="font-size:15px">「はじめる」を おして、マイクを ゆるしてください。<br>でた おとを ドレミで みじかく いいます。</div>
+<button id="go">はじめる</button>
+<div id="big">–</div>
+<div id="heard"></div>
+<div id="res"></div>
+<button class="s" id="next" style="display:none">つぎの おと</button>
+<table id="tb"></table>
+<div style="font-size:13px">きこえた ことば（ぜんぶ）</div>
+<div id="log"></div>
+<script>
+var N=["ド","レ","ミ","ファ","ソ","ラ","シ"];
+var MAP={"ド":["ど","do","ドー","どー","土","度","ドレ"],"レ":["れ","re","レー","れー","例","礼"],"ミ":["み","mi","ミー","みー","三","見","身","3"],"ファ":["ふぁ","ふあ","ファ","ファー","fa","ふぁー","ハ","は","ふぁあ"],"ソ":["そ","so","ソー","そー","素","祖","so"],"ラ":["ら","ra","ラー","らー","la","羅"],"シ":["し","シー","しー","si","shi","四","詩","死","市","4","ティ","ti"]};
+var stat={},cur=null,rec=null,locked=false,running=false;
+N.forEach(function(n){stat[n]={ok:0,all:0}});
+function norm(t){return t.replace(/[\s、。,.！？!?]/g,"")}
+function toNote(t){
+  t=norm(t); if(!t)return null;
+  for(var i=0;i<N.length;i++){var n=N[i]; if(t===n)return n; var a=MAP[n]; for(var j=0;j<a.length;j++) if(t===a[j]||t.toLowerCase()===a[j])return n;}
+  for(var i2=0;i2<N.length;i2++){var n2=N[i2]; if(t.indexOf(n2)===0)return n2;}
+  return null;
+}
+function log(s){var l=document.getElementById("log");l.textContent=s+"\n"+l.textContent}
+function table(){
+  var h="<tr><th>おと</th><th>あたり</th><th>かず</th></tr>",ok=0,all=0;
+  N.forEach(function(n){var s=stat[n];ok+=s.ok;all+=s.all;h+="<tr><td>"+n+"</td><td>"+s.ok+"</td><td>"+s.all+"</td></tr>"});
+  h+="<tr><th>ぜんぶ</th><th>"+ok+"</th><th>"+all+"</th></tr>";
+  document.getElementById("tb").innerHTML=h;
+}
+function nextNote(){
+  var p=cur; do{cur=N[Math.floor(Math.random()*7)]}while(cur===p);
+  locked=false;
+  document.getElementById("big").textContent=cur;
+  document.getElementById("res").textContent="";
+  document.getElementById("heard").textContent="いってね…";
+  document.getElementById("next").style.display="none";
+}
+function judge(text){
+  if(locked||!cur)return;
+  var h=document.getElementById("heard");
+  h.textContent="きこえた：「"+text+"」";
+  var n=toNote(text);
+  if(n===null){document.getElementById("res").textContent="？ わからない";return;}
+  locked=true;
+  stat[cur].all++;
+  var r=document.getElementById("res");
+  if(n===cur){stat[cur].ok++;r.textContent="⭕ あたり！";r.style.color="#2e9d5b";setTimeout(nextNote,900)}
+  else{r.textContent="❌ "+n+" と きこえた";r.style.color="#d84a3a";document.getElementById("next").style.display="block"}
+  table();
+}
+function start(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById("msg").textContent="この ブラウザでは こえの にんしきが つかえません。";return}
+  rec=new SR(); rec.lang="ja-JP"; rec.continuous=false; rec.interimResults=true; rec.maxAlternatives=3;
+  rec.onresult=function(e){
+    var r=e.results[e.results.length-1];
+    var alts=[];for(var i=0;i<r.length;i++)alts.push(r[i].transcript);
+    log((r.isFinal?"[かくてい] ":"[とちゅう] ")+alts.join(" / "));
+    var best=null;
+    for(var k=0;k<alts.length;k++){var n=toNote(alts[k]);if(n){best=alts[k];break}}
+    if(best!==null)judge(best);
+    else if(r.isFinal)judge(alts[0]);
+  };
+  rec.onerror=function(e){log("エラー："+e.error);if(e.error==="not-allowed"||e.error==="service-not-allowed"){running=false;document.getElementById("msg").textContent="マイクが ゆるされていません。せっていで ゆるしてください。"}};
+  rec.onend=function(){if(running){setTimeout(function(){try{rec.start()}catch(e){}},150)}};
+  running=true;
+  try{rec.start()}catch(e){log("start："+e)}
+  table(); nextNote();
+  document.getElementById("go").textContent="とめる";
+}
+document.getElementById("go").addEventListener("click",function(){
+  if(running){running=false;try{rec.stop()}catch(e){}this.textContent="はじめる";return}
+  start();
+});
+document.getElementById("next").addEventListener("click",nextNote);
+["gesturestart","gesturechange","gestureend"].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault()})});
+table();
+</script></body></html>
