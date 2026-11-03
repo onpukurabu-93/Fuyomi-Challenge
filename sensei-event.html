@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>せんせい用 イベントの 日づけ</title>
+<style>
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,"Hiragino Sans",sans-serif;background:#fdf8ec;color:#5b4636;margin:0;padding:14px;max-width:520px;margin:0 auto}
+h1{font-size:19px;margin:6px 0}
+label{display:block;font-size:14px;font-weight:800;margin:12px 0 4px}
+input{font-size:16px;padding:10px;width:100%;box-sizing:border-box;border:2px solid #e0d0ba;border-radius:8px;background:#fff}
+button{font-size:17px;font-weight:900;border:none;border-radius:12px;padding:13px;margin:10px 0;width:100%;color:#fff;background:#ff7043}
+textarea{width:100%;height:190px;font-size:13px;box-sizing:border-box;border:2px solid #e0d0ba;border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,monospace}
+.note{font-size:13px;color:#806c5a;line-height:1.7;margin-top:10px}
+.step{background:#fff;border-radius:10px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}
+</style></head><body>
+<h1>🏆 せんせい用：イベントの 日づけ</h1>
+<div class="note">イベントの はじまりの 日を えらぶと、ほかの 日づけが じどうで はいります。ちがうところは、なおせます。</div>
+<label for="st">イベントが はじまる日</label>
+<input type="date" id="st" value="2027-01-01">
+<label for="en">イベントが おわる日</label>
+<input type="date" id="en" value="2027-01-31">
+<label for="ps">れんしゅう期間：はじまり（ハンコを かぞえる）</label>
+<input type="date" id="ps" value="2026-12-20">
+<label for="pe">れんしゅう期間：おわり</label>
+<input type="date" id="pe" value="2026-12-31">
+<label for="tt">イベントの なまえ</label>
+<input type="text" id="tt" value="1月の ふよみイベント">
+<button id="mk">ファイルの なかみを つくる</button>
+<div id="res"></div>
+<script>
+function p2(n){return (n<10?"0":"")+n}
+function ds(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function parse(s){var a=s.split("-");return new Date(+a[0],+a[1]-1,+a[2],12)}
+document.getElementById("st").addEventListener("change",function(){
+  var v=this.value; if(!v)return; var d=parse(v);
+  var last=new Date(d.getFullYear(),d.getMonth()+1,0,12);
+  document.getElementById("en").value=ds(last);
+  var pe=new Date(d.getTime()-86400000), ps=new Date(pe.getTime()-11*86400000);
+  document.getElementById("pe").value=ds(pe); document.getElementById("ps").value=ds(ps);
+  document.getElementById("tt").value=(d.getMonth()+1)+"月の ふよみイベント";
+});
+document.getElementById("mk").addEventListener("click",function(){
+  var st=document.getElementById("st").value,en=document.getElementById("en").value,ps=document.getElementById("ps").value,pe=document.getElementById("pe").value,tt=document.getElementById("tt").value.trim();
+  var res=document.getElementById("res");
+  if(!st||!en||!ps||!pe||!tt){res.innerHTML='<div class="step" style="color:#c62828;font-weight:800">ぜんぶ いれてね</div>';return}
+  if(!(ps<=pe&&pe<st&&st<=en)){res.innerHTML='<div class="step" style="color:#c62828;font-weight:800">日づけの じゅんばんが ちがいます。<br>れんしゅう期間 → イベント の じゅんに、かさならないように してね。</div>';return}
+  var id=st.slice(0,7);
+  var txt='/* ふよみイベントの せってい（せんせいが かえる ファイル）。\n   sensei-event.html で つくった ものを、ここに はりつけて ください。 */\nwindow.FY_EVENT = {\n  id: "'+id+'",\n  title: "'+tt.replace(/\\/g,"").replace(/"/g,"")+'",\n  pStart: "'+ps+'",\n  pEnd: "'+pe+'",\n  start: "'+st+'",\n  end: "'+en+'"\n};\n';
+  res.innerHTML='<div class="step"><b>つくった なかみ</b>（コピーして つかいます）</div><textarea id="out" readonly></textarea><button id="cp">📋 ぜんぶ コピー</button>'+
+   '<div class="step"><b>GitHub での かえかた</b><br>① GitHub で <b>event_config.js</b> を ひらく<br>② えんぴつの マーク（Edit）を おす<br>③ なかみを ぜんぶ けして、コピーした ものを はりつける<br>④ 「Commit changes」を おす<br>⑤ 数分まつと、アプリに はんえいされます</div>'+
+   '<div class="note">・イベントの id（'+id+'）が かわると、せいとの きろくは あたらしく はじまります。ふるい イベントの きろくは のこります。<br>・日づけを かえるのは、アプリの ファイル（index.html など）は そのままで だいじょうぶです。</div>';
+  var o=document.getElementById("out"); o.value=txt;
+  document.getElementById("cp").addEventListener("click",function(){
+    var b=this,done=function(){b.textContent="✅ コピーした！"};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fb);else fb();
+    function fb(){o.removeAttribute("readonly");o.select();o.setSelectionRange(0,99999);try{document.execCommand("copy");done()}catch(e){}o.setAttribute("readonly","")}
+  });
+});
+</script></body></html>
