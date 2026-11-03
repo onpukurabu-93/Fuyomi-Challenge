@@ -1963,25 +1963,35 @@
       var r = getRec(idx, l);
       if (!r.first) continue;
       any = true;
-      var t = "レベル" + l + "（" + LV[l - 1] + "音）クリア済み　ノーミスの ベスト：" + (r.bestPerfect ? fmt(r.bestPerfect) : "まだ");
-      if (r.n >= 2 && r.first > 0 && r.bestClear < r.first) t += "　のびた：" + Math.round((r.first - r.bestClear) / r.first * 100) + "%";
+      var t = "レベル" + l + "（" + LV[l - 1] + "音）クリア済み　ノーミスのベスト：" + (r.bestPerfect ? fmt(r.bestPerfect) : "まだ");
+      if (r.n >= 2 && r.first > 0 && r.bestClear < r.first) t += "　伸び：" + Math.round((r.first - r.bestClear) / r.first * 100) + "%";
       lines.push(t);
     }
     try {
       var pp = JSON.parse(localStorage.getItem("fy_pass_" + idx) || "{}") || {};
       var list = JSON.parse(localStorage.getItem("fy_song_list") || "[]") || [];
       var names = [], tot = Array.isArray(list) ? list.length : 0;
-      if (tot) list.forEach(function (x) { if (pp[x.c]) names.push(x.title); });
+      if (tot) list.forEach(function (x) { if (pp[x.c]) names.push(x.kt || x.title); });
       else Object.keys(pp).forEach(function (c) { names.push(c); });
-      if (names.length > 0) { any = true; lines.push("きょく：せんせいの ごうかく " + names.length + (tot ? " / " + tot : "") + "きょく<br><span style='font-size:12px;color:#806c5a;'>" + names.join("、") + "</span>"); }
+      if (names.length > 0) { any = true; lines.push("レベル5（曲）：先生の合格 " + names.length + (tot ? " / " + tot : "") + " 曲<br><span style='font-size:12px;color:#806c5a;'>" + names.join("、") + "</span>"); }
     } catch (e) {}
-    return G + "<b>🎼 レジェンドへの みち</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ はじめていません" : "ふよみマスターに なると ひらきます")) + "</div>";
+    return G + "<b>🎼 レジェンドへの道</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ始めていません" : "ふよみマスターになると開きます")) + "</div>";
   };
 
   /* ---- イベントの きろく（トップ画面。だれでも見られる） ---- */
   var EVENT = { id: "2027-01", title: "1月の ふよみイベント",
                 pStart: "2026-12-20", pEnd: "2026-12-31",
-                start: "2027-01-01", end: "2027-01-31" };   /* ★ chunk_proto.html の EVENT と、同じに すること */
+                start: "2027-01-01", end: "2027-01-31" };
+  /* event_config.js（せんせいが かえる ファイル）があれば、そちらの 日づけを つかう（chunk_proto.html と おなじ ファイル） */
+  try {
+    var xh = new XMLHttpRequest();
+    xh.open("GET", "event_config.js?v=" + Math.floor(Date.now() / 60000), false);
+    xh.send();
+    if (xh.status === 200) {
+      var cfg = (new Function(xh.responseText + ";return window.FY_EVENT;"))();
+      if (cfg && cfg.id && cfg.start && cfg.end && cfg.pStart && cfg.pEnd) EVENT = cfg;
+    }
+  } catch (e) {}
   var SALT2 = "fuyomi-2026", CC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   function p2(n) { return (n < 10 ? "0" : "") + n; }
   function todayS() { var d = new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); }
@@ -2004,10 +2014,18 @@
       return n;
     } catch (e) { return 0; }
   }
+  function evPassCount(idx) {
+    try {
+      var p = JSON.parse(localStorage.getItem("fy_pass_" + idx) || "{}") || {}, n = 0;
+      Object.keys(p).forEach(function (c) { var d = String(p[c]); if (d >= EVENT.start && d <= EVENT.end) n++; });
+      return n;
+    } catch (e) { return 0; }
+  }
   function makeEventCode(idx) {
     var d = new Date(), stamp = todayS().replace(/-/g, "") + p2(d.getHours()) + p2(d.getMinutes());
     var f = ["FYE1", String(profiles[idx] || ""), EVENT.id, stamp, String(practiceDays(idx))];
     for (var l = 1; l <= 4; l++) { var r = getEv(idx, l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
+    f.push(String(evPassCount(idx)));
     var payload = f.join("|");
     return { code: "FYE1." + b64e(payload) + "." + sign2(payload), stamp: stamp };
   }
@@ -2021,6 +2039,7 @@
       if (r.bestPerfect || rate) anyT = true;
       rows += '<tr><td style="' + cell + '">レベル' + l + " <span style='font-size:11px'>(" + LV[l - 1] + '音)</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
+    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">せんせいの ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>';
     var c = makeEventCode(idx), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     var scr = document.getElementById("fyEvScr");
@@ -2110,13 +2129,14 @@
     try { payload = b64dec(parts[1]); } catch (e) { return bad("コードを 読めません（切れていませんか？）"); }
     if (signOf(payload) !== parts[2]) return bad("しるしが あいません（書きかえられたか、途中で 切れています）");
     var f = payload.split("|");
-    if (f[0] !== "FYE1" || f.length !== 9) return bad("コードの 中みが ちがいます");
+    if (f[0] !== "FYE1" || (f.length !== 9 && f.length !== 10)) return bad("コードの 中みが ちがいます");
     var st = f[3], when = st.slice(0, 4) + "/" + (+st.slice(4, 6)) + "/" + (+st.slice(6, 8)) + " " + st.slice(8, 10) + ":" + st.slice(10, 12);
     var rows = "";
     for (var l = 1; l <= 4; l++) {
       var a = f[4 + l].split(","), best = parseInt(a[0], 10) || 0, rate = parseInt(a[1], 10) || 0;
       rows += "<tr><td>レベル" + l + "</td><td>" + (best ? fmt(best) : "—") + "</td><td>" + (rate ? rate + "%" : "—") + "</td></tr>";
     }
+    if (f.length === 10) rows += "<tr><td>レベル5</td><td colspan='2'>先生の合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>';
