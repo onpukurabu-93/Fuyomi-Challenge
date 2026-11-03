@@ -80,7 +80,7 @@ function listen(){
     for(var k=0;k<alts.length;k++){var n=toNote(alts[k]);if(n){best=alts[k];break}}
     if(best!==null){got=true;judge(best)} else if(r.isFinal){got=true;judge(alts[0])}
   };
-  rec.onerror=function(e){log("エラー："+e.error);document.getElementById("heard").textContent="エラー："+e.error};
+  rec.onerror=function(e){log("エラー："+e.error);document.getElementById("heard").textContent=(e.error==="no-speech"?"こえが きこえません。もういちど":"エラー："+e.error)};
   rec.onend=function(){listening=false;document.getElementById("go").textContent="🎤 いう（おす）";if(!got&&!locked)document.getElementById("heard").textContent+=" もういちど おしてね"};
   try{rec.start()}catch(e){log("start："+e)}
 }
