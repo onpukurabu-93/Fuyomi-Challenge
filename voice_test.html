@@ -9,16 +9,16 @@ h1{font-size:19px;margin:6px 0}
 button{font-size:18px;font-weight:900;border:none;border-radius:12px;padding:14px;margin:6px 0;width:100%;color:#fff;background:#ff7043}
 button.s{background:#7e8aa0}
 #big{font-size:84px;font-weight:900;margin:8px 0;min-height:100px}
-#heard{font-size:20px;min-height:30px}
+#heard{font-size:18px;min-height:30px}
 #res{font-size:22px;font-weight:900;min-height:34px}
 table{margin:10px auto;border-collapse:collapse;font-size:16px}
 td,th{border:1px solid #d9c9aa;padding:4px 10px}
 #log{font-size:13px;text-align:left;background:#fff;border-radius:8px;padding:8px;max-height:200px;overflow:auto;white-space:pre-wrap}
 </style></head><body>
 <h1>🎤 こえで ドレミ テスト</h1>
-<div id="msg" style="font-size:15px">「はじめる」を おして、マイクを ゆるしてください。<br>でた おとを ドレミで みじかく いいます。</div>
-<button id="go">はじめる</button>
+<div id="msg" style="font-size:15px">「いう」を おして、マイクを ゆるしてください。<br>ボタンを おしてから、でた おとを ドレミで みじかく いいます。</div>
 <div id="big">–</div>
+<button id="go">🎤 いう（おす）</button>
 <div id="heard"></div>
 <div id="res"></div>
 <button class="s" id="next" style="display:none">つぎの おと</button>
@@ -27,8 +27,8 @@ td,th{border:1px solid #d9c9aa;padding:4px 10px}
 <div id="log"></div>
 <script>
 var N=["ド","レ","ミ","ファ","ソ","ラ","シ"];
-var MAP={"ド":["ど","do","ドー","どー","土","度","ドレ"],"レ":["れ","re","レー","れー","例","礼"],"ミ":["み","mi","ミー","みー","三","見","身","3"],"ファ":["ふぁ","ふあ","ファ","ファー","fa","ふぁー","ハ","は","ふぁあ"],"ソ":["そ","so","ソー","そー","素","祖","so"],"ラ":["ら","ra","ラー","らー","la","羅"],"シ":["し","シー","しー","si","shi","四","詩","死","市","4","ティ","ti"]};
-var stat={},cur=null,rec=null,locked=false,running=false;
+var MAP={"ド":["ど","do","ドー","どー","土","度"],"レ":["れ","re","レー","れー","例","礼"],"ミ":["み","mi","ミー","みー","三","見","身","3"],"ファ":["ふぁ","ふあ","ファー","fa","ふぁー","ハ","は"],"ソ":["そ","so","ソー","そー","素","祖"],"ラ":["ら","ra","ラー","らー","la","羅"],"シ":["し","シー","しー","si","shi","四","詩","死","市","4","ティ","ti"]};
+var stat={},cur=null,rec=null,locked=false,listening=false;
 N.forEach(function(n){stat[n]={ok:0,all:0}});
 function norm(t){return t.replace(/[\s、。,.！？!?]/g,"")}
 function toNote(t){
@@ -49,13 +49,12 @@ function nextNote(){
   locked=false;
   document.getElementById("big").textContent=cur;
   document.getElementById("res").textContent="";
-  document.getElementById("heard").textContent="いってね…";
+  document.getElementById("heard").textContent="";
   document.getElementById("next").style.display="none";
 }
 function judge(text){
   if(locked||!cur)return;
-  var h=document.getElementById("heard");
-  h.textContent="きこえた：「"+text+"」";
+  document.getElementById("heard").textContent="きこえた：「"+text+"」";
   var n=toNote(text);
   if(n===null){document.getElementById("res").textContent="？ わからない";return;}
   locked=true;
@@ -65,30 +64,27 @@ function judge(text){
   else{r.textContent="❌ "+n+" と きこえた";r.style.color="#d84a3a";document.getElementById("next").style.display="block"}
   table();
 }
-function start(){
+function listen(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){document.getElementById("msg").textContent="この ブラウザでは こえの にんしきが つかえません。";return}
+  if(listening||locked)return;
+  if(!cur){nextNote()}
   rec=new SR(); rec.lang="ja-JP"; rec.continuous=false; rec.interimResults=true; rec.maxAlternatives=3;
+  var got=false;
+  rec.onstart=function(){listening=true;document.getElementById("go").textContent="🎤 きいてます…";document.getElementById("heard").textContent="いってね…"};
   rec.onresult=function(e){
-    var r=e.results[e.results.length-1];
-    var alts=[];for(var i=0;i<r.length;i++)alts.push(r[i].transcript);
+    var r=e.results[e.results.length-1], alts=[];
+    for(var i=0;i<r.length;i++)alts.push(r[i].transcript);
     log((r.isFinal?"[かくてい] ":"[とちゅう] ")+alts.join(" / "));
     var best=null;
     for(var k=0;k<alts.length;k++){var n=toNote(alts[k]);if(n){best=alts[k];break}}
-    if(best!==null)judge(best);
-    else if(r.isFinal)judge(alts[0]);
+    if(best!==null){got=true;judge(best)} else if(r.isFinal){got=true;judge(alts[0])}
   };
-  rec.onerror=function(e){log("エラー："+e.error);if(e.error==="not-allowed"||e.error==="service-not-allowed"){running=false;document.getElementById("msg").textContent="マイクが ゆるされていません。せっていで ゆるしてください。"}};
-  rec.onend=function(){if(running){setTimeout(function(){try{rec.start()}catch(e){}},150)}};
-  running=true;
+  rec.onerror=function(e){log("エラー："+e.error);document.getElementById("heard").textContent="エラー："+e.error};
+  rec.onend=function(){listening=false;document.getElementById("go").textContent="🎤 いう（おす）";if(!got&&!locked)document.getElementById("heard").textContent+=" もういちど おしてね"};
   try{rec.start()}catch(e){log("start："+e)}
-  table(); nextNote();
-  document.getElementById("go").textContent="とめる";
 }
-document.getElementById("go").addEventListener("click",function(){
-  if(running){running=false;try{rec.stop()}catch(e){}this.textContent="はじめる";return}
-  start();
-});
+document.getElementById("go").addEventListener("click",listen);
 document.getElementById("next").addEventListener("click",nextNote);
 ["gesturestart","gesturechange","gestureend"].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault()})});
 table();
