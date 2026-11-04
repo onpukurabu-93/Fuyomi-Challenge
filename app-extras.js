@@ -1,3 +1,7 @@
+/* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
+window.fyLineBtn = function (text, label, bg) {
+  return '<a href="https://line.me/R/msg/text/?' + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+};
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
@@ -317,7 +321,9 @@
       '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc(rec.name) + ' さん</div>' +
       '<div style="font-size:13px;margin:2px 0;">' + dmd(rec) + '</div>' +
       '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
-      '</div>';
+      '</div>' +
+      window.fyLineBtn('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code) +
+      '<div style="height:8px"></div>';
   }
 
   /* 大きな画面 */
@@ -583,6 +589,7 @@
       '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">あたらしい たんまつに かえる ときに つかいます。<br>「レジェンドへの みち」の きろくと、ハンコの 日を うつせます。<br>プレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
       '<textarea id="fyBkCode" readonly style="width:100%;height:110px;font-size:10px;padding:6px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;word-break:break-all;-webkit-user-select:text;user-select:text;">' + code + '</textarea>' +
       '<button id="fyBkCopy" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#5c6bc0;color:#fff;">コードを コピー</button>' +
+      window.fyLineBtn('【ふよみ】' + (profiles[idx] || '') + ' さんの きろくの うつしコード\n' + code, 'LINEで じぶんに おくる') +
       '<div style="font-size:12px;line-height:1.6;color:#806c5a;margin:8px 0;">コピーして、じぶんに LINE などで おくっておくと、あたらしい たんまつで「🔁 記録の復元」に はれます。</div>'
     );
     document.getElementById("fyBkCopy").addEventListener("click", function () {
@@ -1253,6 +1260,42 @@
     } catch (e) {}
   };
 
+  /* ===== ぜんぶの コードを、1つの はこで かくにん（LINEの メッセージを そのまま 貼る） ===== */
+  window.fyCheckAnyCore = function (raw) {
+    var t = String(raw || "").normalize("NFKC"), m;
+    function esc3(x) { return String(x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function ng(msg) { return { kind: "text", html: '<div style="color:#c62828;font-weight:800;font-size:14px;">❌ ' + msg + '</div>' }; }
+    if ((m = t.match(/FYE1\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/))) return { kind: "event", token: m[0] };
+    if ((m = t.match(/FYC1\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/))) {
+      var parts = m[0].split("."), payload;
+      try { payload = b64dec(parts[1]); } catch (e) { return ng("コードを 読めません（切れていませんか？）"); }
+      if (signOf(payload) !== parts[2]) return ng("しるしが あいません（書きかえられたか、途中で 切れています）");
+      var o; try { o = JSON.parse(payload.slice(5)); } catch (e2) { return ng("コードの 中みが ちがいます"); }
+      var recs = Object.keys(o.r || {}).filter(function (k) { return k.indexOf("rec_") === 0; }).length;
+      var pc = o.p ? Object.keys(o.p).length : 0;
+      return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の「うつしコード」です（生徒が 機種変更で つかうコード）</div>' +
+        '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(o.n) + '</b><br>ひらいている レベル：' + (o.m | 0) + '<br>レベルの きろく：' + recs + ' こ　／　先生の ごうかく：' + pc + ' 曲　／　ハンコ：' + ((o.h || []).length) + ' 日<br><span style="color:#806c5a;">先生が することは ありません。生徒が あたらしい 端末で「きろくの 復元」に はります。</span></div>' };
+    }
+    if (/FY[12]\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が つくった「復元コード」です。（保護者に おくる もの）</div>' };
+    var nm = t.match(/【ふよみ】\s*([^\n]+?)\s*さん/), cd = t.match(/コード[：:]\s*([A-Z0-9]{4})/);
+    if (!nm || !cd) {
+      if (/\b\d{2}-[A-Z0-9]{6}\b/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が だした「ごうかくコード」です。（生徒の アプリで つかう もの）</div>' };
+      return ng("コードの かたちが わかりません。LINEの メッセージを、ぜんぶ 貼ってね。");
+    }
+    var name = cleanName(nm[1]), code = cd[1], found = null, ds = [];
+    for (var i = 0; i < 15; i++) ds.push(localDateStr(new Date(Date.now() - i * 86400000)));
+    var am = t.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = t.match(/のこり\s*(\d+)\s*p/);
+    ds.forEach(function (d) {
+      if (found) return;
+      ["treble", "bass", "master", "legend5", "maestro"].forEach(function (ty) { if (!found && codeFor(name, ty, 0, d) === code) found = { label: INFO[ty].label, d: d }; });
+      for (var n = 1; n <= 99 && !found; n++) if (codeFor(name, "stamp", n, d) === code) found = { label: "スタンプカード " + n + " まいめ", d: d };
+      for (var n2 = 100; n2 <= 1000 && !found; n2 += 100) if (codeFor(name, "legend", n2, d) === code) found = { label: "ふよみレジェンド（" + n2 + "回）", d: d };
+      if (!found && am && rm && window.fyExchangeCode(name, parseInt(am[1], 10), parseInt(rm[1], 10), d) === code) found = { label: "ポイント こうかん " + am[1] + "p（のこり " + rm[1] + "p）", d: d };
+    });
+    if (found) return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div><div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(name) + '</b><br>しゅるい：<b>' + esc3(found.label) + '</b><br>日づけ：' + found.d + '</div>' };
+    return ng("あいません。なまえ「" + esc3(name) + "」、コード「" + esc3(code) + "」。（15日より 前の コードは、「コード かくにん」で 日づけを 入れて しらべてね）");
+  };
+
   window.fyCheckCode = function () {
     var name = cleanName(document.getElementById("fcName").value);
     var type = document.getElementById("fcType").value;
@@ -1778,6 +1821,7 @@
       '<div style="font-size:13px;">' + md(e.d) + '</div>' +
       '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
       '<div style="font-size:11px;color:#806c5a;line-height:1.6;">この がめんを スクショして<br>せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
+      window.fyLineBtn('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）') +
       '</div>';
   }
   function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -2061,6 +2105,7 @@
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
       '<button id="fyEvCopy" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#5c6bc0;color:#fff;margin-top:6px;">コードを コピー</button>' +
+      window.fyLineBtn('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
       '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
       '<button id="fyEvClose" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#f0efec;color:#3b2f27;margin-top:6px;">もどる</button>' +
       '</div>';
@@ -2155,7 +2200,28 @@
         '<div id="feOut" style="margin:6px 0 14px;"></div>';
       t3.insertBefore(d, t3.firstChild);
     }
+    if (t3 && !document.getElementById("fyAnyCheck")) {
+      var a = document.createElement("div");
+      a.id = "fyAnyCheck";
+      a.style.cssText = "background:#fff8e1;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-bottom:14px;";
+      a.innerHTML =
+        '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin-bottom:4px;text-align:left;">🔍 コードを 貼って かくにん（ぜんぶ ここで）</div>' +
+        '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">LINEで 届いた メッセージを、そのまま 貼ってください。<br>イベント・達成・ポイント こうかん・うつしコードを じどうで みわけます。</div>' +
+        '<textarea id="faIn" class="modal-input" style="height:80px;font-size:12px;" placeholder="ここに 貼る"></textarea>' +
+        '<button class="modal-btn" style="background:#ef6c00;font-size:13px;padding:9px;" onclick="fyCheckAny()">かくにん する</button>' +
+        '<div id="faOut" style="margin:6px 0 4px;"></div>';
+      t3.insertBefore(a, t3.firstChild);
+    }
   } catch (e) {}
+  window.fyCheckAny = function () {
+    var out = document.getElementById("faOut"), raw = document.getElementById("faIn").value;
+    var r = window.fyCheckAnyCore(raw);
+    if (r.kind === "event") {
+      document.getElementById("feIn").value = r.token;
+      window.fyCheckEventCode();
+      out.innerHTML = document.getElementById("feOut").innerHTML;
+    } else out.innerHTML = r.html;
+  };
 })();
 
 /* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
