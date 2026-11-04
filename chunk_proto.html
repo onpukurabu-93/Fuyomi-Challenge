@@ -114,6 +114,10 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
 <div id="evScr"><div class="in" id="evIn"></div></div>
 <script src="event_config.js"></script>
 <script>
+/* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
+window.fyLineBtn = function (text, label, bg) {
+  return '<a href="https://line.me/R/msg/text/?' + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+};
 (function () {
   var LEVELS = [16, 32, 64, 96];   /* レベル1〜4 の おとの かず（レベル5は きょく） */
   var level = 1, TOTAL = 16;
@@ -1229,6 +1233,7 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:13px;">' + dt + '</div>' +
       '<div style="font-size:36px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:12px;padding:8px 0;margin:10px 0;">' + rec.code + '</div>' +
       '<div style="font-size:13px;line-height:1.7;">7日いないに、この がめんを スクショして<br>せんせいに おくってね。</div>' +
+      window.fyLineBtn('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code) +
       '<button class="btn back" id="awClose" style="margin-top:16px;">とじる</button></div>';
     scr.scrollTop = 0;
     document.getElementById("awClose").addEventListener("click", function () { scr.style.display = "none"; });
@@ -1254,6 +1259,7 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="evCode" readonly>' + c.code + '</textarea>' +
       '<button class="btn" id="evCopy" style="background:#5c6bc0;padding:10px;font-size:15px;margin-top:6px;">コードを コピー</button>' +
+      window.fyLineBtn('【ふよみイベント】' + (PNAME || '') + ' さんの きろくコード\n' + c.code) +
       '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
       '<button class="btn back" id="evClose" style="padding:10px;font-size:15px;margin-top:6px;">もどる</button>';
     document.getElementById("evScr").style.display = "block";
