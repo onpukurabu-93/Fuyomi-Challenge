@@ -507,6 +507,8 @@ window.fyLineBtn = function (text, label, bg) {
     o.s = {};
     var pbk = Storage.get("fy_pass_" + idx, {});
     if (pbk && typeof pbk === "object" && Object.keys(pbk).length) o.p = pbk;
+    var qbk = Storage.get("fy_play_" + idx, {});
+    if (qbk && typeof qbk === "object" && Object.keys(qbk).length) o.q = qbk;
     ["legend", "maestro", "seen"].forEach(function (kd) {
       var l = Storage.get("fy_chunk_songs_" + kd + "_" + idx, []);
       if (Array.isArray(l) && l.length) o.s[kd] = l;
@@ -564,7 +566,13 @@ window.fyLineBtn = function (text, label, bg) {
       var pk = "fy_pass_" + idx, curP = Storage.get(pk, {}), addP = 0;
       if (!curP || typeof curP !== "object") curP = {};
       Object.keys(o.p).forEach(function (c) { if (/^\d{2}$/.test(c) && !curP[c]) { curP[c] = String(o.p[c]); addP++; } });
-      if (addP) { Storage.set(pk, curP); done.push("せんせいの ごうかく " + Object.keys(curP).length + "きょく"); }
+      if (addP) { Storage.set(pk, curP); done.push("ふよみテスト ごうかく " + Object.keys(curP).length + "きょく"); }
+    }
+    if (o.q && typeof o.q === "object") {
+      var qk = "fy_play_" + idx, curQ = Storage.get(qk, {}), addQ = 0;
+      if (!curQ || typeof curQ !== "object") curQ = {};
+      Object.keys(o.q).forEach(function (c) { if (/^\d{2}$/.test(c) && !curQ[c]) { curQ[c] = String(o.q[c]); addQ++; } });
+      if (addQ) { Storage.set(qk, curQ); done.push("えんそう ごうかく " + Object.keys(curQ).length + "きょく"); }
     }
     var mk = "fy_chunk_max_" + idx;
     if ((o.m | 0) > Storage.getNumber(mk, 0)) { Storage.set(mk, o.m | 0); done.push("ひらいている レベル"); }
@@ -1272,14 +1280,14 @@ window.fyLineBtn = function (text, label, bg) {
       if (signOf(payload) !== parts[2]) return ng("しるしが あいません（書きかえられたか、途中で 切れています）");
       var o; try { o = JSON.parse(payload.slice(5)); } catch (e2) { return ng("コードの 中みが ちがいます"); }
       var recs = Object.keys(o.r || {}).filter(function (k) { return k.indexOf("rec_") === 0; }).length;
-      var pc = o.p ? Object.keys(o.p).length : 0;
+      var pc = o.p ? Object.keys(o.p).length : 0, qc = o.q ? Object.keys(o.q).length : 0;
       return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の「うつしコード」です（生徒が 機種変更で つかうコード）</div>' +
-        '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(o.n) + '</b><br>ひらいている レベル：' + (o.m | 0) + '<br>レベルの きろく：' + recs + ' こ　／　先生の ごうかく：' + pc + ' 曲　／　ハンコ：' + ((o.h || []).length) + ' 日<br><span style="color:#806c5a;">先生が することは ありません。生徒が あたらしい 端末で「きろくの 復元」に はります。</span></div>' };
+        '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(o.n) + '</b><br>ひらいている レベル：' + (o.m | 0) + '<br>レベルの きろく：' + recs + ' こ　／　ふよみテスト ごうかく：' + pc + ' 曲　／　えんそう ごうかく：' + qc + ' 曲　／　ハンコ：' + ((o.h || []).length) + ' 日<br><span style="color:#806c5a;">先生が することは ありません。生徒が あたらしい 端末で「きろくの 復元」に はります。</span></div>' };
     }
     if (/FY[12]\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が つくった「復元コード」です。（保護者に おくる もの）</div>' };
     var nm = t.match(/【ふよみ】\s*([^\n]+?)\s*さん/), cd = t.match(/コード[：:]\s*([A-Z0-9]{4})/);
     if (!nm || !cd) {
-      if (/\b\d{2}-[A-Z0-9]{6}\b/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が だした「ごうかくコード」です。（生徒の アプリで つかう もの）</div>' };
+      if (/\b\d{2}-[A-Z0-9]{6}\b/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が だした「ごうかくコード」です（ふよみテスト か えんそう）。生徒の アプリで つかう もの</div>' };
       return ng("コードの かたちが わかりません。LINEの メッセージを、ぜんぶ 貼ってね。");
     }
     var name = cleanName(nm[1]), code = cd[1], found = null, ds = [];
@@ -2017,7 +2025,11 @@ window.fyLineBtn = function (text, label, bg) {
       var names = [], tot = Array.isArray(list) ? list.length : 0;
       if (tot) list.forEach(function (x) { if (pp[x.c]) names.push(x.kt || x.title); });
       else Object.keys(pp).forEach(function (c) { names.push(c); });
-      if (names.length > 0) { any = true; lines.push("レベル5（曲）：先生の合格 " + names.length + (tot ? " / " + tot : "") + " 曲<br><span style='font-size:12px;color:#806c5a;'>" + names.join("、") + "</span>"); }
+      if (names.length > 0) { any = true; lines.push("レベル5（曲）：ふよみテスト合格 " + names.length + (tot ? " / " + tot : "") + " 曲<br><span style='font-size:12px;color:#806c5a;'>" + names.join("、") + "</span>"); }
+      var qq = JSON.parse(localStorage.getItem("fy_play_" + idx) || "{}") || {}, qn = [];
+      if (tot) list.forEach(function (x) { if (qq[x.c]) qn.push(x.kt || x.title); });
+      else Object.keys(qq).forEach(function (c) { qn.push(c); });
+      if (qn.length > 0) { any = true; lines.push("⭐ 演奏合格 " + qn.length + (tot ? " / " + tot : "") + " 曲<br><span style='font-size:12px;color:#806c5a;'>" + qn.join("、") + "</span>"); }
     } catch (e) {}
     return G + "<b>🎼 レジェンドへの道</b><br>" + (any ? lines.join("<br>") : (isMaster(idx) ? "まだ始めていません" : "ふよみマスターになると開きます")) + "</div>";
   };
@@ -2065,11 +2077,19 @@ window.fyLineBtn = function (text, label, bg) {
       return n;
     } catch (e) { return 0; }
   }
+  function evPlayCount(idx) {
+    try {
+      var p = JSON.parse(localStorage.getItem("fy_play_" + idx) || "{}") || {}, n = 0;
+      Object.keys(p).forEach(function (c) { var d = String(p[c]); if (d >= EVENT.start && d <= EVENT.end) n++; });
+      return n;
+    } catch (e) { return 0; }
+  }
   function makeEventCode(idx) {
     var d = new Date(), stamp = todayS().replace(/-/g, "") + p2(d.getHours()) + p2(d.getMinutes());
     var f = ["FYE1", String(profiles[idx] || ""), EVENT.id, stamp, String(practiceDays(idx))];
     for (var l = 1; l <= 4; l++) { var r = getEv(idx, l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
     f.push(String(evPassCount(idx)));
+    f.push(String(evPlayCount(idx)));
     var payload = f.join("|");
     return { code: "FYE1." + b64e(payload) + "." + sign2(payload), stamp: stamp };
   }
@@ -2083,7 +2103,8 @@ window.fyLineBtn = function (text, label, bg) {
       if (r.bestPerfect || rate) anyT = true;
       rows += '<tr><td style="' + cell + '">レベル' + l + " <span style='font-size:11px'>(" + LV[l - 1] + '音)</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
-    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">せんせいの ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>';
+    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">ふよみテスト ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>' +
+      '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">⭐ えんそう ごうかく <b>' + evPlayCount(idx) + '</b> きょく</td></tr>';
     var c = makeEventCode(idx), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     var scr = document.getElementById("fyEvScr");
@@ -2174,14 +2195,15 @@ window.fyLineBtn = function (text, label, bg) {
     try { payload = b64dec(parts[1]); } catch (e) { return bad("コードを 読めません（切れていませんか？）"); }
     if (signOf(payload) !== parts[2]) return bad("しるしが あいません（書きかえられたか、途中で 切れています）");
     var f = payload.split("|");
-    if (f[0] !== "FYE1" || (f.length !== 9 && f.length !== 10)) return bad("コードの 中みが ちがいます");
+    if (f[0] !== "FYE1" || (f.length !== 9 && f.length !== 10 && f.length !== 11)) return bad("コードの 中みが ちがいます");
     var st = f[3], when = st.slice(0, 4) + "/" + (+st.slice(4, 6)) + "/" + (+st.slice(6, 8)) + " " + st.slice(8, 10) + ":" + st.slice(10, 12);
     var rows = "";
     for (var l = 1; l <= 4; l++) {
       var a = f[4 + l].split(","), best = parseInt(a[0], 10) || 0, rate = parseInt(a[1], 10) || 0;
       rows += "<tr><td>レベル" + l + "</td><td>" + (best ? fmt(best) : "—") + "</td><td>" + (rate ? rate + "%" : "—") + "</td></tr>";
     }
-    if (f.length === 10) rows += "<tr><td>レベル5</td><td colspan='2'>先生の合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
+    if (f.length >= 10) rows += "<tr><td>レベル5</td><td colspan='2'>ふよみテスト合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
+    if (f.length === 11) rows += "<tr><td>レベル5</td><td colspan='2'>⭐ 演奏合格 <b>" + (parseInt(f[10], 10) || 0) + "</b> 曲</td></tr>";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>';
@@ -2276,7 +2298,7 @@ window.fyLineBtn = function (text, label, bg) {
     return out;
   }
   function normName(s) { return String(s || "").normalize("NFKC").replace(/\s+/g, ""); }
-  function codeOf(name, c) { return c + "-" + signOf("PASS|" + normName(name) + "|" + c); }
+  function codeOf(name, c, kind) { return c + "-" + signOf((kind === "play" ? "PLAY|" : "PASS|") + normName(name) + "|" + c); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function $(id) { return document.getElementById(id); }
   function songs() {
@@ -2328,7 +2350,10 @@ window.fyLineBtn = function (text, label, bg) {
         '<input type="text" id="fuName" class="modal-input" style="font-size:16px;" placeholder="例：たろう">' +
         '<div id="fuNames" style="margin:4px 0;"></div>' +
         hr('② ごうかくコードを だす（レベル5）') +
-        '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">ごうかくした きょくに チェック</div>' +
+        '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">どちらの ごうかく？</div>' +
+        '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="pass" checked style="width:18px;height:18px;"> ✅ ふよみテスト ごうかく</label>' +
+        '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="play" style="width:18px;height:18px;"> ⭐ えんそう ごうかく（先生が うたえる えんそう）</label>' +
+        '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">ごうかくした きょくに チェック</div>' +
         '<div id="fuSongs"></div>' +
         '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;" id="fuPassBtn">ごうかくコードを つくる</button>' +
         '<div id="fuPassOut"></div>' +
@@ -2379,8 +2404,9 @@ window.fyLineBtn = function (text, label, bg) {
         remember(name); showNames();
         picked.forEach(function (c) {
           var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; });
-          var code = codeOf(name, c), url = appUrl() + "?pass=" + code;
-          card(name + " さん、「" + title + "」 ごうかく！🎉\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）", out);
+          var kindEl = document.querySelector('input[name="fuKind"]:checked'), kind = kindEl ? kindEl.value : "pass";
+          var code = codeOf(name, c, kind), url = appUrl() + "?pass=" + code;
+          card(name + " さん、「" + title + "」 " + (kind === "play" ? "えんそう ごうかく！⭐" : "ごうかく！🎉") + "\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）", out);
         });
       });
       $("fuRestBtn").addEventListener("click", function () {
