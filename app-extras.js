@@ -1,6 +1,9 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
-window.fyLineBtn = function (text, label, bg) {
-  return '<a href="https://line.me/R/msg/text/?' + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+/* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
+window.FY_OA = "@892rfjzh";
+/* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
+window.fyLineBtn = function (text, label, bg, toOA) {
+  return '<a href="' + (toOA ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -8,7 +11,7 @@ window.fyAppLink = function (kind, value) {
 };
 /* 生徒 → 先生：先生が リンクを タップすると、コードを じどうで かくにん */
 window.fyLineCheck = function (text, label, bg) {
-  return window.fyLineBtn(text + "\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n" + window.fyAppLink("check", text), label, bg);
+  return window.fyLineBtn(text + "\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n" + window.fyAppLink("check", text), label, bg, true);
 };
 /* コード → 記録を もどす リンク */
 window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを タップすると、きろくが もどるよ\n" + window.fyAppLink("restore", code); };
@@ -1243,7 +1246,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '</div>' +
         '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #eadcc8;font-size:11px;color:#806c5a;line-height:1.6;">📌 解約のご連絡は、毎月<b>25日まで</b>にお願いします。26日以降のご連絡は、翌月の解約になります。<br>' +
         '<b style="color:#c62828;">いまボタンを押すと、' + cx.when + '</b>' +
-        window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）', '✉ 解約のご連絡（公式LINEへ送信）', '#9e9e9e') + '</div>';
+        window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）', '✉ 解約のご連絡（公式LINEへ送信）', '#9e9e9e', true) + '</div>';
       html += '</div>';
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
