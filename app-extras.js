@@ -2117,12 +2117,77 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       return n;
     } catch (e) { return 0; }
   }
+  /* ---- のびた きろく（一発正解率・20問ぜんぶ一発・合格レベル）と 賞 ---- */
+  function evLogOf(idx) {
+    try { var a = JSON.parse(localStorage.getItem("fy_log_" + idx) || "[]"); return Array.isArray(a) ? a.filter(function (e) { return e && typeof e.t === "number" && e.c !== "do"; }) : []; } catch (e) { return []; }
+  }
+  function evAvg(a) { return a.length ? Math.round(a.reduce(function (s, e) { return s + e.a; }, 0) / a.length) : -1; }
+  function clearedCount(idx) {
+    var n = 0;
+    try { ["treble", "bass", "all"].forEach(function (c) { for (var l = 1; l <= 5; l++) if (hasLevelCleared(idx, c, l)) n++; }); } catch (e) {}
+    return n;
+  }
+  function evSnapKey(idx) { return "fy_evbase_" + idx + "_" + EVENT.id; }
+  /* イベントが はじまる前は、合格レベルの かずを まいにち 控えておく（はじまったら 止める） */
+  function evSnap() {
+    try {
+      if (todayS() >= EVENT.start) return;
+      profiles.forEach(function (n, idx) {
+        if (!isRegistered(idx)) return;
+        localStorage.setItem(evSnapKey(idx), JSON.stringify({ lv: clearedCount(idx), d: todayS() }));
+      });
+    } catch (e) {}
+  }
+  function evGrowth(idx) {
+    var startMs = new Date(EVENT.start + "T00:00:00").getTime(), endMs = new Date(EVENT.end + "T23:59:59").getTime();
+    var log = evLogOf(idx);
+    var before = log.filter(function (e) { return e.t < startMs; }).slice(-10);
+    var during = log.filter(function (e) { return e.t >= startMs && e.t <= endMs; });
+    var perf = during.filter(function (e) { return e.n === 20 && e.a === 100; }).length;
+    var lv1 = clearedCount(idx), lv0 = -1;
+    try { var sn = JSON.parse(localStorage.getItem(evSnapKey(idx)) || "null"); if (sn && typeof sn.lv === "number") lv0 = sn.lv; } catch (e) {}
+    if (lv0 < 0) {   /* 控えが ないときは、ログから おおよそ もとめる */
+      var seenBefore = {}, seenNew = {};
+      log.forEach(function (e) {
+        if (e.n === 20 && e.a >= 90) {
+          var k = e.c + "|" + e.l;
+          if (e.t < startMs) seenBefore[k] = 1; else if (e.t <= endMs) seenNew[k] = 1;
+        }
+      });
+      var nw = Object.keys(seenNew).filter(function (k) { return !seenBefore[k]; }).length;
+      lv0 = Math.max(0, lv1 - nw);
+    }
+    return { rb: evAvg(before), rd: evAvg(during), nd: during.length, perf: perf, lv0: lv0, lv1: lv1 };
+  }
+  function evAwardOf(g) {
+    var c = [];
+    var up = (g.lv0 >= 0) ? g.lv1 - g.lv0 : 0;
+    if (up >= 1) c.push({ s: up, name: "🚀 レベルアップ賞", d: "ごうかくした レベル " + g.lv0 + " → " + g.lv1 });
+    var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
+    if (ga !== null && ga >= 5) c.push({ s: ga / 10, name: "🎯 せいかいりつ のびのび賞", d: "一発せいかいりつ " + g.rb + "% → " + g.rd + "%" });
+    if (g.perf >= 1) c.push({ s: g.perf / 3, name: "✅ ぜんぶ せいかい賞", d: "20問 ぜんぶ 一発せいかい " + g.perf + "回" });
+    var best = null;
+    c.forEach(function (x) { if (!best || x.s > best.s) best = x; });
+    return best || { name: "💮 れんしゅう がんばった賞", d: "さいごまで れんしゅう がんばったね" };
+  }
+  window.fyEvGrowthHtml = function (g, who, pre) {
+    var aw = evAwardOf(g), up = g.lv0 >= 0 ? g.lv1 - g.lv0 : null;
+    var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
+    var box = "background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px 8px;margin-top:6px;font-size:13px;line-height:1.7;text-align:left;";
+    return '<div style="' + box + '"><b>📈 のびた きろく</b><br>' +
+      '🎯 一発せいかいりつ：' + (g.rb >= 0 ? g.rb + "%" : "—") + " → " + (g.rd >= 0 ? g.rd + "%" : "—") + (ga !== null ? "（" + (ga >= 0 ? "+" : "") + ga + "）" : "") + '<br>' +
+      '✅ 20問 ぜんぶ 一発せいかい：<b>' + g.perf + '</b> 回<br>' +
+      '🚀 ごうかくした レベル：' + g.lv0 + " → " + g.lv1 + (up !== null ? "（+" + up + "）" : "") + '</div>' +
+      (pre ? '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:14px;">🏅 賞は イベントが はじまってから 決まるよ！<br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + md(EVENT.start) + 'から がんばろうね</span></div>' : '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:16px;">🏅 ' + (who ? who + "さんの 賞" : "きみの 賞") + '<br><span style="font-size:20px;">' + aw.name + '</span><br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + aw.d + '</span></div>');
+  };
+  evSnap();
   function makeEventCode(idx) {
     var d = new Date(), stamp = todayS().replace(/-/g, "") + p2(d.getHours()) + p2(d.getMinutes());
     var f = ["FYE1", String(profiles[idx] || ""), EVENT.id, stamp, String(practiceDays(idx))];
     for (var l = 1; l <= 4; l++) { var r = getEv(idx, l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
     f.push(String(evPassCount(idx)));
     f.push(String(evPlayCount(idx)));
+    var g = evGrowth(idx); f.push([g.rb, g.rd, g.nd, g.perf, g.lv0, g.lv1].join(","));
     var payload = f.join("|");
     return { code: "FYE1." + b64e(payload) + "." + sign2(payload), stamp: stamp };
   }
@@ -2152,6 +2217,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:18px;font-weight:900;text-align:center;">🏆 ' + EVENT.title + '</div>' +
       '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
       '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px;text-align:center;font-size:14px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:24px;font-weight:900;color:#ff5722;">' + practiceDays(idx) + '</span> 日</div>' +
+      window.fyEvGrowthHtml(evGrowth(idx), "", todayS() < EVENT.start) +
       '<div style="margin-top:8px;font-size:13px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく（レジェンドへの みち）</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0;"><tr><th style="' + th + '"></th><th style="' + th + '">ノーミスの ベスト</th><th style="' + th + '">のびた</th></tr>' + rows + '</table>' +
       (!isMaster(idx) && !anyT ? '<div style="font-size:12px;color:#806c5a;">ふよみマスターに なると、レジェンドへの みちの タイムも のせられるよ！</div>' : '') +
@@ -2228,7 +2294,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try { payload = b64dec(parts[1]); } catch (e) { return bad("コードを 読めません（切れていませんか？）"); }
     if (signOf(payload) !== parts[2]) return bad("しるしが あいません（書きかえられたか、途中で 切れています）");
     var f = payload.split("|");
-    if (f[0] !== "FYE1" || (f.length !== 9 && f.length !== 10 && f.length !== 11)) return bad("コードの 中みが ちがいます");
+    if (f[0] !== "FYE1" || (f.length !== 9 && f.length !== 10 && f.length !== 11 && f.length !== 12)) return bad("コードの 中みが ちがいます");
     var st = f[3], when = st.slice(0, 4) + "/" + (+st.slice(4, 6)) + "/" + (+st.slice(6, 8)) + " " + st.slice(8, 10) + ":" + st.slice(10, 12);
     var rows = "";
     for (var l = 1; l <= 4; l++) {
@@ -2236,10 +2302,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       rows += "<tr><td>レベル" + l + "</td><td>" + (best ? fmt(best) : "—") + "</td><td>" + (rate ? rate + "%" : "—") + "</td></tr>";
     }
     if (f.length >= 10) rows += "<tr><td>レベル5</td><td colspan='2'>ふよみテスト合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
-    if (f.length === 11) rows += "<tr><td>レベル5</td><td colspan='2'>⭐ 演奏合格 <b>" + (parseInt(f[10], 10) || 0) + "</b> 曲</td></tr>";
+    if (f.length >= 11) rows += "<tr><td>レベル5</td><td colspan='2'>⭐ 演奏合格 <b>" + (parseInt(f[10], 10) || 0) + "</b> 曲</td></tr>";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
-      '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "");
   };
 
   try {
