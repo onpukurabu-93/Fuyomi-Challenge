@@ -842,7 +842,7 @@ function renderScore(bars, beatsPerBar, opt) {
       (sn ? '<button class="btn" id="seenBtn" style="background:#7e57c2;width:78%;margin-top:10px;padding:12px;font-size:15px;">📖 いままでの きょく（' + sn + '）</button>' : '') +
       '<button class="btn back" id="backBtn2">もどる</button>';
     if (sn) document.getElementById("seenBtn").addEventListener("click", showSeenList);
-    document.getElementById("go").addEventListener("click", beginCount);
+    document.getElementById("go").addEventListener("click", function () { try { if (level !== 5 && !pianoOn && localStorage.getItem("fy_piano_pref") === "1" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) pianoStart(); } catch (e) {} beginCount(); });
     document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
   }
   window.__beeps = [];
@@ -1151,7 +1151,7 @@ function renderScore(bars, beatsPerBar, opt) {
   }
   try { var sv = localStorage.getItem("fy_piano_sens"); if (sv) { document.getElementById("pianoSens").value = sv; pThr = +sv; } } catch (e) {}
   document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
-  document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) pianoStop(); else pianoStart(); });
+  document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) { pianoStop(); try { localStorage.setItem("fy_piano_pref", "0"); } catch (e) {} } else { pianoStart(); try { localStorage.setItem("fy_piano_pref", "1"); } catch (e) {} } });
   window.__pass = { apply: applyPass, sig: passSig, get: getPass, count: passCount };
   window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, nameOf: nameOf };
   window.__piano = { on: function () { return pianoOn; } };
