@@ -2141,7 +2141,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   function evGrowth(idx) {
     var startMs = new Date(EVENT.start + "T00:00:00").getTime(), endMs = new Date(EVENT.end + "T23:59:59").getTime();
     var log = evLogOf(idx);
-    var before = log.filter(function (e) { return e.t < startMs; }).slice(-10);
+    var pS = new Date(EVENT.pStart + "T00:00:00").getTime(), pE = new Date(EVENT.pEnd + "T23:59:59").getTime();
+    var before = log.filter(function (e) { return e.t >= pS && e.t <= pE; });          /* れんしゅう期間の きろく */
+    if (!before.length) before = log.filter(function (e) { return e.t < startMs; }).slice(-10);   /* なければ、イベント前の 直近10回 */
     var during = log.filter(function (e) { return e.t >= startMs && e.t <= endMs; });
     var perf = during.filter(function (e) { return e.n === 20 && e.a === 100; }).length;
     var lv1 = clearedCount(idx), lv0 = -1;
