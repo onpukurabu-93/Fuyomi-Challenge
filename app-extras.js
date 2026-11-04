@@ -1235,7 +1235,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         ((typeof window.fyParentChunk === "function") ? window.fyParentChunk(idx) : '') +
         GR + '<b>💮 今週のハンコ</b> ' + ((typeof window.fyParentStamps === "function") ? window.fyParentStamps(idx) : "") + '</div>' +
         GR + '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') + '</div>' +
-        '</div>';
+        '</div>' +
+        '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #eadcc8;font-size:11px;color:#806c5a;line-height:1.6;">📌 解約のご連絡は、毎月<b>25日まで</b>にお願いします。26日以降のご連絡は、翌月の解約になります。' +
+        window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。', '✉ 解約のご連絡（LINE）', '#9e9e9e') + '</div>';
       html += '</div>';
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
