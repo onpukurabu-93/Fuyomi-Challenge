@@ -115,8 +115,11 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
 <script src="event_config.js"></script>
 <script>
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
-window.fyLineBtn = function (text, label, bg) {
-  return '<a href="https://line.me/R/msg/text/?' + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+/* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
+window.FY_OA = "@892rfjzh";
+/* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
+window.fyLineBtn = function (text, label, bg, toOA) {
+  return '<a href="' + (toOA ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -124,7 +127,7 @@ window.fyAppLink = function (kind, value) {
 };
 /* 生徒 → 先生：先生が リンクを タップすると、コードを じどうで かくにん */
 window.fyLineCheck = function (text, label, bg) {
-  return window.fyLineBtn(text + "\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n" + window.fyAppLink("check", text), label, bg);
+  return window.fyLineBtn(text + "\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n" + window.fyAppLink("check", text), label, bg, true);
 };
 /* コード → 記録を もどす リンク */
 window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを タップすると、きろくが もどるよ\n" + window.fyAppLink("restore", code); };
