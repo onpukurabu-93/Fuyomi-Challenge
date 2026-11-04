@@ -2264,7 +2264,7 @@ window.fyLineBtn = function (text, label, bg) {
   try { initProfiles(); } catch (e) {}
 })();
 
-/* ===== 先生用：ごうかくコードを アプリの中で つくる（LINEで おくる） ===== */
+/* ===== 先生用：コードの ひとつの はこ（なまえは 1か所。だす／しらべる） ===== */
 (function () {
   var SALT = "fuyomi-2026", CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   var FALLBACK = [["01","アマリリス"],["02","おおきな くりの きの したで"],["03","はるの おがわ"],["04","はるが きた"],["05","あめ こんこん"],["06","いけの こい"],["07","ふじさん"],["08","ロンドンばし"],["09","きんこんしき"],["10","ゆうやけ こやけ"],["11","かえるの がっしょう"]];
@@ -2278,6 +2278,7 @@ window.fyLineBtn = function (text, label, bg) {
   function normName(s) { return String(s || "").normalize("NFKC").replace(/\s+/g, ""); }
   function codeOf(name, c) { return c + "-" + signOf("PASS|" + normName(name) + "|" + c); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function $(id) { return document.getElementById(id); }
   function songs() {
     try {
       var l = JSON.parse(localStorage.getItem("fy_song_list") || "[]");
@@ -2288,71 +2289,140 @@ window.fyLineBtn = function (text, label, bg) {
   function savedNames() {
     var n = [];
     try { n = JSON.parse(localStorage.getItem("sensei_names") || "[]") || []; } catch (e) {}
-    try { if (typeof profiles !== "undefined") profiles.forEach(function (p) { if (p && n.indexOf(p) === -1) n.push(p); }); } catch (e) {}
+    try { if (typeof profiles !== "undefined") profiles.forEach(function (p) { if (p && !/^せいと[0-9]+$/.test(p) && n.indexOf(p) === -1) n.push(p); }); } catch (e) {}
     return n;
   }
+  function remember(name) {
+    try { var n = JSON.parse(localStorage.getItem("sensei_names") || "[]") || []; if (n.indexOf(name) === -1) { n.push(name); localStorage.setItem("sensei_names", JSON.stringify(n)); } } catch (e) {}
+  }
   function appUrl() { try { return new URL("chunk_proto.html", location.href).href; } catch (e) { return "https://onpukurabu-93.github.io/Fuyomi-Challenge/chunk_proto.html"; } }
+  function copyBtn(text) {
+    var cp = document.createElement("button"); cp.className = "modal-btn"; cp.style.cssText = "background:#5c6bc0;font-size:13px;padding:8px;"; cp.textContent = "📋 コピー";
+    cp.addEventListener("click", function () {
+      var done = function () { cp.textContent = "✅ コピーした！"; };
+      function fb() { var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); done(); } catch (e) {} t.remove(); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb); else fb();
+    });
+    return cp;
+  }
+  function card(text, parent) {
+    var wrap = document.createElement("div"); wrap.style.cssText = "background:#fff;border-radius:10px;padding:8px;margin:8px 0;";
+    var tx = document.createElement("div"); tx.style.cssText = "font-size:12px;white-space:pre-wrap;word-break:break-all;"; tx.textContent = text; wrap.appendChild(tx);
+    if (window.fyLineBtn) { var h = document.createElement("div"); h.innerHTML = window.fyLineBtn(text, "LINEで おくる"); wrap.appendChild(h); }
+    wrap.appendChild(copyBtn(text));
+    parent.appendChild(wrap);
+  }
+  function hr(t) { return '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin:14px 0 4px;border-top:2px solid #c8e6c9;padding-top:10px;">' + t + '</div>'; }
 
   function build() {
-    var t3 = document.getElementById("teacherTab3");
-    if (!t3 || document.getElementById("fyPassMk")) return;
-    var box = document.createElement("div");
-    box.id = "fyPassMk";
-    box.style.cssText = "background:#e8f5e9;border:2px solid #43a047;border-radius:12px;padding:8px;margin-bottom:14px;text-align:left;";
-    box.innerHTML =
-      '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin-bottom:4px;">🎼 レベル5：ごうかくコードを つくる</div>' +
-      '<div style="font-size:11px;color:#806c5a;margin-bottom:4px;">生徒の なまえ（アプリに でている なまえと おなじに）</div>' +
-      '<input type="text" id="fpName" class="modal-input" style="font-size:16px;" placeholder="例：たろう">' +
-      '<div id="fpNames" style="margin:4px 0;"></div>' +
-      '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">ごうかくした きょく（えらぶ）</div>' +
-      '<div id="fpSongs"></div>' +
-      '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;" id="fpMk">コードを つくる</button>' +
-      '<div id="fpRes"></div>';
-    t3.insertBefore(box, t3.firstChild);
-    var sd = document.getElementById("fpSongs");
-    songs().forEach(function (s) {
-      var l = document.createElement("label");
-      l.style.cssText = "display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:3px 0;padding:6px;background:#fff;border-radius:8px;";
-      l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;"> ' + Number(s[0]) + '．' + esc(s[1]);
-      sd.appendChild(l);
-    });
+    var t3 = $("teacherTab3");
+    if (!t3) return;
+    var ui = $("fyUni");
+    if (!ui) {
+      ui = document.createElement("div");
+      ui.id = "fyUni";
+      ui.style.cssText = "background:#e8f5e9;border:2px solid #43a047;border-radius:12px;padding:8px;margin-bottom:14px;text-align:left;";
+      ui.innerHTML =
+        '<div style="font-size:15px;font-weight:900;color:#2e7d32;">🔑 コード（ここに ぜんぶ あります）</div>' +
+        '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">① 生徒の なまえ（ひらがな・すうじ。アプリと おなじに）</div>' +
+        '<input type="text" id="fuName" class="modal-input" style="font-size:16px;" placeholder="例：たろう">' +
+        '<div id="fuNames" style="margin:4px 0;"></div>' +
+        hr('② ごうかくコードを だす（レベル5）') +
+        '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">ごうかくした きょくに チェック</div>' +
+        '<div id="fuSongs"></div>' +
+        '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;" id="fuPassBtn">ごうかくコードを つくる</button>' +
+        '<div id="fuPassOut"></div>' +
+        hr('③ 復元コードを だす（機種変更の とき）') +
+        '<details id="fuRestoreBox"><summary style="font-size:13px;font-weight:800;color:#3949ab;padding:6px 0;">ひらく</summary>' +
+        '<div style="text-align:left;font-size:11px;color:#806c5a;">マスターの たっせい日（とっていなければ 空らん）</div>' +
+        '<div style="font-size:11px;">ト音記号マスター<input id="fuDt" class="modal-input" type="date"></div>' +
+        '<div style="font-size:11px;">ヘ音記号マスター<input id="fuDb" class="modal-input" type="date"></div>' +
+        '<div style="font-size:11px;">ふよみマスター<input id="fuDm" class="modal-input" type="date"></div>' +
+        '<input id="fuTot" class="modal-input" type="number" min="0" placeholder="20問 全部一発正解の 回数">' +
+        '<input id="fuRb" class="modal-input" type="number" min="0" placeholder="連続の 最高（回）">' +
+        '<input id="fuRn" class="modal-input" type="number" min="0" placeholder="連続の いま（回）">' +
+        '<input id="fuTp" class="modal-input" type="number" min="0" placeholder="トレーニングポイント（いま 何p）">' +
+        '<div style="font-size:11px;color:#806c5a;">合格した レベル（0〜5）</div>' +
+        '<div style="display:flex;gap:4px;margin-bottom:6px;">' +
+          '<select id="fuLt" class="modal-input" style="margin:0;"><option value="0">ト音 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+          '<select id="fuLb" class="modal-input" style="margin:0;"><option value="0">ヘ音 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+          '<select id="fuLa" class="modal-input" style="margin:0;"><option value="0">全カード 0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>' +
+        '</div>' +
+        '<button class="modal-btn" style="background:#5c6bc0;font-size:13px;padding:9px;" id="fuRestBtn">復元コードを つくる</button>' +
+        '<div id="fuRestOut"></div></details>' +
+        hr('④ コードを しらべる') +
+        '<div id="fuCheckSlot"></div>' +
+        '<details id="fuOldBox" style="margin-top:8px;"><summary style="font-size:12px;font-weight:800;color:#806c5a;padding:6px 0;">15日より 前の コードを しらべる（ふだんは つかいません）</summary>' +
+        '<div style="font-size:11px;color:#806c5a;margin-bottom:4px;">なまえは ① を つかいます。しゅるい・ひづけ を えらんで、正しい コードを 出して くらべます。</div>' +
+        '<select id="fuType" class="modal-input"><option value="">▼ しゅるいを えらんでね</option><option value="treble">ト音記号マスター</option><option value="bass">ヘ音記号マスター</option><option value="master">ふよみマスター</option><option value="legend5">ふよみレジェンド（100曲）</option><option value="maestro">ふよみマエストロ（100曲）</option><option value="exchange">ポイント こうかん</option></select>' +
+        '<input id="fuDate" class="modal-input" type="date">' +
+        '<div style="font-size:11px;color:#806c5a;">「ポイント こうかん」のときだけ、スクショの 数字を 入れてね</div>' +
+        '<div style="display:flex;gap:4px;"><input id="fuAmt" class="modal-input" type="number" min="0" placeholder="こうかんした p"><input id="fuRest" class="modal-input" type="number" min="0" placeholder="のこり p"></div>' +
+        '<button class="modal-btn" style="background:#5c6bc0;font-size:13px;padding:9px;" id="fuOldBtn">正しい コードを 出す</button>' +
+        '<div id="fuOldOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0;color:#3949ab;word-break:break-all;"></div></details>';
+      t3.insertBefore(ui, t3.firstChild);
+      var sd = $("fuSongs");
+      songs().forEach(function (s) {
+        var l = document.createElement("label");
+        l.style.cssText = "display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:3px 0;padding:6px;background:#fff;border-radius:8px;";
+        l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;"> ' + Number(s[0]) + '．' + esc(s[1]);
+        sd.appendChild(l);
+      });
+      var dt = $("fuDate"); if (dt) { var d0 = new Date(); dt.value = d0.getFullYear() + "-" + ("0" + (d0.getMonth() + 1)).slice(-2) + "-" + ("0" + d0.getDate()).slice(-2); }
+      function nameVal() { return $("fuName").value.trim().normalize("NFKC"); }
+      function needName(out) { var n = nameVal(); if (!n) { out.innerHTML = '<div style="padding:8px;">① の なまえを いれてね</div>'; return null; } return n; }
+      $("fuPassBtn").addEventListener("click", function () {
+        var out = $("fuPassOut"); out.innerHTML = "";
+        var name = needName(out); if (!name) return;
+        var picked = Array.prototype.slice.call(sd.querySelectorAll("input:checked")).map(function (x) { return x.value; });
+        if (!picked.length) { out.innerHTML = '<div style="padding:8px;">きょくを えらんでね</div>'; return; }
+        remember(name); showNames();
+        picked.forEach(function (c) {
+          var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; });
+          var code = codeOf(name, c), url = appUrl() + "?pass=" + code;
+          card(name + " さん、「" + title + "」 ごうかく！🎉\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）", out);
+        });
+      });
+      $("fuRestBtn").addEventListener("click", function () {
+        var out = $("fuRestOut"); out.innerHTML = "";
+        var name = needName(out); if (!name) return;
+        var map = { frName: name, frDt: $("fuDt").value, frDb: $("fuDb").value, frDm: $("fuDm").value, frTot: $("fuTot").value, frRb: $("fuRb").value, frRn: $("fuRn").value, frTp: $("fuTp").value, frLt: $("fuLt").value, frLb: $("fuLb").value, frLa: $("fuLa").value };
+        Object.keys(map).forEach(function (k) { var e = $(k); if (e) e.value = map[k]; });
+        if (typeof window.fyMakeRestore !== "function" || !$("frOut")) { out.innerHTML = '<div style="padding:8px;">いま つかえません</div>'; return; }
+        window.fyMakeRestore();
+        var code = $("frOut").value;
+        if (!/^FY2\./.test(code)) { out.innerHTML = '<div style="padding:8px;color:#c62828;">' + esc(code) + '</div>'; return; }
+        remember(name); showNames();
+        card(name + " さんの 復元コードです。\nアプリの「きろくと コード」に いれてね。\n" + code, out);
+      });
+      $("fuOldBtn").addEventListener("click", function () {
+        var out = $("fuOldOut"); out.textContent = "";
+        var name = nameVal(); if (!name) { out.textContent = "① の なまえを いれてね"; return; }
+        var map = { fcName: name, fcType: $("fuType").value, fcDate: $("fuDate").value, fcAmt: $("fuAmt").value, fcRest: $("fuRest").value };
+        Object.keys(map).forEach(function (k) { var e = $(k); if (e) e.value = map[k]; });
+        if (typeof window.fyCheckCode !== "function" || !$("fcOut")) { out.textContent = "いま つかえません"; return; }
+        window.fyCheckCode();
+        out.textContent = $("fcOut").textContent;
+      });
+    }
     function showNames() {
-      var nb = document.getElementById("fpNames"); nb.innerHTML = "";
+      var nb = $("fuNames"); if (!nb) return; nb.innerHTML = "";
       savedNames().forEach(function (x) {
         var b = document.createElement("button");
         b.style.cssText = "display:inline-block;border:none;border-radius:8px;background:#7e8aa0;color:#fff;font-size:13px;padding:6px 10px;margin:2px;";
-        b.textContent = x; b.addEventListener("click", function () { document.getElementById("fpName").value = x; });
+        b.textContent = x; b.addEventListener("click", function () { $("fuName").value = x; });
         nb.appendChild(b);
       });
     }
     showNames();
-    document.getElementById("fpMk").addEventListener("click", function () {
-      var name = document.getElementById("fpName").value.trim(), res = document.getElementById("fpRes"); res.innerHTML = "";
-      if (!name) { res.innerHTML = '<div style="padding:8px;">なまえを いれてね</div>'; return; }
-      var picked = Array.prototype.slice.call(sd.querySelectorAll("input:checked")).map(function (x) { return x.value; });
-      if (!picked.length) { res.innerHTML = '<div style="padding:8px;">きょくを えらんでね</div>'; return; }
-      try { var n = JSON.parse(localStorage.getItem("sensei_names") || "[]") || []; if (n.indexOf(name) === -1) { n.push(name); localStorage.setItem("sensei_names", JSON.stringify(n)); } } catch (e) {}
-      showNames();
-      picked.forEach(function (c) {
-        var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; });
-        var code = codeOf(name, c), url = appUrl() + "?pass=" + code;
-        var text = name + " さん、「" + title + "」 ごうかく！🎉\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）";
-        var wrap = document.createElement("div"); wrap.style.cssText = "background:#fff;border-radius:10px;padding:8px;margin:8px 0;";
-        var tx = document.createElement("div"); tx.style.cssText = "font-size:12px;white-space:pre-wrap;word-break:break-all;"; tx.textContent = text; wrap.appendChild(tx);
-        if (window.fyLineBtn) { var h = document.createElement("div"); h.innerHTML = window.fyLineBtn(text, "LINEで おくる"); wrap.appendChild(h); }
-        var cp = document.createElement("button"); cp.className = "modal-btn"; cp.style.cssText = "background:#5c6bc0;font-size:13px;padding:8px;"; cp.textContent = "📋 コピー";
-        cp.addEventListener("click", function () {
-          var done = function () { cp.textContent = "✅ コピーした！"; };
-          function fb() { var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); done(); } catch (e) {} t.remove(); }
-          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb); else fb();
-        });
-        wrap.appendChild(cp);
-        res.appendChild(wrap);
-      });
-    });
+    /* しらべる はこを ひとつに（貼るだけ）。ほかの 古い はこは かくす */
+    var any = $("fyAnyCheck"), slot = $("fuCheckSlot");
+    if (any && slot && any.parentNode !== slot) { any.style.margin = "0"; slot.appendChild(any); }
+    ["fyEventCheck", "fyStampTest", "fyPassMk"].forEach(function (id) { var e = $(id); if (e) e.style.display = "none"; });
+    if (t3.firstChild !== ui) t3.insertBefore(ui, t3.firstChild);
   }
   try { build(); } catch (e) {}
   var pr = window.renderTeacherView;
   if (typeof pr === "function") window.renderTeacherView = function () { var r = pr.apply(this, arguments); try { build(); } catch (e) {} return r; };
-  window.__fyPassMk = { code: codeOf, build: build };
+  window.__fyUni = { code: codeOf, build: build };
 })();
