@@ -751,8 +751,9 @@ function renderScore(bars, beatsPerBar, opt) {
     cur.setAttribute("x", p.x - 12); cur.setAttribute("y", p.base - 4 * renderScore.GAP - 28);
     cur.style.display = "";
     if (!noScroll) {
-      var r = cur.getBoundingClientRect(), want = r.top + window.pageYOffset - window.innerHeight * 0.28;
-      if (r.top < 70 || r.bottom > window.innerHeight - 130) { try { window.scrollTo({ top: Math.max(0, want), behavior: "smooth" }); } catch (e) { window.scrollTo(0, Math.max(0, want)); } }
+      /* よむ ところが 画面の したの ほう（60%より した）に くる まえに、うえの ほう（20%）へ うごかす */
+      var r = cur.getBoundingClientRect(), want = r.top + window.pageYOffset - window.innerHeight * 0.2;
+      if (r.top < 70 || r.bottom > window.innerHeight * 0.6) { try { window.scrollTo({ top: Math.max(0, want), behavior: "smooth" }); } catch (e) { window.scrollTo(0, Math.max(0, want)); } }
     }
   }
   function scStop() {
