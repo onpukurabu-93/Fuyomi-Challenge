@@ -746,13 +746,25 @@ function renderScore(bars, beatsPerBar, opt) {
     try { localStorage.setItem("fy_pass_" + PID, JSON.stringify(p)); } catch (e) {}
     return { ok: true, msg: "🎉 「" + sg.title + "」 ごうかく！" + (nw ? "" : "（もう ごうかくしているよ）"), song: sg };
   }
+  /* コードが ふくすう（「_」「,」「スペース」で くぎる）でも まとめて うけつける */
+  function applyPassMany(raw) {
+    var parts = String(raw || "").split(/[_,、\s+]+/).filter(function (x) { return x; });
+    if (parts.length <= 1) return applyPass(raw);
+    var msgs = [], okAny = false, last = null, bad = [];
+    parts.forEach(function (c) {
+      var r = applyPass(c);
+      if (r.ok) { okAny = true; last = r.song; msgs.push(r.msg); } else bad.push(r.msg);
+    });
+    if (!okAny) return { ok: false, msg: bad[0] || "コードが ちがうよ" };
+    return { ok: true, msg: msgs.concat(bad.length ? ["（" + bad.length + "つは うけとれなかったよ：" + bad[0] + "）"] : []).join("<br>"), song: last };
+  }
   /* 保護者ページが 曲の なまえを よめるように、曲の いちらんを のこしておく */
   try { localStorage.setItem("fy_song_list", JSON.stringify(SONGS.map(function (s) { return { c: s.c, title: s.title, kt: ({ amaryllis: "アマリリス", kuri: "大きな栗の木の下で", ogawa: "春の小川", harugakita: "春が来た", amekon: "雨こんこん", ikenokoi: "池の鯉", fujisan: "ふじ山", london: "ロンドン橋", kinkon: "金婚式", yuuyake: "夕焼け小焼け", kaeru: "かえるの合唱", kirakira: "きらきら星", hato: "鳩", hotaru: "蛍の光", musunde: "むすんでひらいて", usagi: "うさぎとかめ", donguri: "どんぐりころころ" })[s.id] || s.title }; }))); } catch (e) {}
   /* LINE の リンク（?pass=…）から ひらいたとき */
   var passBanner = "";
   try {
     var pm = location.search.match(/[?&]pass=([^&]+)/);
-    if (pm) { var pr = applyPass(decodeURIComponent(pm[1])); passBanner = pr.msg; try { history.replaceState(null, "", location.pathname); } catch (e2) {} }
+    if (pm) { var pr = applyPassMany(decodeURIComponent(pm[1])); passBanner = pr.msg; try { history.replaceState(null, "", location.pathname); } catch (e2) {} }
   } catch (e) {}
   if (passBanner) {
     var pbd = document.createElement("div");
@@ -789,7 +801,7 @@ function renderScore(bars, beatsPerBar, opt) {
     passBanner = "";
     sc.innerHTML = h;
     document.getElementById("passBtn").addEventListener("click", function () {
-      var r = applyPass(document.getElementById("passIn").value);
+      var r = applyPassMany(document.getElementById("passIn").value);
       if (r.ok) { passBanner = r.msg; showLevel5(); } else { var pmz = document.getElementById("passMsg"); pmz.style.color = "#d84a3a"; pmz.textContent = r.msg; }
     });
     Array.prototype.forEach.call(sc.querySelectorAll("button[data-i]"), function (b) {
@@ -1264,7 +1276,7 @@ function renderScore(bars, beatsPerBar, opt) {
   try { var sv = localStorage.getItem("fy_piano_sens"); if (sv) { document.getElementById("pianoSens").value = sv; pThr = +sv; } } catch (e) {}
   document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
   document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) { pianoStop(); try { localStorage.setItem("fy_piano_pref", "0"); } catch (e) {} } else { pianoStart(); try { localStorage.setItem("fy_piano_pref", "1"); } catch (e) {} } });
-  window.__pass = { apply: applyPass, sig: passSig, playSig: playSig, get: getPass, getPlay: getPlay, count: passCount, playCount: playCount };
+  window.__pass = { many: applyPassMany, apply: applyPass, sig: passSig, playSig: playSig, get: getPass, getPlay: getPlay, count: passCount, playCount: playCount };
   window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, notes: function () { return follow.notes; }, nameOf: nameOf };
   window.__piano = { on: function () { return pianoOn; } };
 
