@@ -1194,6 +1194,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<span style="color:#1565c0;font-weight:800;">■ 青い項目</span>：先生の復元コードで、戻せます。<br>' +
       '<span style="color:#9a9a9a;font-weight:800;">■ グレーの項目</span>：復元できません（復元した日から、また記録されます）。</div>';
     var any = false;
+    var cx = (function () {
+      var d = new Date(), day = d.getDate(), mo = d.getMonth() + 1;
+      if (day <= 25) return { when: mo + "月末で解約になります。" };
+      return { when: "25日を過ぎているため、" + (mo === 12 ? 1 : mo + 1) + "月末で解約になります。" };
+    })();
     profiles.forEach(function (n, idx) {
       if (!isRegistered(idx)) return;
       any = true;
@@ -1236,8 +1241,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         GR + '<b>💮 今週のハンコ</b> ' + ((typeof window.fyParentStamps === "function") ? window.fyParentStamps(idx) : "") + '</div>' +
         GR + '<b>🔥 練習した日の連続</b> ' + calculateStreak(idx) + '日　<b>🎵 6つのド最高点</b> ' + (doB ? doB.accuracy + '%' : '-') + '</div>' +
         '</div>' +
-        '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #eadcc8;font-size:11px;color:#806c5a;line-height:1.6;">📌 解約のご連絡は、毎月<b>25日まで</b>にお願いします。26日以降のご連絡は、翌月の解約になります。' +
-        window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。', '✉ 解約のご連絡（公式LINEへ送信）', '#9e9e9e') + '</div>';
+        '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #eadcc8;font-size:11px;color:#806c5a;line-height:1.6;">📌 解約のご連絡は、毎月<b>25日まで</b>にお願いします。26日以降のご連絡は、翌月の解約になります。<br>' +
+        '<b style="color:#c62828;">いまボタンを押すと、' + cx.when + '</b>' +
+        window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）', '✉ 解約のご連絡（公式LINEへ送信）', '#9e9e9e') + '</div>';
       html += '</div>';
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
