@@ -510,25 +510,32 @@ function renderScore(bars, beatsPerBar, opt) {
   var W = 400, GAP = 9, LEFT = 14, RIGHT = 388, SYSH = 120, TOP = 52;
   function yOf(n, base) { return base - n * GAP / 2; }
   function ns(tag, a, kids) { var s = "<" + tag; for (var k in a) s += " " + k + '="' + a[k] + '"'; return s + (kids === undefined ? "/>" : ">" + kids + "</" + tag + ">"); }
-  function nw(d) { return 12 + 11 * Math.sqrt(d / 0.5); }
+  /* 1だんの ながさ＝8ぱく（4/4は 2しょうせつ、2/4は 4しょうせつ）。1ぱくの はばは ぜんぶ おなじ。
+     2ぱくの おとは、1ぱくの おと 2つぶんの ながさに なる */
+  var PADL = 8, PADR = 6, MINGAP = 11, X0 = LEFT + 52 + 20;
+  var dmin = 99; bars.forEach(function (b) { b.forEach(function (q) { if (q[1] < dmin) dmin = q[1]; }); });
+  /* 1だんの しょうせつ数：ふつうは 8ぱくぶん。16分音符が あって せまい ときだけ へらす */
+  var NB = Math.max(1, Math.round(8 / beatsPerBar));
+  while (NB > 2 && ((RIGHT - X0 - (PADL + PADR) * NB) / (NB * beatsPerBar)) * dmin < 10) NB--;
+  var LINE_BEATS = NB * beatsPerBar;
+  var BW = (RIGHT - X0 - (PADL + PADR) * NB) / LINE_BEATS;
   var info = bars.map(function (b) {
-    var w = 10; b.forEach(function (q) { w += nw(q[1]); });
-    return { b: b, w: w };
+    var bt = 0; b.forEach(function (q) { bt += q[1]; });
+    return { b: b, beats: bt, w: PADL + PADR + bt * BW };
   });
-  var lines = [], cur = [], cw = 0;
+  var lines = [], cur = [], cb = 0;
   info.forEach(function (x) {
-    var avail = RIGHT - LEFT - 52 - (lines.length === 0 ? 20 : 0);
-    if (cur.length && cw + x.w > avail) { lines.push(cur); cur = []; cw = 0; }
-    cur.push(x); cw += x.w;
+    if (cur.length && cb + x.beats > LINE_BEATS + 1e-6) { lines.push(cur); cur = []; cb = 0; }
+    cur.push(x); cb += x.beats;
   });
   if (cur.length) lines.push(cur);
   var H = TOP + lines.length * SYSH, out = "", barNo = 0, noteIdx = 0, pos = [];
   lines.forEach(function (ln, li) {
     var base = TOP + li * SYSH + 60;
-    var x0 = LEFT + 52 + (li === 0 ? 20 : 0);
+    var x0 = X0;
     var avail = RIGHT - x0, tot = 0; ln.forEach(function (x) { tot += x.w; });
-    var sc = (li === lines.length - 1 && tot < avail * 0.8) ? 1 : avail / tot;
-    var xEnd = (li === lines.length - 1 && sc === 1) ? Math.min(RIGHT, x0 + tot + 8) : RIGHT;
+    var sc = 1;
+    var xEnd = (tot < avail * 0.8) ? Math.min(RIGHT, x0 + tot + 8) : RIGHT;   /* みじかい だん（さいしょの 1ぱく など）は、せんを そこで おわらせる */
     for (var i = 0; i < 5; i++) out += ns("line", { x1: LEFT, x2: xEnd, y1: base - i * GAP, y2: base - i * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
     out += ns("path", { d: SCORE_CLEF, fill: "#5b4636", transform: "translate(" + (LEFT + 4) + "," + (base + 15.9) + ") scale(0.056,-0.056) translate(-120,291)" });
     if (li === 0) {
@@ -539,12 +546,20 @@ function renderScore(bars, beatsPerBar, opt) {
     ln.forEach(function (bx) {
       barNo++;
       if (opt.barNums) out += ns("text", { x: x + 2, y: base - 4 * GAP - 14, "font-size": 9, fill: "#a08c74" }, String(barNo));
-      var cx = x + 8 * sc, tt = 0, objs = [];
+      var tt = 0, objs = [];
       bx.b.forEach(function (q) {
-        var d = q[1], w = nw(d) * sc;
-        objs.push({ n: q[0], d: d, nx: cx + w / 2 - 4, y: yOf(q[0], base), t: tt, grp: null });
-        cx += w; tt += d;
+        var d = q[1];
+        objs.push({ n: q[0], d: d, nx: x + PADL + 5 + tt * BW, y: yOf(q[0], base), t: tt, grp: null });
+        tt += d;
       });
+      /* おとが ぶつからない ように（16分音符など）、すこしだけ ずらす */
+      (function () {
+        var m = objs.length; if (m < 2) return;
+        var xs = objs.map(function (o) { return o.nx; }), lim = x + bx.w - PADR - 3;
+        for (var q1 = 1; q1 < m; q1++) xs[q1] = Math.max(xs[q1], xs[q1 - 1] + MINGAP);
+        if (xs[m - 1] > lim) { xs[m - 1] = lim; for (var q2 = m - 2; q2 >= 0; q2--) xs[q2] = Math.min(xs[q2], xs[q2 + 1] - MINGAP); }
+        objs.forEach(function (o, q3) { o.nx = xs[q3]; });
+      })();
       /* 連桁：おなじ 1ぱく の なかの 8分・16分音符を つなぐ */
       var groups = [], gcur = [];
       objs.forEach(function (o) {
@@ -633,14 +648,14 @@ function renderScore(bars, beatsPerBar, opt) {
         }
         out += g;
       });
-      x += bx.w * sc;
+      x += bx.w;
       var fin = (li === lines.length - 1 && bx === ln[ln.length - 1]);
       if (fin) out += ns("line", { x1: x - 5, x2: x - 5, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
       out += ns("line", { x1: x, x2: x, y1: base, y2: base - 4 * GAP, stroke: "#5b4636", "stroke-width": fin ? 3.4 : 1.2 });
     });
   });
   renderScore.pos = pos; renderScore.GAP = GAP;
-  var hit = ns("rect", { id: "sc-cur", x: 0, y: 0, width: 28, height: 4 * GAP + 56, rx: 8, fill: "rgba(255,112,67,0.30)", stroke: "#ff7043", "stroke-width": 1.5, style: "display:none;pointer-events:none" });
+  var hit = ns("rect", { id: "sc-cur", x: 0, y: 0, width: 24, height: 4 * GAP + 56, rx: 8, fill: "rgba(255,112,67,0.30)", stroke: "#ff7043", "stroke-width": 1.5, style: "display:none;pointer-events:none" });
   pos.forEach(function (p, i) { hit += ns("rect", { "class": "sn", "data-i": i, x: p.x - 12, y: p.base - 4 * GAP - 28, width: 24, height: 4 * GAP + 56, fill: "transparent", style: "cursor:pointer" }); });
   out += hit;
   return ns("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "楽譜" }, out);
@@ -718,7 +733,7 @@ function renderScore(bars, beatsPerBar, opt) {
   function curMove(i, noScroll) {
     var cur = document.getElementById("sc-cur"), p = renderScore.pos && renderScore.pos[i];
     if (!cur || !p) { if (cur) cur.style.display = "none"; return; }
-    cur.setAttribute("x", p.x - 14); cur.setAttribute("y", p.base - 4 * renderScore.GAP - 28);
+    cur.setAttribute("x", p.x - 12); cur.setAttribute("y", p.base - 4 * renderScore.GAP - 28);
     cur.style.display = "";
     if (!noScroll) {
       var r = cur.getBoundingClientRect(), want = r.top + window.pageYOffset - window.innerHeight * 0.28;
