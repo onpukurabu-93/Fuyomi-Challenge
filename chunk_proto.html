@@ -743,12 +743,11 @@ function renderScore(bars, beatsPerBar, opt) {
       var c = ensureCtx();
       if (c) {
         try { if (c.state !== "running") c.resume(); } catch (e) {}
-        var t = c.currentTime + 0.05, mk = function (f, t0, d, v) { var o = c.createOscillator(), g = c.createGain(); o.type = "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + d + 0.05); };
-        [[523, 0], [659, 0.15], [784, 0.3], [1047, 0.45]].forEach(function (a) { mk(a[0], t + a[1], 0.25, 0.25); });
-        [523, 659, 784, 1047].forEach(function (f) { mk(f, t + 0.7, 0.7, 0.15); });
+        var t = c.currentTime + 0.05;
+        playSeq(["fanfare"]);
         var n = Math.floor(c.sampleRate * 1.6), buf = c.createBuffer(1, n, c.sampleRate), ch = buf.getChannelData(0);
         for (var k = 0; k < n; k++) { var tt = k / c.sampleRate, ph = (tt * 9) % 1; ch[k] = (Math.random() * 2 - 1) * Math.pow(1 - ph, 5) * Math.min(1, tt * 6) * Math.max(0, 1 - tt / 1.6); }
-        var src = c.createBufferSource(), g2 = c.createGain(); src.buffer = buf; g2.gain.value = 0.5; src.connect(g2); g2.connect(c.destination); src.start(t + 1.0);
+        var src = c.createBufferSource(), g2 = c.createGain(); src.buffer = buf; g2.gain.value = 0.5; src.connect(g2); g2.connect(c.destination); src.start(t + 0.6);
       }
     } catch (e) {}
     var d = document.createElement("div"); d.id = "scDoneBox";
