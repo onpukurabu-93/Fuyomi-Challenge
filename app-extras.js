@@ -2,6 +2,16 @@
 window.fyLineBtn = function (text, label, bg) {
   return '<a href="https://line.me/R/msg/text/?' + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
 };
+/* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
+window.fyAppLink = function (kind, value) {
+  try { var u = new URL("index.html", location.href); u.search = ""; u.hash = ""; return u.href + "?" + kind + "=" + encodeURIComponent(value); } catch (e) { return ""; }
+};
+/* 生徒 → 先生：先生が リンクを タップすると、コードを じどうで かくにん */
+window.fyLineCheck = function (text, label, bg) {
+  return window.fyLineBtn(text + "\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n" + window.fyAppLink("check", text), label, bg);
+};
+/* コード → 記録を もどす リンク */
+window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを タップすると、きろくが もどるよ\n" + window.fyAppLink("restore", code); };
 (function () {
   /* ★ マスター音声を、ファンファーレのはじまりから何ミリ秒後に鳴らすか（4000 = 4秒） */
   var MASTER_DELAY_MS = 4000;
@@ -322,7 +332,7 @@ window.fyLineBtn = function (text, label, bg) {
       '<div style="font-size:13px;margin:2px 0;">' + dmd(rec) + '</div>' +
       '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
       '</div>' +
-      window.fyLineBtn('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code) +
+      window.fyLineCheck('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code) +
       '<div style="height:8px"></div>';
   }
 
@@ -448,8 +458,15 @@ window.fyLineBtn = function (text, label, bg) {
       String(o.tp | 0)].join("|");
     return "FY2." + b64enc(payload) + "." + signOf(payload);
   }
+  /* LINEの メッセージを ぜんぶ 貼っても、コードの ところだけ ひろう（前後の 文字や 改行は むし） */
+  function pickCode(raw) {
+    var t = String(raw || "").normalize("NFKC"), i = t.search(/FY(?:C1|1|2)\./);
+    if (i < 0) return t.replace(/\s+/g, "");
+    var u = t.slice(i).replace(/\s+/g, ""), m = u.match(/^FY(?:C1|1|2)\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/);
+    return m ? m[0] : u;
+  }
   function parseRestoreCode(raw) {
-    var code = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+    var code = pickCode(raw);
     var parts = code.split(".");
     if (parts.length !== 3 || (parts[0] !== "FY1" && parts[0] !== "FY2")) return { err: "コードの形が正しくありません。先生から届いたコードを、そのまま貼ってください。" };
     var payload;
@@ -533,7 +550,7 @@ window.fyLineBtn = function (text, label, bg) {
     return out;
   }
   function applyChunkRestore(raw, idx) {
-    var code = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+    var code = pickCode(raw);
     var parts = code.split(".");
     if (parts.length !== 3 || parts[0] !== "FYC1") return { ok: false, msg: "コードの形が正しくありません。" };
     var payload;
@@ -597,7 +614,7 @@ window.fyLineBtn = function (text, label, bg) {
       '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">あたらしい たんまつに かえる ときに つかいます。<br>「レジェンドへの みち」の きろくと、ハンコの 日を うつせます。<br>プレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
       '<textarea id="fyBkCode" readonly style="width:100%;height:110px;font-size:10px;padding:6px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;word-break:break-all;-webkit-user-select:text;user-select:text;">' + code + '</textarea>' +
       '<button id="fyBkCopy" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#5c6bc0;color:#fff;">コードを コピー</button>' +
-      window.fyLineBtn('【ふよみ】' + (profiles[idx] || '') + ' さんの きろくの うつしコード\n' + code, 'LINEで じぶんに おくる') +
+      window.fyLineBtn(window.fyRestoreText('【ふよみ】' + (profiles[idx] || '') + ' さんの きろくの うつしコード\n' + code, code), 'LINEで じぶんに おくる') +
       '<div style="font-size:12px;line-height:1.6;color:#806c5a;margin:8px 0;">コピーして、じぶんに LINE などで おくっておくと、あたらしい たんまつで「🔁 記録の復元」に はれます。</div>'
     );
     document.getElementById("fyBkCopy").addEventListener("click", function () {
@@ -607,8 +624,9 @@ window.fyLineBtn = function (text, label, bg) {
     });
   };
 
+  window.__fyRestoreTest = { pick: function (r) { return pickCode(r); }, chunk: function (i) { return makeChunkBackup(i); }, apply: function (r, i) { return applyRestore(r, i); } };
   function applyRestore(raw, idx) {
-    if (/^FYC1\./.test(String(raw || "").normalize("NFKC").replace(/\s+/g, ""))) return applyChunkRestore(raw, idx);
+    if (/^FYC1\./.test(pickCode(raw))) return applyChunkRestore(raw, idx);
     var p = parseRestoreCode(raw);
     if (p.err) return { ok: false, msg: p.err };
     var cur = profiles[idx] || "";
@@ -630,6 +648,21 @@ window.fyLineBtn = function (text, label, bg) {
     if (!done.length) return { ok: true, msg: "この端末には、すでに同じか、それ以上の記録があります。新しく書き込む記録は、ありませんでした。" };
     return { ok: true, msg: "復元しました。\n・" + done.join("\n・") };
   }
+
+  /* リンクを タップして 復元：コードの なまえと おなじ プレイヤーに じどうで いれる */
+  window.fyLinkRestore = function (raw) {
+    var code = pickCode(raw), name = "";
+    try {
+      var parts = code.split("."), payload = b64dec(parts[1]);
+      if (parts.length !== 3 || signOf(payload) !== parts[2]) return { ok: false, msg: "コードが 正しくありません。リンクが 途中で 切れていないか、たしかめてください。" };
+      if (parts[0] === "FYC1") name = JSON.parse(payload.slice(5)).n;
+      else name = payload.split("|")[1];
+    } catch (e) { return { ok: false, msg: "コードを 読めませんでした。" }; }
+    var idx = -1;
+    for (var i = 0; i < profiles.length; i++) { if (isRegistered(i) && cleanName(profiles[i]) === cleanName(name)) idx = i; }
+    if (idx < 0) return { ok: false, msg: "「" + name + "」さんの プレイヤーが、この端末に ありません。先に、この なまえで プレイヤーを つくってから、もういちど リンクを タップしてください。" };
+    var r = applyRestore(code, idx); r.name = name; return r;
+  };
 
   /* 復元の入力画面（「きろくと コード」のページから） */
   function showRestoreForm() {
@@ -1829,7 +1862,7 @@ window.fyLineBtn = function (text, label, bg) {
       '<div style="font-size:13px;">' + md(e.d) + '</div>' +
       '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
       '<div style="font-size:11px;color:#806c5a;line-height:1.6;">この がめんを スクショして<br>せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
-      window.fyLineBtn('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）') +
+      window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）') +
       '</div>';
   }
   function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -2126,7 +2159,7 @@ window.fyLineBtn = function (text, label, bg) {
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
       '<button id="fyEvCopy" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#5c6bc0;color:#fff;margin-top:6px;">コードを コピー</button>' +
-      window.fyLineBtn('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
+      window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
       '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
       '<button id="fyEvClose" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#f0efec;color:#3b2f27;margin-top:6px;">もどる</button>' +
       '</div>';
@@ -2235,6 +2268,16 @@ window.fyLineBtn = function (text, label, bg) {
       t3.insertBefore(a, t3.firstChild);
     }
   } catch (e) {}
+  window.fyCheckAnyHtml = function (raw) {
+    var r = window.fyCheckAnyCore(raw);
+    if (r.kind === "event") {
+      var fi = document.getElementById("feIn"), fo = document.getElementById("feOut");
+      if (!fi || !fo) return "いま かくにん できません";
+      fi.value = r.token; window.fyCheckEventCode();
+      return fo.innerHTML;
+    }
+    return r.html;
+  };
   window.fyCheckAny = function () {
     var out = document.getElementById("faOut"), raw = document.getElementById("faIn").value;
     var r = window.fyCheckAnyCore(raw);
@@ -2419,7 +2462,7 @@ window.fyLineBtn = function (text, label, bg) {
         var code = $("frOut").value;
         if (!/^FY2\./.test(code)) { out.innerHTML = '<div style="padding:8px;color:#c62828;">' + esc(code) + '</div>'; return; }
         remember(name); showNames();
-        card(name + " さんの 復元コードです。\nアプリの「きろくと コード」に いれてね。\n" + code, out);
+        card(window.fyRestoreText(name + " さんの 復元コードです。\n" + code, code), out);
       });
       $("fuOldBtn").addEventListener("click", function () {
         var out = $("fuOldOut"); out.textContent = "";
@@ -2451,4 +2494,36 @@ window.fyLineBtn = function (text, label, bg) {
   var pr = window.renderTeacherView;
   if (typeof pr === "function") window.renderTeacherView = function () { var r = pr.apply(this, arguments); try { build(); } catch (e) {} return r; };
   window.__fyUni = { code: codeOf, build: build };
+})();
+
+
+/* ===== LINEの リンクを タップして ひらいたとき（?restore=… ／ ?check=…） ===== */
+(function () {
+  function show(title, body, ok) {
+    var d = document.createElement("div");
+    d.style.cssText = "position:fixed;left:0;right:0;top:0;bottom:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;";
+    d.innerHTML = '<div style="background:#fffdf5;border-radius:16px;padding:16px;max-width:360px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 4px 16px rgba(0,0,0,.3);">' +
+      '<div style="font-size:17px;font-weight:900;margin-bottom:8px;">' + title + '</div>' +
+      '<div style="font-size:14px;line-height:1.7;color:' + (ok === false ? "#c62828" : "#5b4636") + ';white-space:pre-line;text-align:left;">' + body + '</div>' +
+      '<button id="fyLkClose" style="display:block;width:100%;margin-top:12px;border:none;border-radius:12px;padding:12px;font-size:16px;font-weight:800;background:#ff7043;color:#fff;">とじる</button></div>';
+    document.body.appendChild(d);
+    document.getElementById("fyLkClose").addEventListener("click", function () { d.remove(); });
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function run() {
+    var m = location.search.match(/[?&](restore|check)=([^&]+)/);
+    if (!m) return;
+    var val; try { val = decodeURIComponent(m[2]); } catch (e) { return; }
+    try { history.replaceState(null, "", location.pathname); } catch (e2) {}
+    try {
+      if (m[1] === "restore") {
+        var r = window.fyLinkRestore(val);
+        show(r.ok ? "🔁 きろくが もどりました" : "もどせませんでした", (r.ok ? "「" + esc(r.name) + "」さん\n" : "") + esc(r.msg), r.ok);
+      } else {
+        show("🔍 コードの かくにん", '<div style="white-space:normal;">' + window.fyCheckAnyHtml(val) + '</div>', true);
+      }
+    } catch (e3) { show("エラー", "リンクを ひらけませんでした。", false); }
+  }
+  setTimeout(run, 500);
+  window.__fyLinkRun = run;
 })();
