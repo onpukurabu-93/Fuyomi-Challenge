@@ -839,7 +839,10 @@ function renderScore(bars, beatsPerBar, opt) {
     });
     follow.i = 0;
     document.getElementById("scBack").addEventListener("click", function () { scStop(); showLevel5(); });
-    window.scrollTo(0, 0);
+    /* きょくを えらんだら、がくふの なまえが 画面の いちばん うえに くるように する（レベルの ボタンは うえに かくれる） */
+    function toScoreTop() { try { var y = sc.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0, y)); } catch (e) { window.scrollTo(0, 0); } }
+    toScoreTop();
+    setTimeout(toScoreTop, 60);
   }
 
   function start() {
