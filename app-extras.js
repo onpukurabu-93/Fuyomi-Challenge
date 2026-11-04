@@ -1,9 +1,11 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
+/* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
+window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
 window.fyLineBtn = function (text, label, bg, toOA) {
-  return '<a href="' + (toOA ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -2408,6 +2410,14 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   /* ===== まとめて 集計（先生ページ）：LINEの メッセージを いっぱい 貼る → ひょう ＋ 賞の あん ＋ スプレッドシート用コピー ===== */
   window.fyBulkRun = function () {
+    var out0 = document.getElementById("fbOut");
+    if (out0) out0.innerHTML = '<div style="font-size:13px;font-weight:800;color:#2e7d32;">⏳ 集計しています…</div>';
+    setTimeout(function () {
+      try { fyBulkRun2(); try { out0.scrollIntoView({ block: "start" }); } catch (e2) {} }
+      catch (err) { if (out0) out0.innerHTML = '<div style="color:#c62828;font-weight:800;font-size:13px;">❌ うまく 集計できませんでした<br><span style="font-size:11px;">' + esc(String(err && err.message || err)) + '</span></div>'; }
+    }, 30);
+  };
+  function fyBulkRun2() {
     var out = document.getElementById("fbOut");
     var raw = String(document.getElementById("fbIn").value || "").normalize("NFKC").replace(/%2E/gi, ".");
     var toks = raw.match(/FYE1\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/g) || [];
@@ -2450,7 +2460,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<textarea id="fbTsv" readonly style="width:100%;height:60px;font-size:10px;box-sizing:border-box;margin-top:6px;-webkit-user-select:text;user-select:text;">' + esc(tsv.join("\n")) + '</textarea>' +
       '<button class="modal-btn" style="background:#2e7d32;font-size:13px;padding:9px;" onclick="fyBulkCopy(this)">📋 スプレッドシート用に コピー</button>' +
       '<div style="font-size:11px;color:#806c5a;">Googleスプレッドシートの A1 に 貼ると、1人 1行で 入ります。</div>';
-  };
+  }
   window.fyBulkCopy = function (btn) {
     var ta = document.getElementById("fbTsv"), ok = false;
     try { ta.focus(); ta.select(); ta.setSelectionRange(0, 999999); ok = document.execCommand("copy"); } catch (e) {}
