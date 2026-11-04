@@ -120,7 +120,7 @@ window.fyLineBtn = function (text, label, bg) {
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
-  try { var u = new URL("index.html", location.href); u.search = ""; u.hash = ""; return u.href + "?" + kind + "=" + encodeURIComponent(value); } catch (e) { return ""; }
+  try { var u = new URL("index.html", location.href); u.search = ""; u.hash = ""; return u.href + "?" + kind + "=" + encodeURIComponent(value).replace(/\./g, "%2E"); }   /* LINEは リンクの「.」で きれて しまうので、「.」は %2E に する */ catch (e) { return ""; }
 };
 /* 生徒 → 先生：先生が リンクを タップすると、コードを じどうで かくにん */
 window.fyLineCheck = function (text, label, bg) {
