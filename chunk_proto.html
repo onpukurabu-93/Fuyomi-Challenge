@@ -165,11 +165,17 @@ window.fyLineBtn = function (text, label, bg) {
     if (p && typeof p === "object") Object.keys(p).forEach(function (c) { var d = String(p[c]); if (d >= EVENT.start && d <= EVENT.end) n++; });
     return n;
   }
+  function evPlayCount() {
+    var p = getJSON("fy_play_" + PID, {}), n = 0;
+    if (p && typeof p === "object") Object.keys(p).forEach(function (c) { var d = String(p[c]); if (d >= EVENT.start && d <= EVENT.end) n++; });
+    return n;
+  }
   function makeEventCode() {
     var d = new Date(), stamp = todayStr().replace(/-/g, "") + p2(d.getHours()) + p2(d.getMinutes());
     var f = ["FYE1", PNAME, EVENT.id, stamp, String(practiceDays())];
     for (var l = 1; l <= 4; l++) { var r = getEv(l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
     f.push(String(evPassCount()));
+    f.push(String(evPlayCount()));
     var payload = f.join("|");
     return { code: "FYE1." + b64enc(payload) + "." + signOf(payload), stamp: stamp };
   }
@@ -679,6 +685,9 @@ function renderScore(bars, beatsPerBar, opt) {
   /* ===== ごうかく コード（せんせいが LINE で おくる） ===== */
   function normName(s) { return String(s || "").normalize("NFKC").replace(/\s+/g, ""); }
   function passSig(name, c) { return signOf("PASS|" + normName(name) + "|" + c); }
+  function playSig(name, c) { return signOf("PLAY|" + normName(name) + "|" + c); }   /* ⭐ えんそう ごうかく */
+  function getPlay() { var a = getJSON("fy_play_" + PID, {}); return (a && typeof a === "object") ? a : {}; }
+  function playCount() { var p = getPlay(), n = 0; SONGS.forEach(function (s) { if (p[s.c]) n++; }); return n; }
   function getPass() { var a = getJSON("fy_pass_" + PID, {}); return (a && typeof a === "object") ? a : {}; }
   function passCount() { var p = getPass(), n = 0; SONGS.forEach(function (s) { if (p[s.c]) n++; }); return n; }
   /* コードを しらべて、あっていれば きろくする。もどりは {ok, msg} */
@@ -688,7 +697,15 @@ function renderScore(bars, beatsPerBar, opt) {
     if (PID === "x" || !PNAME) return { ok: false, msg: "トップがめんで なまえを えらんでから ひらいてね" };
     var sg = null; SONGS.forEach(function (s) { if (s.c === m[1]) sg = s; });
     if (!sg) return { ok: false, msg: "その きょくは ないよ" };
-    if (passSig(PNAME, sg.c) !== m[2]) return { ok: false, msg: "このコードは " + PNAME + " さんの コードじゃないよ。なまえを たしかめてね" };
+    var kind = null;
+    if (passSig(PNAME, sg.c) === m[2]) kind = "pass"; else if (playSig(PNAME, sg.c) === m[2]) kind = "play";
+    if (!kind) return { ok: false, msg: "このコードは " + PNAME + " さんの コードじゃないよ。なまえを たしかめてね" };
+    if (kind === "play") {
+      var q = getPlay(), nq = !q[sg.c];
+      q[sg.c] = todayStr();
+      try { localStorage.setItem("fy_play_" + PID, JSON.stringify(q)); } catch (e) {}
+      return { ok: true, msg: "⭐ 「" + sg.title + "」 えんそう ごうかく！" + (nq ? "" : "（もう ごうかくしているよ）"), song: sg };
+    }
     var p = getPass(), nw = !p[sg.c];
     p[sg.c] = todayStr();
     try { localStorage.setItem("fy_pass_" + PID, JSON.stringify(p)); } catch (e) {}
@@ -723,12 +740,12 @@ function renderScore(bars, beatsPerBar, opt) {
     document.getElementById("subTx").textContent = "ト音記号　がくふを みて ひいてみよう";
     var sc = document.getElementById("songScr");
     sc.style.display = "block";
-    var ps = getPass();
+    var ps = getPass(), pl = getPlay();
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
-            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう　<span style="font-size:14px;color:#2e7d32;">ごうかく ' + passCount() + ' / ' + SONGS.length + '</span></div>' +
+            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう　<span style="font-size:14px;color:#2e7d32;">ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ えんそう ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
             '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに きいてもらおう。</div>';
     SONGS.forEach(function (sg, i) {
-      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + sg.no + '．' + sg.title + '</button>';
+      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + '</button>';
     });
     h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
          '<input id="passIn" type="text" autocomplete="off" autocapitalize="characters" placeholder="例：03-AB12CD" style="font-size:16px;padding:8px;width:60%;border:2px solid #e0d0ba;border-radius:8px;"> ' +
@@ -1212,7 +1229,7 @@ function renderScore(bars, beatsPerBar, opt) {
   try { var sv = localStorage.getItem("fy_piano_sens"); if (sv) { document.getElementById("pianoSens").value = sv; pThr = +sv; } } catch (e) {}
   document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
   document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) { pianoStop(); try { localStorage.setItem("fy_piano_pref", "0"); } catch (e) {} } else { pianoStart(); try { localStorage.setItem("fy_piano_pref", "1"); } catch (e) {} } });
-  window.__pass = { apply: applyPass, sig: passSig, get: getPass, count: passCount };
+  window.__pass = { apply: applyPass, sig: passSig, playSig: playSig, get: getPass, getPlay: getPlay, count: passCount, playCount: playCount };
   window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, notes: function () { return follow.notes; }, nameOf: nameOf };
   window.__piano = { on: function () { return pianoOn; } };
 
@@ -1306,7 +1323,8 @@ function renderScore(bars, beatsPerBar, opt) {
       var r = getEv(l), rate = evRate(r);
       rows += "<tr><td>レベル" + l + " <span style='font-size:11px'>(" + LEVELS[l - 1] + "音)</span></td><td>" + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + "</td><td>" + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
-    rows += "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>せんせいの ごうかく <b>" + evPassCount() + "</b> きょく</td></tr>";
+    rows += "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>ふよみテスト ごうかく <b>" + evPassCount() + "</b> きょく</td></tr>" +
+      "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>⭐ えんそう ごうかく <b>" + evPlayCount() + "</b> きょく</td></tr>";
     var c = makeEventCode(), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     document.getElementById("evIn").innerHTML =
