@@ -779,9 +779,10 @@ function renderScore(bars, beatsPerBar, opt) {
     } catch (e) {}
     var d = document.createElement("div"); d.id = "scDoneBox";
     d.style.cssText = "position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.35);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;";
-    d.innerHTML = '<div style="background:#fffdf5;border-radius:18px;padding:20px 16px;max-width:340px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);"><div style="font-size:40px;">🎉👏</div><div style="font-size:18px;font-weight:900;margin:8px 0;">えんそう がんばったね！</div><div style="font-size:15px;line-height:1.6;color:#5b4636;">うまく ひけたら、<br>つぎの レッスンで<br>せんせいに きいてもらおう</div><button class="btn" id="scDoneOk" style="margin-top:14px;">とじる</button></div>';
+    d.innerHTML = '<div style="background:#fffdf5;border-radius:18px;padding:20px 16px;max-width:340px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);"><div style="font-size:40px;">🎉👏</div><div style="font-size:18px;font-weight:900;margin:8px 0;">えんそう がんばったね！</div><div style="font-size:15px;line-height:1.6;color:#5b4636;">うまく ひけたら、<br>つぎの レッスンで<br>せんせいに きいてもらおう</div><button class="btn" id="scDoneNext" style="margin-top:14px;background:#43a047;">' + (curScoreSong ? nextLabel(curScoreSong) : 'つぎの きょくへ ▶') + '</button><button class="btn" id="scDoneOk" style="margin-top:8px;background:#9e9e9e;">とじる</button></div>';
     document.body.appendChild(d);
     document.getElementById("scDoneOk").addEventListener("click", scDoneClose);
+    document.getElementById("scDoneNext").addEventListener("click", function () { scDoneClose(); if (curScoreSong) showScore(nextSongOf(curScoreSong)); });
   }
   function followHeard(name) {
     if (!follow.on || follow.i >= follow.notes.length) return;
@@ -798,13 +799,18 @@ function renderScore(bars, beatsPerBar, opt) {
       curMove(follow.i);
     }
   }
+  var curScoreSong = null;
+  function nextSongOf(sg) { var k = SONGS.indexOf(sg); return SONGS[(k + 1) % SONGS.length]; }
+  function nextLabel(sg) { var n = nextSongOf(sg); return (SONGS.indexOf(sg) === SONGS.length - 1 ? 'さいしょの きょくへ ▶' : 'つぎの きょくへ ▶') + '<br><span style="font-size:13px;font-weight:700;">' + n.no + '．' + n.title + '</span>'; }
   function showScore(sg) {
     scStop();
+    curScoreSong = sg;
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay }) + '</div>' +
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
-      '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:96px;">もどる</button>' +
+      '<button class="btn" id="scNext" style="margin-top:14px;background:#43a047;">' + nextLabel(sg) + '</button>' +
+      '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:96px;">もどる（きょくを えらぶ）</button>' +
       '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
       '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
       '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 4px;font-size:15px;flex:1;">🎹 ひいてみる</button>' +
@@ -839,6 +845,7 @@ function renderScore(bars, beatsPerBar, opt) {
     });
     follow.i = 0;
     document.getElementById("scBack").addEventListener("click", function () { scStop(); showLevel5(); });
+    document.getElementById("scNext").addEventListener("click", function () { scStop(); showScore(nextSongOf(sg)); });
     /* きょくを えらんだら、がくふの なまえが 画面の いちばん うえに くるように する（レベルの ボタンは うえに かくれる） */
     function toScoreTop() { try { var y = sc.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0, y)); } catch (e) { window.scrollTo(0, 0); } }
     toScoreTop();
