@@ -2514,12 +2514,18 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         var picked = Array.prototype.slice.call(sd.querySelectorAll("input:checked")).map(function (x) { return x.value; });
         if (!picked.length) { out.innerHTML = '<div style="padding:8px;">きょくを えらんでね</div>'; return; }
         remember(name); showNames();
-        picked.forEach(function (c) {
-          var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; });
-          var kindEl = document.querySelector('input[name="fuKind"]:checked'), kind = kindEl ? kindEl.value : "pass";
-          var code = codeOf(name, c, kind), url = appUrl() + "?pass=" + code;
-          card(name + " さん、「" + title + "」 " + (kind === "play" ? "えんそう ごうかく！⭐" : "ごうかく！🎉") + "\nつぎの リンクを タップしてね\n" + url + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code + "」を いれてね）", out);
-        });
+        var kindEl = document.querySelector('input[name="fuKind"]:checked'), kind = kindEl ? kindEl.value : "pass";
+        function titleOfSong(c) { var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; }); return title; }
+        var okLabel = (kind === "play" ? "えんそう ごうかく！⭐" : "ごうかく！🎉");
+        if (picked.length === 1) {
+          var c1 = picked[0], code1 = codeOf(name, c1, kind), url1 = appUrl() + "?pass=" + code1;
+          card(name + " さん、「" + titleOfSong(c1) + "」 " + okLabel + "\nつぎの リンクを タップしてね\n" + url1 + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コード「" + code1 + "」を いれてね）", out);
+        } else {
+          /* ふくすうの きょくは、1つの メッセージ・1つの リンクに まとめる */
+          var codes = picked.map(function (c) { return codeOf(name, c, kind); });
+          var lines = picked.map(function (c) { return "・「" + titleOfSong(c) + "」"; });
+          card(name + " さん、" + okLabel + "（" + picked.length + "きょく）\n" + lines.join("\n") + "\nつぎの リンクを タップしてね\n" + appUrl() + "?pass=" + codes.join("_") + "\n（リンクが ひらかない ときは、アプリの がくふの がめんで コードを 1つずつ いれてね）\n" + codes.join("\n"), out);
+        }
       });
       $("fuRestBtn").addEventListener("click", function () {
         var out = $("fuRestOut"); out.innerHTML = "";
