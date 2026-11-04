@@ -864,8 +864,18 @@ function renderScore(bars, beatsPerBar, opt) {
     }
   }
   var curScoreSong = null;
-  function nextSongOf(sg) { var k = SONGS.indexOf(sg); return SONGS[(k + 1) % SONGS.length]; }
-  function nextLabel(sg) { var n = nextSongOf(sg); return (SONGS.indexOf(sg) === SONGS.length - 1 ? 'さいしょの きょくへ ▶' : 'つぎの きょくへ ▶') + '<br><span style="font-size:13px;font-weight:700;">' + n.no + '．' + n.title + '</span>'; }
+  /* つぎの きょく：ふよみテストに ごうかくして いない きょくを、じゅんばんに（さいごの あとは いちばん わかい ばんごうの まだの きょくへ）。ぜんぶ ごうかくなら ふつうに つぎの ばんごう */
+  function nextSongOf(sg) {
+    var k = SONGS.indexOf(sg), n = SONGS.length, p = {};
+    try { p = getPass() || {}; } catch (e) {}
+    for (var i = 1; i < n; i++) {
+      var c = SONGS[(k + i) % n];
+      if (!p[c.c]) return c;
+    }
+    return SONGS[(k + 1) % n];
+  }
+  function nextWraps(sg) { var nx = nextSongOf(sg); return SONGS.indexOf(nx) <= SONGS.indexOf(sg); }
+  function nextLabel(sg) { var n = nextSongOf(sg); return (nextWraps(sg) ? 'さいしょの きょくへ ▶' : 'つぎの きょくへ ▶') + '<br><span style="font-size:13px;font-weight:700;">' + n.no + '．' + n.title + '</span>'; }
   function showScore(sg) {
     scStop();
     curScoreSong = sg;
@@ -1399,7 +1409,7 @@ function renderScore(bars, beatsPerBar, opt) {
   document.getElementById("evBtn").addEventListener("click", showEvent);
   document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
   document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
-  window.__chunk = { pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: nextSongOf(cur).no, label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
