@@ -727,12 +727,35 @@ function renderScore(bars, beatsPerBar, opt) {
   }
   function scStop() {
     if (!follow) return;
+    if (typeof scDoneClose === "function" && !window.__scDoneKeep) scDoneClose();
     demoTimers.forEach(function (t) { clearTimeout(t); }); demoTimers = [];
     if (follow.on || pianoOn) { follow.on = false; pianoStop(); }
     follow.on = false;
     try { if (melodyOut) melodyOut.disconnect(); } catch (e) {}
     var f = document.getElementById("scFollow"); if (f) { f.textContent = "🎹 ひいてみる"; f.style.background = "#5c6bc0"; }
     var d = document.getElementById("scDemo"); if (d) { d.textContent = "▶ おてほん"; d.style.background = "#7e57c2"; }
+  }
+  /* レベル5：ひきおわった とき（ファンファーレ・はくしゅ・ことば） */
+  function scDoneClose() { var d = document.getElementById("scDoneBox"); if (d) d.remove(); }
+  function scDone() {
+    scDoneClose();
+    try {
+      var c = ensureCtx();
+      if (c) {
+        try { if (c.state !== "running") c.resume(); } catch (e) {}
+        var t = c.currentTime + 0.05, mk = function (f, t0, d, v) { var o = c.createOscillator(), g = c.createGain(); o.type = "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + d + 0.05); };
+        [[523, 0], [659, 0.15], [784, 0.3], [1047, 0.45]].forEach(function (a) { mk(a[0], t + a[1], 0.25, 0.25); });
+        [523, 659, 784, 1047].forEach(function (f) { mk(f, t + 0.7, 0.7, 0.15); });
+        var n = Math.floor(c.sampleRate * 1.6), buf = c.createBuffer(1, n, c.sampleRate), ch = buf.getChannelData(0);
+        for (var k = 0; k < n; k++) { var tt = k / c.sampleRate, ph = (tt * 9) % 1; ch[k] = (Math.random() * 2 - 1) * Math.pow(1 - ph, 5) * Math.min(1, tt * 6) * Math.max(0, 1 - tt / 1.6); }
+        var src = c.createBufferSource(), g2 = c.createGain(); src.buffer = buf; g2.gain.value = 0.5; src.connect(g2); g2.connect(c.destination); src.start(t + 1.0);
+      }
+    } catch (e) {}
+    var d = document.createElement("div"); d.id = "scDoneBox";
+    d.style.cssText = "position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.35);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;";
+    d.innerHTML = '<div style="background:#fffdf5;border-radius:18px;padding:20px 16px;max-width:340px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.25);"><div style="font-size:40px;">🎉👏</div><div style="font-size:18px;font-weight:900;margin:8px 0;">えんそう がんばったね！</div><div style="font-size:15px;line-height:1.6;color:#5b4636;">うまく ひけたら、<br>つぎの レッスンで<br>せんせいに きいてもらおう</div><button class="btn" id="scDoneOk" style="margin-top:14px;">とじる</button></div>';
+    document.body.appendChild(d);
+    document.getElementById("scDoneOk").addEventListener("click", scDoneClose);
   }
   function followHeard(name) {
     if (!follow.on || follow.i >= follow.notes.length) return;
@@ -743,6 +766,7 @@ function renderScore(bars, beatsPerBar, opt) {
         var st = document.getElementById("scSt"); if (st) st.textContent = "🎉 さいごまで ひけたね！";
         var cur = document.getElementById("sc-cur"); if (cur) cur.style.display = "none";
         follow.on = false; scStop(); var st2 = document.getElementById("scSt"); if (st2) st2.textContent = "🎉 さいごまで ひけたね！";
+        scDone();
         return;
       }
       curMove(follow.i);
@@ -1153,7 +1177,7 @@ function renderScore(bars, beatsPerBar, opt) {
   document.getElementById("pianoSens").addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
   document.getElementById("pianoBtn").addEventListener("click", function () { if (pianoOn) { pianoStop(); try { localStorage.setItem("fy_piano_pref", "0"); } catch (e) {} } else { pianoStart(); try { localStorage.setItem("fy_piano_pref", "1"); } catch (e) {} } });
   window.__pass = { apply: applyPass, sig: passSig, get: getPass, count: passCount };
-  window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, nameOf: nameOf };
+  window.__follow = { move: function (i) { curMove(i); }, heard: function (n) { followHeard(n); }, st: function () { return { on: follow.on, i: follow.i }; }, notes: function () { return follow.notes; }, nameOf: nameOf };
   window.__piano = { on: function () { return pianoOn; } };
 
   /* iPhone：ゆびで 画面が かくだいされるのを ふせぐ */
