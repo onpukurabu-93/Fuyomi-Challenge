@@ -1,12 +1,13 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LINEてすと</title>
-<style>body{font-family:sans-serif;padding:16px}a{display:block;background:#06c755;color:#fff;font-weight:900;font-size:18px;text-align:center;padding:16px;border-radius:12px;margin:14px 0;text-decoration:none}</style></head><body>
-<h3>LINE てすと（iPhone で おしてね）</h3>
-<p>おした あと、どうなったか ぜんぶ おしえてね。</p>
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LINEてすと2</title>
+<style>body{font-family:sans-serif;padding:16px}a{display:block;background:#06c755;color:#fff;font-weight:900;font-size:17px;text-align:center;padding:16px;border-radius:12px;margin:14px 0;text-decoration:none}</style></head><body>
+<h3>LINE てすと2（iPhone で おしてね）</h3>
 <script>
-var OA="@892rfjzh";
-function b(label,text){document.write('<a href="https://line.me/R/oaMessage/'+OA+'/?'+encodeURIComponent(text)+'">'+label+'</a>');}
-b("A：みじかい もじ だけ","てすとA");
-b("B：2ぎょう（かいぎょう あり）","てすとB\nコード：01-ABCDEF");
-b("C：かいぎょう ＋ リンク（いまの ごうかくコードと おなじ）","【ふよみ】てすと さん\nコード：01-ABCDEF\n\n▼ せんせいは ここを タップ\nhttps://onpukurabu-93.github.io/Fuyomi-Challenge/index.html?check=abc");
-b("D：かいぎょう ＋ ▼ だけ（リンクなし）","【ふよみ】てすと さん\nコード：01-ABCDEF\n\n▼ せんせいは ここを タップ");
+var OA="@892rfjzh", BASE="https://onpukurabu-93.github.io/Fuyomi-Challenge/index.html";
+function link(v){return BASE+"?check="+encodeURIComponent(v).replace(/\./g,"%2E");}
+function b(label,text){var u="https://line.me/R/oaMessage/"+OA+"/?"+encodeURIComponent(text);document.write('<a href="'+u+'">'+label+'<br><small>（ながさ '+u.length+'）</small></a>');}
+var full="【ふよみ】あいふぉん93 さん　ふよみテスト ごうかく　アマリリス\nコード：01-ABCDEF";
+b("E：いまの ごうかくコードと おなじ（ながい）", full+"\n\n▼ せんせいは ここを タップ（コードを じどうで かくにん）\n"+link(full));
+var mid="【ふよみ】あいふぉん93 さん\nコード：01-ABCDEF";
+b("F：リンクの なかみを みじかく（なまえ と コード だけ）", full+"\n\n▼ せんせいは ここを タップ\n"+link(mid));
+b("G：リンクなし（もじ だけ）", full);
 </script></body></html>
