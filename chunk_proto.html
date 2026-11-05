@@ -795,6 +795,12 @@ function renderScore(bars, beatsPerBar, opt) {
   }
 
   /* ===== レベル5：がくふを みて ひく ===== */
+  var groupOpen = null;
+  var GROUPS = [
+    { name: "やさしい", icon: "🌱", color: "#43a047", ids: ["11", "08", "13", "05", "12", "01"] },
+    { name: "ふつう", icon: "🌼", color: "#fb8c00", ids: ["15", "03", "02", "04", "07", "18"] },
+    { name: "むずかしい", icon: "🔥", color: "#e53935", ids: ["16", "10", "06", "17", "14", "09"] }
+  ];
   function showLevel5() {
     micKey = "";
     token++; if (typeof scStop === "function") scStop();
@@ -812,13 +818,29 @@ function renderScore(bars, beatsPerBar, opt) {
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
             '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう　<span style="font-size:14px;color:#2e7d32;">ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ えんそう ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
             '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに きいてもらおう。</div>';
-    SONGS.forEach(function (sg, i) {
-      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + '</button>';
+    /* きょくを レベルごとの グループに わける（ふえた ときは、GROUPS の ids に c を たす） */
+    var inG = {};
+    GROUPS.forEach(function (g) { g.list = []; g.ids.forEach(function (c) { SONGS.forEach(function (sg, i) { if (sg.c === c) { g.list.push(i); inG[c] = 1; } }); }); });
+    var rest = []; SONGS.forEach(function (sg, i) { if (!inG[sg.c]) rest.push(i); });
+    var gs = GROUPS.slice(); if (rest.length) gs.push({ name: "そのほか", icon: "🎵", color: "#78909c", list: rest });
+    if (groupOpen === null) {
+      groupOpen = -1;
+      gs.forEach(function (g, gi) { if (groupOpen === -1 && g.list.some(function (i) { return !ps[SONGS[i].c]; })) groupOpen = gi; });
+    }
+    gs.forEach(function (g, gi) {
+      var ok = 0; g.list.forEach(function (i) { if (ps[SONGS[i].c]) ok++; });
+      var open = (gi === groupOpen);
+      h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:8px;padding:14px;font-size:18px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
+      if (open) g.list.forEach(function (i) {
+        var sg = SONGS[i];
+        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + '</button>';
+      });
     });
     h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
          '<input id="passIn" type="text" autocomplete="off" autocapitalize="characters" placeholder="例：03-AB12CD" style="font-size:16px;padding:8px;width:60%;border:2px solid #e0d0ba;border-radius:8px;"> ' +
          '<button id="passBtn" style="font-size:15px;font-weight:800;padding:9px 12px;border:none;border-radius:8px;background:#ff7043;color:#fff;">おくる</button>' +
-         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></div>';
+         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></div>' +
+         '<button class="btn back" id="lvTop" style="margin-top:14px;margin-bottom:24px;padding:16px;font-size:17px;">⌂ トップへ もどる</button>';
     passBanner = "";
     sc.innerHTML = h;
     document.getElementById("passBtn").addEventListener("click", function () {
@@ -828,6 +850,10 @@ function renderScore(bars, beatsPerBar, opt) {
     Array.prototype.forEach.call(sc.querySelectorAll("button[data-i]"), function (b) {
       b.addEventListener("click", function () { showScore(SONGS[+b.getAttribute("data-i")]); });
     });
+    Array.prototype.forEach.call(sc.querySelectorAll("button[data-g]"), function (b) {
+      b.addEventListener("click", function () { var g = +b.getAttribute("data-g"); groupOpen = (groupOpen === g) ? -1 : g; showLevel5(); });
+    });
+    document.getElementById("lvTop").addEventListener("click", function () { location.href = "index.html"; });
   }
   var demoTimers = [];
   function curMove(i, noScroll) {
@@ -939,7 +965,7 @@ function renderScore(bars, beatsPerBar, opt) {
       demoTimers.push(setTimeout(function () { scStop(); var c = document.getElementById("sc-cur"); if (c) c.style.display = "none"; }, t + 400));
     });
     follow.i = 0;
-    document.getElementById("scBack").addEventListener("click", function () { scStop(); showLevel5(); });
+    document.getElementById("scBack").addEventListener("click", function () { scStop(); GROUPS.forEach(function (g, gi) { if (g.ids.indexOf(sg.c) !== -1) groupOpen = gi; }); showLevel5(); });
     document.getElementById("scNext").addEventListener("click", function () { scStop(); showScore(nextSongOf(sg)); });
     /* きょくを えらんだら、がくふの なまえが 画面の いちばん うえに くるように する（レベルの ボタンは うえに かくれる） */
     function toScoreTop() { try { var y = sc.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0, y)); } catch (e) { window.scrollTo(0, 0); } }
