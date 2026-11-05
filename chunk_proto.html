@@ -1330,7 +1330,7 @@ function renderScore(bars, beatsPerBar, opt) {
   });
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
-  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(4); renderLv(); });
+  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(5); renderLv(); });
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
