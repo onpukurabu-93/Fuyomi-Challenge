@@ -117,9 +117,11 @@ html, body, button { touch-action: manipulation; -webkit-text-size-adjust: 100%;
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
+/* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
+window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
 window.fyLineBtn = function (text, label, bg, toOA) {
-  return '<a href="' + (toOA ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -264,7 +266,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     { id: "usagi", c: "16", bp: 2, lay: 2, bars: [[[2,0.75],[0,0.25],[2,0.75],[0,0.25]],[[0,0.75],[-1,0.25],[-1,1]],[[-1,0.75],[-1,0.25],[-2,0.75],[-1,0.25]],[[0,1.5],[-99,0.5]],[[2,0.75],[0,0.25],[0,0.75],[2,0.25]],[[0,0.75],[-1,0.25],[-2,1]],[[-1,0.75],[-1,0.25],[0,0.75],[-1,0.25]],[[-2,1.5],[-99,0.5]],[[2,0.75],[2,0.25],[2,0.75],[2,0.25]],[[3,0.75],[3,0.25],[3,0.75],[3,0.25]],[[5,0.75],[5,0.25],[5,0.75],[3,0.25]],[[2,1.5],[-99,0.5]],[[3,0.75],[3,0.25],[5,0.75],[3,0.25]],[[2,0.75],[2,0.25],[0,0.75],[0,0.25]],[[-1,0.75],[-1,0.25],[0,0.75],[-1,0.25]],[[-2,1.5],[-99,0.5]]], no: 16, title: "うさぎと かめ", beat: 0.5,
       seq: [[2,0.75],[0,0.25],[2,0.75],[0,0.25],[0,0.75],[-1,0.25],[-1,1],[-1,0.75],[-1,0.25],[-2,0.75],[-1,0.25],[0,1.5],[-99,0.5],[2,0.75],[0,0.25],[0,0.75],[2,0.25],[0,0.75],[-1,0.25],[-2,1],[-1,0.75],[-1,0.25],[0,0.75],[-1,0.25],[-2,1.5],[-99,0.5],[2,0.75],[2,0.25],[2,0.75],[2,0.25],[3,0.75],[3,0.25],[3,0.75],[3,0.25],[5,0.75],[5,0.25],[5,0.75],[3,0.25],[2,1.5],[-99,0.5],[3,0.75],[3,0.25],[5,0.75],[3,0.25],[2,0.75],[2,0.25],[0,0.75],[0,0.25],[-1,0.75],[-1,0.25],[0,0.75],[-1,0.25],[-2,1.5],[-99,0.5]] },
     { id: "donguri", c: "17", bp: 2, lay: 2, bars: [[[2,0.5],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25]],[[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5]],[[0,0.25],[0,0.25],[2,0.25],[2,0.25],[3,0.25],[3,0.25],[3,0.25],[3,0.25]],[[5,0.5],[0,0.25],[0,0.25],[2,0.5],[-99,0.5]],[[2,0.25],[2,0.25],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25]],[[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5]],[[2,0.5],[0,0.5],[3,0.5],[2,0.25],[2,0.25]],[[3,0.25],[3,0.25],[4,0.25],[4,0.25],[5,1]]], no: 17, title: "どんぐり ころころ", beat: 0.5,
-      seq: [[2,0.5],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25],[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5],[0,0.25],[0,0.25],[2,0.25],[2,0.25],[3,0.25],[3,0.25],[3,0.25],[3,0.25],[5,0.5],[0,0.25],[0,0.25],[2,0.5],[-99,0.5],[2,0.25],[2,0.25],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25],[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5],[2,0.5],[0,0.5],[3,0.5],[2,0.25],[2,0.25],[3,0.25],[3,0.25],[4,0.25],[4,0.25],[5,1]] }
+      seq: [[2,0.5],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25],[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5],[0,0.25],[0,0.25],[2,0.25],[2,0.25],[3,0.25],[3,0.25],[3,0.25],[3,0.25],[5,0.5],[0,0.25],[0,0.25],[2,0.5],[-99,0.5],[2,0.25],[2,0.25],[0,0.25],[0,0.25],[1,0.25],[0,0.25],[-1,0.25],[-2,0.25],[2,0.5],[0,0.25],[0,0.25],[-1,0.5],[-99,0.5],[2,0.5],[0,0.5],[3,0.5],[2,0.25],[2,0.25],[3,0.25],[3,0.25],[4,0.25],[4,0.25],[5,1]] },
+    { id: "oshogatsu", c: "18", bp: 4, key: "Bb", bars: [[[1,2],[2,1],[1,0.5],[2,0.5]],[[3,1],[5,1],[3,2]],[[2,1],[2,1],[1,1],[2,1]],[[3,3],[-99,1]],[[1,0.5],[1,0.5],[-1,0.5],[-1,0.5],[-2,0.5],[-2,0.5],[-2,1]],[[1,0.5],[1,0.5],[2,0.5],[2,0.5],[3,2]],[[3,0.5],[3,0.5],[2,0.5],[2,0.5],[1,0.5],[1,0.5],[1,0.5],[1,0.5]],[[2,0.5],[2,0.5],[3,0.5],[3,0.5],[5,2]],[[1,2],[2,1],[1,0.5],[2,0.5]],[[3,1],[5,1],[3,1],[3,1]],[[2,1],[2,1],[3,1],[2,1]],[[1,3],[-99,1]]], no: 18, title: "おしょうがつ", beat: 0.6,
+      seq: [[1,2],[2,1],[1,0.5],[2,0.5],[3,1],[5,1],[3,2],[2,1],[2,1],[1,1],[2,1],[3,3],[-99,1],[1,0.5],[1,0.5],[-1,0.5],[-1,0.5],[-2,0.5],[-2,0.5],[-2,1],[1,0.5],[1,0.5],[2,0.5],[2,0.5],[3,2],[3,0.5],[3,0.5],[2,0.5],[2,0.5],[1,0.5],[1,0.5],[1,0.5],[1,0.5],[2,0.5],[2,0.5],[3,0.5],[3,0.5],[5,2],[1,2],[2,1],[1,0.5],[2,0.5],[3,1],[5,1],[3,1],[3,1],[2,1],[2,1],[3,1],[2,1],[1,3],[-99,1]] }
   ];
   SONGS.forEach(function (x) { x.notes = x.seq.map(function (q) { return q[0]; }); });
   var song = SONGS[0];
@@ -307,7 +311,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         var t = c.currentTime + 0.1;
         sg.seq.forEach(function (q) {
           if (q[0] === -99) { t += q[1] * sg.beat; return; }
-          var dur = q[1] * sg.beat, f = 440 * Math.pow(2, (midiOf(q[0]) - 69) / 12);
+          var dur = q[1] * sg.beat, f = 440 * Math.pow(2, (midiOf(q[0], sg.key) - 69) / 12);
           var m = c.createGain(), hold = Math.max(dur * 1.4, 0.6);
           m.gain.setValueAtTime(0.0001, t);
           m.gain.exponentialRampToValueAtTime(0.45, t + 0.008);
@@ -344,7 +348,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   /* ---- 音：せいかいの ときだけ、その おんの たかさで ピアノふうの おとを ならす ---- */
   var OFFS = [0, 1, 3, 5, 7, 8, 10];            /* ミ ファ ソ ラ シ ド レ の ミからの 半音 */
-  function midiOf(n) { return 64 + 12 * Math.floor(n / 7) + OFFS[((n % 7) + 7) % 7]; }
+  function midiOf(n, key) {
+    var k = ((n % 7) + 7) % 7, m = 64 + 12 * Math.floor(n / 7) + OFFS[k];
+    if (key === "Bb" && k === 4) m -= 1;   /* ちょうごうの ♭：シ → シ♭ */
+    if (key === "F#" && k === 1) m += 1;   /* ちょうごうの ♯：ファ → ファ♯ */
+    return m;
+  }
   function playNote(n) {
     var c = ensureCtx();
     if (!c) return;
@@ -584,6 +593,14 @@ function renderScore(bars, beatsPerBar, opt) {
     var xEnd = (tot < avail * 0.995) ? Math.min(RIGHT, x0 + tot + ((li === lines.length - 1) ? 1.7 : 0)) : RIGHT;   /* みじかい だん（さいしょの 1ぱく など）は、せんを そこで おわらせる */
     for (var i = 0; i < 5; i++) out += ns("line", { x1: LEFT, x2: xEnd, y1: base - i * GAP, y2: base - i * GAP, stroke: "#5b4636", "stroke-width": 1.2 });
     out += ns("path", { d: SCORE_CLEF, fill: "#5b4636", transform: "translate(" + (LEFT + 4) + "," + (base + 15.9) + ") scale(0.056,-0.056) translate(-120,291)" });
+    if (opt.key === "Bb" || opt.key === "F#") {
+      var kx = LEFT + 40, ky = (opt.key === "Bb") ? yOf(4, base) : yOf(8, base), kc = "#3d2c20";
+      if (opt.key === "Bb") {
+        out += ns("path", { d: "M" + kx + " " + (ky - 14) + " L" + kx + " " + (ky + 4) + " M" + kx + " " + (ky + 4) + " C" + (kx + 9) + " " + (ky + 1) + " " + (kx + 9) + " " + (ky - 7) + " " + kx + " " + (ky - 4), fill: "none", stroke: kc, "stroke-width": 1.7, "stroke-linecap": "round" });
+      } else {
+        out += ns("path", { d: "M" + (kx - 2.5) + " " + (ky - 9) + " L" + (kx - 2.5) + " " + (ky + 9) + " M" + (kx + 2.5) + " " + (ky - 10) + " L" + (kx + 2.5) + " " + (ky + 8) + " M" + (kx - 6) + " " + (ky - 2) + " L" + (kx + 6) + " " + (ky - 4.5) + " M" + (kx - 6) + " " + (ky + 4.5) + " L" + (kx + 6) + " " + (ky + 2), fill: "none", stroke: kc, "stroke-width": 1.5, "stroke-linecap": "round" });
+      }
+    }
     if (li === 0) {
       out += ns("text", { x: LEFT + 56, y: base - 2 * GAP - 2, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, String(beatsPerBar));
       out += ns("text", { x: LEFT + 56, y: base - 1, "font-size": 21, "font-weight": 900, "text-anchor": "middle", fill: "#5b4636", "font-family": "serif" }, "4");
@@ -762,7 +779,7 @@ function renderScore(bars, beatsPerBar, opt) {
     return { ok: true, msg: msgs.concat(bad.length ? ["（" + bad.length + "つは うけとれなかったよ：" + bad[0] + "）"] : []).join("<br>"), song: last };
   }
   /* 保護者ページが 曲の なまえを よめるように、曲の いちらんを のこしておく */
-  try { localStorage.setItem("fy_song_list", JSON.stringify(SONGS.map(function (s) { return { c: s.c, title: s.title, kt: ({ amaryllis: "アマリリス", kuri: "大きな栗の木の下で", ogawa: "春の小川", harugakita: "春が来た", amekon: "雨こんこん", ikenokoi: "池の鯉", fujisan: "ふじ山", london: "ロンドン橋", kinkon: "金婚式", yuuyake: "夕焼け小焼け", kaeru: "かえるの合唱", kirakira: "きらきら星", hato: "鳩", hotaru: "蛍の光", musunde: "むすんでひらいて", usagi: "うさぎとかめ", donguri: "どんぐりころころ" })[s.id] || s.title }; }))); } catch (e) {}
+  try { localStorage.setItem("fy_song_list", JSON.stringify(SONGS.map(function (s) { return { c: s.c, title: s.title, kt: ({ amaryllis: "アマリリス", kuri: "大きな栗の木の下で", ogawa: "春の小川", harugakita: "春が来た", amekon: "雨こんこん", ikenokoi: "池の鯉", fujisan: "ふじ山", london: "ロンドン橋", kinkon: "金婚式", yuuyake: "夕焼け小焼け", kaeru: "かえるの合唱", kirakira: "きらきら星", hato: "鳩", hotaru: "蛍の光", musunde: "むすんでひらいて", usagi: "うさぎとかめ", donguri: "どんぐりころころ", oshogatsu: "お正月" })[s.id] || s.title }; }))); } catch (e) {}
   /* LINE の リンク（?pass=…）から ひらいたとき */
   var passBanner = "";
   try {
@@ -779,6 +796,7 @@ function renderScore(bars, beatsPerBar, opt) {
 
   /* ===== レベル5：がくふを みて ひく ===== */
   function showLevel5() {
+    micKey = "";
     token++; if (typeof scStop === "function") scStop();
     var bar0 = document.getElementById("scBar"); if (bar0) bar0.remove();
     if (pianoOn) pianoStop();
@@ -884,7 +902,7 @@ function renderScore(bars, beatsPerBar, opt) {
     curScoreSong = sg;
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
-      '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay }) + '</div>' +
+      '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay, key: sg.key }) + '</div>' +
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scNext" style="margin-top:14px;background:#43a047;">' + nextLabel(sg) + '</button>' +
       '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:96px;">もどる（きょくを えらぶ）</button>' +
@@ -902,7 +920,7 @@ function renderScore(bars, beatsPerBar, opt) {
     document.getElementById("scFollow").addEventListener("click", function () {
       if (follow.on) { scStop(); document.getElementById("scSt").textContent = ""; return; }
       scStop();
-      follow.notes = notes; if (follow.i >= notes.length) follow.i = 0;
+      follow.notes = notes; micKey = sg.key || ""; if (follow.i >= notes.length) follow.i = 0;
       follow.on = true; pReadyAt = performance.now();
       curMove(follow.i);
       this.textContent = "🎹 きいてるよ（とめる）"; this.style.background = "#2e7d32";
@@ -930,6 +948,7 @@ function renderScore(bars, beatsPerBar, opt) {
   }
 
   function start() {
+    micKey = "";
     if (level === 5) { showLevel5(); return; }
     scStop(); var bar1 = document.getElementById("scBar"); if (bar1) bar1.remove();
     document.getElementById("howTx").style.display = ""; document.getElementById("subTx").textContent = "ト音記号　3つの おとを ひとまとまりで よもう";
@@ -1185,13 +1204,19 @@ function renderScore(bars, beatsPerBar, opt) {
   var PAD_MSG = "⚠ iPad は おとが きこえにくい ことが あります。<br>「とても びんかん」に して、iPad を ピアノの ちかくに おいてね。<br>iPhone の ほうが よく きこえます。";
   (function () { var e = document.getElementById("pianoPad"); if (e && IS_IPAD) { e.innerHTML = PAD_MSG; e.style.display = "block"; } })();
   var follow = { on: false, i: 0, notes: [] };
+  var micKey = "";
+  function pcName(pc) {
+    if (micKey === "Bb") { if (pc === 10) return "シ"; if (pc === 11) return ""; }
+    if (micKey === "F#") { if (pc === 6) return "ファ"; if (pc === 5) return ""; }
+    return PC[pc];
+  }
   function pSt(t) { var e = document.getElementById("pianoSt"); if (e) e.textContent = t; var e2 = document.getElementById("scSt"); if (e2) e2.textContent = t; }
   function heard(name, legato) {
     if (follow.on) { followHeard(name); return; }
     if (legato) { if (expectName() === name) press(name); } else press(name);
   }
   var NM12 = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
-  function pShow(pc, m, tag) { pSt("きこえた：" + NM12[pc] + (tag ? "（" + tag + "）" : "")); }
+  function pShow(pc, m, tag) { pSt("きこえた：" + (micKey === "Bb" && pc === 10 ? "シ♭" : NM12[pc]) + (tag ? "（" + tag + "）" : "")); }
   function expectName() { return queue[idx] === undefined ? null : nameOf(queue[idx]); }
   function pianoUi() {
     var box = document.getElementById("pianoBox");
@@ -1236,7 +1261,7 @@ function renderScore(bars, beatsPerBar, opt) {
           pLastPc = pc2; pLast = now; pStab = null;
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(m2);
           pShow(pc2, m2, "つなげ");
-          if (PC[pc2]) heard(PC[pc2], true);
+          if (pcName(pc2)) heard(pcName(pc2), true);
         } else if (pLastPc === -1 && pStab.n >= 4) { pLastPc = pc2; }
       } else { pStab = null; }
     }
@@ -1249,7 +1274,7 @@ function renderScore(bars, beatsPerBar, opt) {
         if (pPend.got.length >= 2) {
           var votes = {}, bm = null, bn = 0;
           pPend.got.forEach(function (f) { var m = Math.round(69 + 12 * Math.log(f / 440) / Math.LN2); votes[m] = (votes[m] || 0) + 1; if (votes[m] > bn) { bn = votes[m]; bm = m; } });
-          var nm = PC[((bm % 12) + 12) % 12];
+          var nm = pcName(((bm % 12) + 12) % 12);
           window.__pianoHeard = (window.__pianoHeard || []); window.__pianoHeard.push(bm);
           pLastPc = ((bm % 12) + 12) % 12; pStab = null;
           pShow(((bm % 12) + 12) % 12, bm, "");
