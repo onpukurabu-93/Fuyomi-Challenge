@@ -1197,6 +1197,11 @@ function renderScore(bars, beatsPerBar, opt) {
         var fs = big ? 38 : (w === "★" || w === "はい" ? 24 : 24);
         tx += '<text id="scCl' + i + '" data-fs="' + fs + '" x="' + (bm0.x0 + tb * bm0.bw) + '" y="' + (bm0.base - 4 * G - 18) + '" text-anchor="middle" font-size="' + fs + '" font-weight="700" fill="#1e88e5" font-family="sans-serif">' + w + '</text>';
       });
+      /* カウントの しょうせつせん：カウントの はじまりの まえと（さいしょから はじまる きょくは）がくふの 1しょうせつめの まえ */
+      var q0 = sg.bars[0][0], fpad = 8 + ((q0 && q0[0] !== -99 && q0.length > 2 && q0[2] !== null && q0[2] !== undefined) ? 6 : 0) + 5;
+      function bl(x) { return '<line x1="' + x + '" x2="' + x + '" y1="' + bm0.base + '" y2="' + (bm0.base - 4 * G) + '" stroke="#5b4636" stroke-width="1.2"/>'; }
+      tx += bl(bm0.x0 - pre * bm0.bw - 13);
+      if (pk === 0) tx += bl(bm0.x0 - fpad);
       svg = svg.replace(/<\/svg>$/, tx + "</svg>");
       box.innerHTML = '<div id="scFlow" style="overflow:hidden;position:relative;border-radius:8px;"><div id="scFlowIn" style="will-change:transform;">' + svg + '</div><div style="position:absolute;left:' + (flowPlayX - 1) + 'px;top:0;bottom:0;width:2px;background:rgba(30,136,229,.0);"></div></div>';
       var st = document.createElement("style"); st.id = "fyFlowCss"; st.textContent = "#scCount{display:none!important}"; document.head.appendChild(st);
