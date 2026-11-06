@@ -963,7 +963,7 @@ function renderScore(bars, beatsPerBar, opt) {
     runStop();
     var bs = bsOf(sg), ev = [], tt = 0, ni = 0;
     sg.seq.forEach(function (q) { if (q[0] !== -99) { ev.push({ b: tt, i: ni }); ni++; } tt += q[1]; });
-    var total = tt, pk = 0;
+    var total = tt, pk = 0, restLead = (sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4) ? sg.seq[0][1] : 0;   /* 1ばんめが 休符の きょく（主よ） */
     /* アウフタクト（さいしょの しょうせつが みじかい きょく）：その ぶんだけ カウントを へらして、ふえは 「4」などの はくから はいる */
     (function () { var f0 = sg.bars && sg.bars[0], sm = 0; if (f0) { f0.forEach(function (q) { sm += q[1]; }); if (sm < sg.bp - 1e-4) pk = sm; } })();
     var pre = opt.count ? ((sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp)) - pk) : 0;   /* 1.5ぱくなど 小数もOK */
@@ -975,20 +975,27 @@ function renderScore(bars, beatsPerBar, opt) {
       if (runSt !== st) return;
       var tb = (performance.now() - startAt) / 1000 / bs - pre;
       if (tb < 0) {
-        var ck = sg.c6 ? 3 : 1, num = Math.floor((tb + pre) * ck + 1e-6) + 1;
+        /* 8分音符1つの アウフタクト（4/4の 0.5はく など）は 「1 と 2 と 3 と 4 はい！」と 半はくごとに かぞえる */
+        var half = !sg.c6 && !sg.ts && pk > 0 && Math.abs(pk * 2 - Math.round(pk * 2)) < 1e-4 && Math.abs(pk - Math.round(pk)) > 1e-4;
+        var ck = (sg.c6 || restLead > 0) ? 3 : (half ? 2 : 1), num = Math.floor((tb + pre) * ck + 1e-6) + 1;
         if (num !== st.lastNum && num >= 1) {
-          st.lastNum = num; if (cntSnd) beep((num === 1 || (sg.c6 && num === 4)) ? 1100 : 800, 0.07, 0.35);
+          var N = Math.ceil(pre * ck - 1e-6), shown = num > N ? N : num;
+          var isTo = half && shown % 2 === 0, isHai = restLead === 0 && shown === N;   /* と／いれる はく */
+          var isBig = (sg.c6 && (shown === 1 || shown === 4)) || (restLead > 0 && shown % 3 === 1);   /* 6/8は 1と4、9/8は 1・4・7 を おおきく */
+          st.lastNum = num; if (cntSnd) beep((num === 1 || isBig) ? 1100 : (isTo ? 600 : 800), 0.07, isTo ? 0.2 : 0.35);
           var cv = document.getElementById("scCount");
           if (!cv) { cv = document.createElement("div"); cv.id = "scCount"; cv.style.cssText = "position:fixed;left:0;right:0;top:26%;text-align:center;font-size:96px;font-weight:900;color:#1e88e5;text-shadow:0 2px 8px rgba(255,255,255,.9);z-index:40;pointer-events:none;"; document.body.appendChild(cv); }
-          var shown = num > Math.ceil(pre * ck - 1e-6) ? Math.ceil(pre * ck - 1e-6) : num;
-          cv.textContent = String(shown); cv.style.fontSize = sg.c6 ? ((shown === 1 || shown === 4) ? "140px" : "64px") : "96px";
+          var lab = half ? (isTo ? "と" : String((shown + 1) / 2)) : String(shown);
+          if (isHai) lab = "はい！";
+          cv.style.color = isHai ? "#e53935" : "#1e88e5"; cv.textContent = lab;
+          cv.style.fontSize = isHai ? "72px" : (isTo ? "56px" : ((sg.c6 || restLead > 0) ? (isBig ? "140px" : "64px") : "96px"));
         }
       } else {
         var cv2 = document.getElementById("scCount");
-        if (opt.count && pk > 0 && tb < pk - 1e-6) {
-          /* アウフタクトの はく：カウントの つづきの かずを だす（れい：4/4で 1はく → 「4」） */
+        /* 主よ：休符の ところが 「はい！」、そのあと おとが はいる */
+        if (opt.count && restLead > 0 && pk === 0 && tb < restLead - 1e-6) {
           if (!cv2) { cv2 = document.createElement("div"); cv2.id = "scCount"; cv2.style.cssText = "position:fixed;left:0;right:0;top:26%;text-align:center;font-size:96px;font-weight:900;color:#1e88e5;text-shadow:0 2px 8px rgba(255,255,255,.9);z-index:40;pointer-events:none;"; document.body.appendChild(cv2); }
-          cv2.textContent = String(Math.floor((tb + pre) * (sg.c6 ? 3 : 1) + 1e-6) + 1); if (sg.c6) cv2.style.fontSize = "64px";
+          cv2.style.color = "#e53935"; cv2.textContent = "はい！"; cv2.style.fontSize = "72px";
         } else if (cv2) cv2.remove();
         if (opt.sound && !st.soundDone) { st.soundDone = true; playMelody(sg, bs); }
         var bi = Math.floor(tb - pk + 1e-6);   /* 小節の あたまから かぞえた はく（アウフタクトは マイナス） */
@@ -1072,10 +1079,16 @@ function renderScore(bars, beatsPerBar, opt) {
   }
   /* アウフタクトの きょくは、「カウント ○」（○＝かぞえる かいすう）を がくふの はじめに かく */
   function pickCount(sg) {
-    var f0 = sg.bars && sg.bars[0], sm = 0; if (!f0) return 0;
+    var f0 = sg.bars && sg.bars[0], sm = 0; if (!f0) return "";
     f0.forEach(function (q) { sm += q[1]; });
-    if (sg.c6) return (sm < sg.bp - 1e-4) ? 5 : 0;
-    return (sm < sg.bp - 1e-4) ? Math.ceil((sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp)) - sm - 1e-4) : 0;
+    var lead = (sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4);
+    if (!(sm < sg.bp - 1e-4) && !lead) return "";
+    var pk = lead ? 0 : sm, base = sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp);
+    var half = !sg.c6 && !sg.ts && pk > 0 && Math.abs(pk * 2 - Math.round(pk * 2)) < 1e-4 && Math.abs(pk - Math.round(pk)) > 1e-4;
+    var ck = sg.c6 ? 3 : (half ? 2 : 1), N = Math.ceil((base - pk) * ck - 1e-4), out = [];
+    for (var k = 1; k <= N; k++) out.push(half ? (k % 2 === 0 ? "と" : String((k + 1) / 2)) : String(k));
+    if (lead) { out = []; for (var j = 1; j <= 9; j++) out.push(String(j)); out.push("はい"); }
+    return out.join(half ? "" : " ") + " ★";
   }
   function nextSongOf(sg) {
     var L = orderedSongs(), k = L.indexOf(sg), n = L.length, p = {};
