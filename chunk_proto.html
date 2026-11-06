@@ -986,7 +986,7 @@ function renderScore(bars, beatsPerBar, opt) {
     var total = tt, pk = 0, restLead = (sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4) ? sg.seq[0][1] : 0;   /* 1ばんめが 休符の きょく（主よ） */
     /* アウフタクト（さいしょの しょうせつが みじかい きょく）：その ぶんだけ カウントを へらして、ふえは 「4」などの はくから はいる */
     (function () { var f0 = sg.bars && sg.bars[0], sm = 0; if (f0) { f0.forEach(function (q) { sm += q[1]; }); if (sm < sg.bp - 1e-4) pk = sm; } })();
-    var pre = opt.count ? ((sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp)) - pk) : 0;   /* 1.5ぱくなど 小数もOK */
+    var cs = countSlots(sg), pre = opt.count ? cs.pre : 0;
     var startAt = performance.now() + (opt.sound ? 100 : 60) + (opt.count ? 0 : 0);
     if (opt.sound && !opt.count) playMelody(sg, bs);
     runSt = { raf: 0, ev: 0, lastClick: -1, lastNum: 0, soundDone: !!(opt.sound && !opt.count) };
@@ -996,21 +996,12 @@ function renderScore(bars, beatsPerBar, opt) {
       var tb = (performance.now() - startAt) / 1000 / bs - pre;
       if (flowActive) { flowShift(tb); if (tb < 0) phMove(tb); }
       if (tb < 0) {
-        /* 8分音符1つの アウフタクト（4/4の 0.5はく など）は 「1 と 2 と 3 と 4 はい！」と 半はくごとに かぞえる */
-        var half = !sg.c6 && !sg.ts && pk > 0 && Math.abs(pk * 2 - Math.round(pk * 2)) < 1e-4 && Math.abs(pk - Math.round(pk)) > 1e-4;
-        var ck = (sg.c6 || restLead > 0) ? 3 : (half ? 2 : 1), num = Math.floor((tb + pre) * ck + 1e-6) + 1;
-        if (num !== st.lastNum && num >= 1) {
-          var N = Math.ceil(pre * ck - 1e-6), shown = num > N ? N : num;
-          var isTo = half && shown % 2 === 0, isHai = restLead === 0 && shown === N;   /* と／いれる はく */
-          var isBig = (sg.c6 && (shown === 1 || shown === 4)) || (restLead > 0 && shown % 3 === 1);   /* 6/8は 1と4、9/8は 1・4・7 を おおきく */
-          st.lastNum = num; if (cntSnd) beep((num === 1 || isBig) ? 1100 : (isTo ? 600 : 800), 0.07, isTo ? 0.2 : 0.35);
-          var cv = document.getElementById("scCount");
-          if (!cv) { cv = document.createElement("div"); cv.id = "scCount"; cv.style.cssText = "position:fixed;left:0;right:0;top:26%;text-align:center;font-size:96px;font-weight:900;color:#1e88e5;text-shadow:0 2px 8px rgba(255,255,255,.9);z-index:40;pointer-events:none;"; document.body.appendChild(cv); }
-          var lab = half ? (isTo ? "と" : String((shown + 1) / 2)) : String(shown);
-          if (isHai) lab = "はい！";
-          cntHi(sg, shown - 1, isHai);
-          cv.style.color = isHai ? "#e53935" : "#1e88e5"; cv.textContent = lab;
-          cv.style.fontSize = isHai ? "72px" : (isTo ? "56px" : ((sg.c6 || restLead > 0) ? (isBig ? "140px" : "64px") : "96px"));
+        /* カウント：きょくごとの きめ（COUNTS）に そって、いま どの かずか を さがす */
+        var si = -1; for (var q = 0; q < cs.slots.length; q++) { if (cs.slots[q].lead) break; if (cs.slots[q].t <= tb + 1e-6) si = q; }
+        if (si !== st.lastSlot && si >= 0) {
+          st.lastSlot = si; var sl = cs.slots[si];
+          if (cntSnd) beep((si === 0 || sl.big) ? 1100 : (sl.lab === "と" ? 600 : 800), 0.07, sl.lab === "と" ? 0.2 : 0.35);
+          cntHi(sg, si, sl.hai);
         }
       } else {
         var cv2 = document.getElementById("scCount");
@@ -1018,11 +1009,11 @@ function renderScore(bars, beatsPerBar, opt) {
         if (opt.count && restLead > 0 && pk === 0 && tb < restLead - 1e-6) {
           if (!cv2) { cv2 = document.createElement("div"); cv2.id = "scCount"; cv2.style.cssText = "position:fixed;left:0;right:0;top:26%;text-align:center;font-size:96px;font-weight:900;color:#1e88e5;text-shadow:0 2px 8px rgba(255,255,255,.9);z-index:40;pointer-events:none;"; document.body.appendChild(cv2); }
           cv2.style.color = "#e53935"; cv2.textContent = "はい！"; cv2.style.fontSize = "72px";
-          cntHi(sg, 9, true);
+          cntHi(sg, cs.slots.length - 1, true);
         } else if (cv2) cv2.remove();
         if (opt.count) {
           var _k = (pk > 0 && tb < pk - 1e-6) ? "star" : (restLead > 0 && pk === 0 && tb >= restLead - 1e-6 && tb < restLead + 0.34) ? "star" : (restLead > 0 && pk === 0 && tb < restLead - 1e-6 ? "hai" : "off");
-          if (_k !== st.hiKey) { st.hiKey = _k; if (_k === "star") cntHi(sg, (sg.__cl || (sg.__cl = pickCount(sg))).length - 1, false); else if (_k === "off") cntHi(sg, -1, false); }
+          if (_k !== st.hiKey) { st.hiKey = _k; if (_k === "star") cntHi(sg, cs.slots.length, false); else if (_k === "off") cntHi(sg, -1, false); }
         }
         if (opt.sound && !st.soundDone) { st.soundDone = true; playMelody(sg, bs); }
         var bi = Math.floor(tb - pk + 1e-6);   /* 小節の あたまから かぞえた はく（アウフタクトは マイナス） */
@@ -1106,26 +1097,54 @@ function renderScore(bars, beatsPerBar, opt) {
     return out;
   }
   /* アウフタクトの きょくは、「カウント ○」（○＝かぞえる かいすう）を がくふの はじめに かく */
-  function pickCount(sg) {
-    var f0 = sg.bars && sg.bars[0], sm = 0; if (!f0) return [];
-    f0.forEach(function (q) { sm += q[1]; });
-    var lead = (sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4);
-    var pk = (!lead && sm < sg.bp - 1e-4) ? sm : 0, base = sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp);
-    var half = !sg.c6 && !sg.ts && pk > 0 && Math.abs(pk * 2 - Math.round(pk * 2)) < 1e-4 && Math.abs(pk - Math.round(pk)) > 1e-4;
-    var ck = (sg.c6 || lead) ? 3 : (half ? 2 : 1), N = Math.ceil((base - pk) * ck - 1e-4), out = [];
-    for (var k = 1; k <= N; k++) out.push(half ? (k % 2 === 0 ? "と" : String((k + 1) / 2)) : String(k));
-    if (lead) out.push("はい");
-    out.push("★");
-    return out;
+  /* ===== カウントの きめかた（きょくごとに さだめる） =====
+     「はく:かず かず … | はく:かず …」。| は しょうせつせん。 * は おおきく。 は は 「はい！」。
+     はく = 1つの かずの ながさ（1=4ぶおんぷ、.5=8ぶおんぷ）。かいてない きょくは、1しょうせつぶんを 1・2・3… と かぞえて さいごが 「はい！」 */
+  var COUNTS = {
+    "08": "1:1 2 | .5:1 と 2 は", "13": "1:1 2 | 1:1 は", "05": "1:1 2 | .5:1 と 2 は",
+    "15": "1:1 2 | .5:1 と 2 は", "02": ".5:1 と 2 と | .5:3 と 4 は", "27": ".5:1 と 2 と 3 は",
+    "33": "1:1 2 3 | .333333:*1 2 3 *4 5 6 *7 8 9",
+    "16": "1:1 2 | .5:1 と 2 は", "10": "1:1 2 | .5:1 と 2 は", "06": "1:1 2 | .5:1 と 2 は",
+    "17": "1:1 2 | .5:1 と 2 は", "32": "1:1 2 | .5:1 と 2 は", "34": "1:1 2 | .5:1 と 2 は",
+    "01": "1:1 2 3 4 | 1:1 は", "24": "1:1 2 3 | .5:1 と 2 は", "28": "1:1 2 3 4 | .5:1 と 2 と 3 と は",
+    "30": "1:1 2 | .5:1 と は", "14": "1:1 2 3 4 | 1:1 2 は", "09": "1:1 2 3 4 | 1:1 2 は",
+    "21": "1:1 2 3 | .5:1 と 2 は", "22": "1:1 2 3 4 | 1:1 2 は"
+  };
+  /* カウントの ぜんぶ：slots=[{t(おとの はじまりから はかった ひらき), lab, big, hai}]、bars=[しょうせつせんの t]、pre=ぜんたいの ながさ、star=★の t */
+  function countSlots(sg) {
+    if (sg.__cs) return sg.__cs;
+    var f0 = sg.bars && sg.bars[0], sm = 0; if (f0) f0.forEach(function (q) { sm += q[1]; });
+    var lead = !!(sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4);
+    var pk = (!lead && sm < sg.bp - 1e-4) ? sm : 0, slots = [], bars = [], pre = 0, spec = COUNTS[sg.c];
+    if (spec) {
+      spec.split("|").forEach(function (bar, bi) {
+        var m = bar.trim().split(":"), d = parseFloat(m[0]), toks = m[1].trim().split(/\s+/);
+        if (bi > 0) bars.push(pre);
+        toks.forEach(function (w) { var big = w.charAt(0) === "*"; if (big) w = w.slice(1); slots.push({ t: pre, lab: w === "は" ? "はい" : w, big: big, hai: w === "は" }); pre += d; });
+      });
+    } else {
+      var base = sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp);
+      var half = !sg.c6 && !sg.ts && pk > 0 && Math.abs(pk * 2 - Math.round(pk * 2)) < 1e-4 && Math.abs(pk - Math.round(pk)) > 1e-4;
+      var ck = sg.c6 ? 3 : (half ? 2 : 1), N = Math.ceil((base - pk) * ck - 1e-4);
+      pre = base - pk;
+      for (var k = 1; k <= N; k++) slots.push({ t: (k - 1) / ck, lab: half ? (k % 2 === 0 ? "と" : String((k + 1) / 2)) : String(k), big: !!(sg.c6 && (k === 1 || k === 4)), hai: k === N });
+      slots.forEach(function (q) { q.t -= 0; });
+    }
+    /* さいしょが 休符の きょく（主よ）：おとの はじまりの 休符の ところが 「はい！」 */
+    var starT = 0;
+    if (lead) { slots.push({ t: pre, lab: "はい", big: false, hai: true, lead: true }); starT = sg.seq[0][1]; }
+    slots.forEach(function (q) { q.t -= pre; }); bars = bars.map(function (x) { return x - pre; });
+    if (lead) { slots[slots.length - 1].t = 0; }
+    return (sg.__cs = { slots: slots, bars: bars, pre: pre, star: starT, lead: lead, pk: pk });
   }
-  /* がくふの うえの カウントを、いま かぞえている ばしょだけ おおきく ひからせる（idx<0 で もとに もどす） */
+  /* がくふの うえの カウントを、いま かぞえている ばしょだけ おおきく ひからせる（idx<0 で もとに もどす。idx=slots.length が ★） */
   function cntHi(sg, idx, hai) {
-    var labs = sg.__cl || (sg.__cl = pickCount(sg));
-    for (var i = 0; i < labs.length; i++) {
+    var cs = countSlots(sg), n = cs.slots.length;
+    for (var i = 0; i <= n; i++) {
       var t = document.getElementById("scCl" + i); if (!t) continue;
-      var on = i === idx;
-      t.textContent = (on && hai) ? (t.getAttribute("data-fs") ? "はい" : "はい！") : labs[i];
-      t.setAttribute("fill", on ? (hai || labs[i] === "★" || labs[i] === "はい" ? "#e53935" : "#1e88e5") : "#1e88e5");
+      var on = i === idx, lab = i === n ? "★" : cs.slots[i].lab;
+      t.textContent = lab;
+      t.setAttribute("fill", on ? ((i === n || cs.slots[i].hai) ? "#e53935" : "#1e88e5") : "#1e88e5");
       var fs0 = +t.getAttribute("data-fs") || 20; t.setAttribute("font-size", on ? Math.round(fs0 * 1.25) : fs0); t.setAttribute("font-weight", on ? 900 : 700);
     }
   }
@@ -1180,28 +1199,21 @@ function renderScore(bars, beatsPerBar, opt) {
     }
     function flowOn() {
       var box = document.getElementById("scBox"); if (!box) return;
-      var labs = sg.__cl || (sg.__cl = pickCount(sg));
-      var lead = !!(sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4);
-      var ck = (sg.c6 || lead) ? 3 : 1, N = labs.length - 1 - (lead ? 1 : 0);
-      var f0 = sg.bars[0], sm = 0; f0.forEach(function (q) { sm += q[1]; });
-      var pk = (!lead && sm < sg.bp - 1e-4) ? sm : 0;
-      if (!sg.c6 && !lead && !sg.ts && pk > 0 && Math.abs(pk - Math.round(pk)) > 1e-4) ck = 2;
-      var pre = N / ck, wide = sg.ts ? 99 : (ck === 2 ? 90 : 60);
+      var cs = countSlots(sg), pre = cs.pre, pk = cs.pk, n = cs.slots.length;
+      var wide = sg.ts ? 99 : ((cs.slots.some(function (q) { return q.lab === "と"; })) ? 90 : 60);
       var svg = renderScore(sg.bars, sg.bp, { lay: [sg.bars.length], ks: sg.ks, dbl: sg.dbl, ts: sg.ts, b4: sg.b4, wide: wide, lead: Math.round(pre * wide + 14) });
       var vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg), SW = +vb[1], SH = +vb[2];
       svg = svg.replace('width="100%"', 'width="' + SW + '" height="' + SH + '" style="display:block;max-width:none;width:' + SW + 'px;height:' + SH + 'px;"');
       var bm0 = renderScore.bmap[0], G = renderScore.GAP, tx = "";
-      labs.forEach(function (w, i) {
-        var tb;
-        if (lead) tb = (i < 9) ? (-pre + i / 3) : (i === 9 ? 0 : renderScore.bmap[0].t1 * 0 + sg.seq[0][1]);
-        else tb = (i < N) ? (-pre + i / ck) : 0;
-        var big = (sg.c6 && (i === 0 || i === 3)) || (lead && i < 9 && i % 3 === 0);
-        var fs = big ? 38 : (w === "★" || w === "はい" ? 24 : 24);
-        tx += '<text id="scCl' + i + '" data-fs="' + fs + '" x="' + (bm0.x0 + tb * bm0.bw) + '" y="' + (bm0.base - 4 * G - 18) + '" text-anchor="middle" font-size="' + fs + '" font-weight="700" fill="#1e88e5" font-family="sans-serif">' + w + '</text>';
+      cs.slots.forEach(function (q, i) {
+        var fs = q.big ? 38 : 24;
+        tx += '<text id="scCl' + i + '" data-fs="' + fs + '" x="' + (bm0.x0 + q.t * bm0.bw) + '" y="' + (bm0.base - 4 * G - 18) + '" text-anchor="middle" font-size="' + fs + '" font-weight="700" fill="#1e88e5" font-family="sans-serif">' + q.lab + '</text>';
       });
-      /* カウントの しょうせつせん：カウントの はじまりの まえと（さいしょから はじまる きょくは）がくふの 1しょうせつめの まえ */
+      tx += '<text id="scCl' + n + '" data-fs="24" x="' + (bm0.x0 + cs.star * bm0.bw) + '" y="' + (bm0.base - 4 * G - 18) + '" text-anchor="middle" font-size="24" font-weight="700" fill="#1e88e5" font-family="sans-serif">★</text>';
+      /* しょうせつせん：カウントの しょうせつの あいだと（さいしょから はじまる きょくは）がくふの 1しょうせつめの まえ */
       var q0 = sg.bars[0][0], fpad = 8 + ((q0 && q0[0] !== -99 && q0.length > 2 && q0[2] !== null && q0[2] !== undefined) ? 6 : 0) + 5;
       function bl(x) { return '<line x1="' + x + '" x2="' + x + '" y1="' + bm0.base + '" y2="' + (bm0.base - 4 * G) + '" stroke="#5b4636" stroke-width="1.2"/>'; }
+      cs.bars.forEach(function (t) { tx += bl(bm0.x0 + t * bm0.bw - 13); });
       if (pk === 0) tx += bl(bm0.x0 - fpad);
       svg = svg.replace(/<\/svg>$/, tx + "</svg>");
       box.innerHTML = '<div id="scFlow" style="overflow:hidden;position:relative;border-radius:8px;"><div id="scFlowIn" style="will-change:transform;">' + svg + '</div><div style="position:absolute;left:' + (flowPlayX - 1) + 'px;top:0;bottom:0;width:2px;background:rgba(30,136,229,.0);"></div></div>';
