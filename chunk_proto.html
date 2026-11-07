@@ -1000,7 +1000,7 @@ function renderScore(bars, beatsPerBar, opt) {
         var si = -1; for (var q = 0; q < cs.slots.length; q++) { if (cs.slots[q].lead) break; if (cs.slots[q].t <= tb + 1e-6) si = q; }
         if (si !== st.lastSlot && si >= 0) {
           st.lastSlot = si; var sl = cs.slots[si];
-          if (cntSnd) beep((si === 0 || sl.big) ? 1100 : (sl.lab === "と" ? 600 : 800), 0.07, sl.lab === "と" ? 0.2 : 0.35);
+          if (cntSnd) beep((si === 0 || sl.big || sl.hd) ? 1100 : (sl.lab === "と" ? 600 : 800), 0.07, sl.lab === "と" ? 0.2 : 0.35);
           cntHi(sg, si, sl.hai);
         }
       } else {
@@ -1013,7 +1013,7 @@ function renderScore(bars, beatsPerBar, opt) {
         } else if (cv2) cv2.remove();
         if (opt.count) {
           var _k = (pk > 0 && tb < pk - 1e-6) ? "star" : (restLead > 0 && pk === 0 && tb >= restLead - 1e-6 && tb < restLead + 0.34) ? "star" : (restLead > 0 && pk === 0 && tb < restLead - 1e-6 ? "hai" : "off");
-          if (_k !== st.hiKey) { st.hiKey = _k; if (_k === "star") cntHi(sg, cs.slots.length, false); else if (_k === "off") cntHi(sg, -1, false); }
+          if (_k !== st.hiKey) { st.hiKey = _k; if (_k === "star") { var ls = cs.slots[cs.slots.length - 1]; if (ls && ls.late) cntHi(sg, cs.slots.length - 1, true); else cntHi(sg, cs.slots.length, false); } else if (_k === "off") cntHi(sg, -1, false); }
         }
         if (opt.sound && !st.soundDone) { st.soundDone = true; playMelody(sg, bs); }
         var bi = Math.floor(tb - pk + 1e-6);   /* 小節の あたまから かぞえた はく（アウフタクトは マイナス） */
@@ -1104,10 +1104,10 @@ function renderScore(bars, beatsPerBar, opt) {
     "01": "1:1 2 3 4 | 1:1 は",
     "02": "1:1 2 | .5:1 と 2 は",
     "03": "1:1 2 3 4 | 1:1 2 3 は",
-    "04": "1:1 2 3 4 | 1:1 2 3 は",
+    "04": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "05": "1:1 2 | .5:1 と 2 は",
     "06": "1:1 2 | .5:1 と 2 は",
-    "07": "1:1 2 3 4 | 1:1 2 3 は",
+    "07": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "08": "1:1 2 | .5:1 と 2 は",
     "09": "1:1 2 3 4 | 1:1 2 は",
     "10": "1:1 2 | .5:1 と 2 は",
@@ -1118,37 +1118,38 @@ function renderScore(bars, beatsPerBar, opt) {
     "15": "1:1 2 | .5:1 と 2 は",
     "16": "1:1 2 | .5:1 と 2 は",
     "17": "1:1 2 | .5:1 と 2 は",
-    "18": "1:1 2 3 4 | 1:1 2 3 は",
+    "18": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "19": "1:1 2 3 4 | 1:1 2 3 は",
-    "20": "1:1 2 3 4 | 1:1 2 3 は",
+    "20": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "21": "1:1 2 3 | .5:1 と 2 は",
     "22": "1:1 2 3 4 | 1:1 2 は",
     "23": "1:1 2 3 4 | 1:1 2 3 は",
     "24": "1:1 2 3 | .5:1 と 2 は",
-    "25": "1:1 2 3 4 | 1:1 2 3 は",
+    "25": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "26": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "27": "1:1 2 3 | .5:1 と 2 と 3 は",
     "28": "1:1 2 3 4 | .5:1 と 2 と 3 と は",
     "29": "1:1 2 3 | 1:1 2 は",
     "30": "1:1 2 | .5:1 と は",
-    "31": "1:1 2 3 4 | 1:1 2 3 は",
+    "31": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は",
     "32": "1:1 2 | .5:1 と 2 は",
     "33": "1:1 2 3 | .333333:*1 2 3 *4 5 6 *7 8 9",
     "34": "1:1 2 | .5:1 と 2 は",
-    "35": "1:1 2 | .333333:*1 2 3 *4 は",
-    "36": "1:1 2 3 4 | 1:1 2 3 は"
+    "35": ".333333:*1 2 3 *4 5 6 | .333333:*1 2 3 *4 5 は@",
+    "36": "1:1 2 3 4 | .5:1 と 2 と 3 と 4 は"
   };
   /* カウントの ぜんぶ：slots=[{t(おとの はじまりから はかった ひらき), lab, big, hai}]、bars=[しょうせつせんの t]、pre=ぜんたいの ながさ、star=★の t */
   function countSlots(sg) {
     if (sg.__cs) return sg.__cs;
     var f0 = sg.bars && sg.bars[0], sm = 0; if (f0) f0.forEach(function (q) { sm += q[1]; });
     var lead = !!(sg.seq[0] && sg.seq[0][0] === -99 && sg.seq[0][1] < sg.bp - 1e-4);
-    var pk = (!lead && sm < sg.bp - 1e-4) ? sm : 0, slots = [], bars = [], pre = 0, spec = COUNTS[sg.c];
+    var pk = (!lead && sm < sg.bp - 1e-4) ? sm : 0, slots = [], bars = [], pre = 0, spec = COUNTS[sg.c], late = false;
     if (spec) {
       spec.split("|").forEach(function (bar, bi) {
         var m = bar.trim().split(":"), d = parseFloat(m[0]), toks = m[1].trim().split(/\s+/);
         if (bi > 0) bars.push(pre);
-        toks.forEach(function (w) { var big = w.charAt(0) === "*"; if (big) w = w.slice(1); slots.push({ t: pre, lab: w === "は" ? "はい" : w, big: big, hai: w === "は" }); pre += d; });
+        toks.forEach(function (w, wi) { var big = w.charAt(0) === "*"; if (big) w = w.slice(1);
+          if (w === "は@") { late = true; return; } slots.push({ t: pre, lab: w === "は" ? "はい" : w, big: big, hai: w === "は", hd: wi === 0 }); pre += d; });
       });
     } else {
       var base = sg.ts ? sg.bp : (sg.bp === 2 ? 4 : sg.bp);
@@ -1160,9 +1161,10 @@ function renderScore(bars, beatsPerBar, opt) {
     }
     /* さいしょが 休符の きょく（主よ）：おとの はじまりの 休符の ところが 「はい！」 */
     var starT = 0;
+    if (late) { slots.push({ t: pre, lab: "はい", big: false, hai: true, lead: true, late: true }); starT = 1e6; }
     if (lead) { slots.push({ t: pre, lab: "はい", big: false, hai: true, lead: true }); starT = sg.seq[0][1]; }
     slots.forEach(function (q) { q.t -= pre; }); bars = bars.map(function (x) { return x - pre; });
-    if (lead) { slots[slots.length - 1].t = 0; }
+    if (lead || late) { slots[slots.length - 1].t = 0; }
     return (sg.__cs = { slots: slots, bars: bars, pre: pre, star: starT, lead: lead, pk: pk });
   }
   /* がくふの うえの カウントを、いま かぞえている ばしょだけ おおきく ひからせる（idx<0 で もとに もどす。idx=slots.length が ★） */
