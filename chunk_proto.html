@@ -467,7 +467,19 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     } catch (e) { return null; }
   }
   /* タッチのたびに、まだ あいていなければ あける（iPhoneは どの タッチで あくか きまっていないので、何回か ためす） */
+  /* iPhoneの マナーモード（ミュート）でも 音が でるように「さいせい」モードに する */
+  var sessDone = false;
+  function playbackSession() {
+    if (sessDone) return; sessDone = true;
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    try {
+      var a = document.createElement("audio"); a.setAttribute("playsinline", ""); a.loop = true; a.volume = 0.01;
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+      var p = a.play(); if (p && p.catch) p.catch(function () { sessDone = false; });
+    } catch (e) { sessDone = false; }
+  }
   function tryUnlock() {
+    playbackSession();
     var c = ensureCtx();
     if (!c) return;
     try {
