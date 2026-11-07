@@ -783,6 +783,15 @@
       if (mt) cel.push(mt);
     }
 
+    /* 👑→🏅 ふよみ名人：20問ぜんぶ いっぱつ せいかいの れんぞくが 100回（200回…）に なった ひとかい */
+    if (acc === 100 && is20 && run1 > 0 && run1 % 100 === 0) {
+      var lg = addAch(idx, "legend", run1);
+      if (lg) {
+        cel.push(lg);
+        try { Storage.set("onpu_legend_count_" + idx, getAch(idx).filter(function (r) { return r && r.type === "legend"; }).length); } catch (e) {}
+      }
+    }
+
     try { initProfiles(); } catch (e) {}
 
     /* 10問かんぺき → 「つぎは きろくに のこる 20問に チャレンジ！」の声（ファンファーレが おわってから） */
@@ -1188,16 +1197,16 @@
     try {
       var t2 = document.getElementById("tTab2");
       if (t2) t2.style.display = "none";
-      /* むかしの 100回目の テスト用ボタンは つかわない */
+      /* 100回目の テスト用ボタンは、20問れんぞくで うごくように つくりなおして つかう */
       window.resetParentPasswordByTeacher = function () {};   /* 保護者パスワードの リセットは つかわない */
       var tab3b = document.getElementById("teacherTab3");
       if (tab3b) {
         Array.prototype.forEach.call(tab3b.querySelectorAll("button"), function (bt) {
           var oc = bt.getAttribute("onclick") || "";
-          if (oc.indexOf("setStreak99ForTest") !== -1 || oc.indexOf("resetLegendForTest") !== -1 || oc.indexOf("resetParentPasswordByTeacher") !== -1) bt.style.display = "none";
+          if (oc.indexOf("resetParentPasswordByTeacher") !== -1) bt.style.display = "none";
         });
         Array.prototype.forEach.call(tab3b.querySelectorAll("div"), function (dv) {
-          if (dv.children.length === 0 && dv.textContent.indexOf("100回目のテスト") !== -1) dv.style.display = "none";
+          /* 見出し「100回目のテスト」は のこす */
         });
       }
     } catch (e) {}
@@ -2164,6 +2173,25 @@
     }
   } catch (e) {}
 })();
+
+/* ===== 🏅 ふよみ名人（20問ぜんぶ いっぱつ せいかい 100回れんぞく）の テスト用ボタン ===== */
+window.setStreak99ForTest = function () {
+  var i = activeProfileIndex;
+  Storage.set("fy_run_now_" + i, 99);
+  alert((profiles[i] || "") + " さんの 20問れんぞくを 99回に しました。\nトップに もどって、20問を ぜんぶ いっぱつで せいかいすると、100回目の ふよみ名人が 出ます。");
+  try { initProfiles(); } catch (e) {}
+};
+window.resetLegendForTest = function () {
+  var i = activeProfileIndex;
+  Storage.set("fy_run_now_" + i, 0);
+  Storage.set("fy_run_best_" + i, 0);
+  Storage.set("onpu_legend_count_" + i, 0);
+  Storage.set("onpu_legend_" + i, false);
+  var a = Storage.get("fy_ach_" + i, []);
+  if (Array.isArray(a)) Storage.set("fy_ach_" + i, a.filter(function (r) { return !(r && r.type === "legend"); }));
+  alert((profiles[i] || "") + " さんの ふよみ名人の きろくと 20問れんぞくを リセットしました。");
+  try { initProfiles(); } catch (e) {}
+};
 
 /* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
 (function () {
