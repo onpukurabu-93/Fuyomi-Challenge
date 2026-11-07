@@ -463,7 +463,7 @@ body { display: flex; justify-content: center; align-items: center; }
 <div id="legendModal" class="modal-bg legend-bg hidden">
   <div class="modal-box legend-box">
     <div class="legend-crown">👑</div>
-    <div class="legend-title">ふよみレジェンド</div>
+    <div class="legend-title">ふよみ名人</div>
     <div class="legend-name" id="legendStudentName">〇〇 さん</div>
     <div class="legend-count">パーフェクト 100回 れんぞく！</div>
     <div class="legend-comment">
@@ -633,7 +633,7 @@ function getLegendCount(idx) {
 }
 
 function legendMark(idx) {
-  return getLegendCount(idx) > 0 ? "👑 " : "";
+  return getLegendCount(idx) > 0 ? "🏅 " : "";
 }
 
 /* ⏱ 残っているタイマーを管理（連打や画面移動でタイマーが重ならないようにする） */
@@ -1064,7 +1064,7 @@ function initProfiles() {
   const legendBox = document.getElementById("legendRecord");
   const legendCount = getLegendCount(activeProfileIndex);
   if (legendCount > 0) {
-    legendBox.textContent = `👑 100回れんぞく達成 ×${legendCount}`;
+    legendBox.textContent = `🏅 ふよみ名人（100回れんぞく） ×${legendCount}`;
     legendBox.classList.remove("hidden");
   } else {
     legendBox.textContent = "";
