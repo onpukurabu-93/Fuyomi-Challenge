@@ -2168,7 +2168,7 @@
 /* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
 (function () {
   /* ★ もとに もどしたい ときは、下の 1行を false に する */
-  var HIDE_OLD_LEGEND = false;
+  var HIDE_OLD_LEGEND = true;
   if (!HIDE_OLD_LEGEND) return;
 
   /* 名前の前の 👑、トップの「100回達成」の行、金色の おいわい画面 */
