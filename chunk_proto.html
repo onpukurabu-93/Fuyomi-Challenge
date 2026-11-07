@@ -1108,6 +1108,43 @@ function renderScore(bars, beatsPerBar, opt) {
   /* ===== カウントの きめかた（きょくごとに さだめる） =====
      「はく:かず かず … | はく:かず …」。| は しょうせつせん。 * は おおきく。 は は 「はい！」。
      はく = 1つの かずの ながさ（1=4ぶおんぷ、.5=8ぶおんぷ）。かいてない きょくは、1しょうせつぶんを 1・2・3… と かぞえて さいごが 「はい！」 */
+  /* 作曲者（がくふ画面に出す。空の曲は出さない） */
+  var COMPOSERS = {
+    "02": "イギリス民謡",
+    "03": "岡野貞一 作曲",
+    "04": "岡野貞一 作曲",
+    "06": "文部省唱歌",
+    "07": "文部省唱歌",
+    "08": "イギリス民謡",
+    "09": "ガブリエル＝マリー 作曲",
+    "10": "草川信 作曲",
+    "11": "ドイツ民謡",
+    "12": "フランス民謡",
+    "13": "文部省唱歌",
+    "14": "スコットランド民謡",
+    "15": "ルソー 作曲（伝）",
+    "16": "納所弁次郎 作曲",
+    "17": "梁田貞 作曲",
+    "18": "滝廉太郎 作曲",
+    "19": "ベートーヴェン 作曲",
+    "20": "エルガー 作曲",
+    "21": "ベートーヴェン 作曲",
+    "22": "ヴェルディ 作曲",
+    "23": "林広守 作曲",
+    "24": "ホルスト 作曲",
+    "25": "山田耕筰 作曲",
+    "26": "文部省唱歌",
+    "28": "シューマン 作曲",
+    "29": "サン＝サーンス 作曲",
+    "30": "シューベルト 作曲",
+    "32": "ハイドン 作曲",
+    "33": "バッハ 作曲",
+    "34": "モーツァルト 作曲",
+    "35": "ランゲ 作曲",
+    "37": "ドイツ民謡",
+    "38": "ビショップ 作曲",
+    "39": "フランス民謡"
+  };
   var COUNTS = {
     "01": "1:1 2 3 4 | 1:1 は",
     "02": "1:1 2 | .5:1 と 2 は",
@@ -1206,7 +1243,7 @@ function renderScore(bars, beatsPerBar, opt) {
     scStop();
     curScoreSong = sg;
     var sc = document.getElementById("songScr");
-    sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0;">' + sg.no + '．' + sg.title + '</div>' +
+    sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + sg.no + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay, ks: sg.ks, dbl: sg.dbl, ts: sg.ts, b4: sg.b4 }) + '</div>' +
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scAgain" style="margin-top:14px;background:#fb8c00;">🔁 もういちど ひく</button>' +
