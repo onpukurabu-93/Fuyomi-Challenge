@@ -926,7 +926,7 @@ function renderScore(bars, beatsPerBar, opt) {
       h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:8px;padding:14px;font-size:18px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
       if (open) g.list.forEach(function (i) {
         var sg = SONGS[i];
-        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="display:block;font-size:12px;font-weight:600;opacity:.8;margin-top:2px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
+        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
       });
     });
     h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
