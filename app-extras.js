@@ -783,9 +783,16 @@
       if (mt) cel.push(mt);
     }
 
-    /* 👑→🏅 ふよみ名人：20問ぜんぶ いっぱつ せいかいの れんぞくが 100回（200回…）に なった ひとかい */
-    if (acc === 100 && is20 && run1 > 0 && run1 % 100 === 0) {
-      var lg = addAch(idx, "legend", run1);
+    /* 🏅 ふよみ名人：「全カード レベル5」の 20問を ぜんぶ いっぱつ せいかいする れんぞくが 100回（200回…）に なった ひとかい
+       ほかの コース・レベルは 数えない（まちがえたら 0に もどる） */
+    var mRun = 0;
+    if (is20 && selectedClef === "all" && selectedLevel === 5) {
+      var kMj = "fy_meijin_run_" + idx;
+      mRun = (acc === 100) ? Storage.getNumber(kMj, 0) + 1 : 0;
+      Storage.set(kMj, mRun);
+    }
+    if (acc === 100 && mRun > 0 && mRun % 100 === 0) {
+      var lg = addAch(idx, "legend", mRun);
       if (lg) {
         cel.push(lg);
         try { Storage.set("onpu_legend_count_" + idx, getAch(idx).filter(function (r) { return r && r.type === "legend"; }).length); } catch (e) {}
@@ -2177,12 +2184,13 @@
 /* ===== 🏅 ふよみ名人（20問ぜんぶ いっぱつ せいかい 100回れんぞく）の テスト用ボタン ===== */
 window.setStreak99ForTest = function () {
   var i = activeProfileIndex;
-  Storage.set("fy_run_now_" + i, 99);
-  alert((profiles[i] || "") + " さんの 20問れんぞくを 99回に しました。\nトップに もどって、20問を ぜんぶ いっぱつで せいかいすると、100回目の ふよみ名人が 出ます。");
+  Storage.set("fy_meijin_run_" + i, 99);
+  alert((profiles[i] || "") + " さんの「全カード レベル5」の れんぞくを 99回に しました。\nトップに もどって、全カード レベル5の 20問を ぜんぶ いっぱつで せいかいすると、100回目の ふよみ名人が 出ます。");
   try { initProfiles(); } catch (e) {}
 };
 window.resetLegendForTest = function () {
   var i = activeProfileIndex;
+  Storage.set("fy_meijin_run_" + i, 0);
   Storage.set("fy_run_now_" + i, 0);
   Storage.set("fy_run_best_" + i, 0);
   Storage.set("onpu_legend_count_" + i, 0);
