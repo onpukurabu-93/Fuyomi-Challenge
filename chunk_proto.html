@@ -891,7 +891,7 @@ function renderScore(bars, beatsPerBar, opt) {
   /* ===== ごうかく コード（せんせいが LINE で おくる） ===== */
   function normName(s) { return String(s || "").normalize("NFKC").replace(/\s+/g, ""); }
   function passSig(name, c) { return signOf("PASS|" + normName(name) + "|" + c); }
-  function playSig(name, c) { return signOf("PLAY|" + normName(name) + "|" + c); }   /* ⭐ えんそう ごうかく */
+  function playSig(name, c) { return signOf("PLAY|" + normName(name) + "|" + c); }   /* ⭐ せんせいの ごうかく */
   function getPlay() { var a = getJSON("fy_play_" + PID, {}); return (a && typeof a === "object") ? a : {}; }
   function playCount() { var p = getPlay(), n = 0; SONGS.forEach(function (s) { if (p[s.c]) n++; }); return n; }
   function getPass() { var a = getJSON("fy_pass_" + PID, {}); return (a && typeof a === "object") ? a : {}; }
@@ -910,11 +910,13 @@ function renderScore(bars, beatsPerBar, opt) {
       var q = getPlay(), nq = !q[sg.c];
       q[sg.c] = todayStr();
       try { localStorage.setItem("fy_play_" + PID, JSON.stringify(q)); } catch (e) {}
-      return { ok: true, msg: "⭐ 「" + sg.title + "」 えんそう ごうかく！" + (nq ? "" : "（もう ごうかくしているよ）"), song: sg };
+      if (nq && playCount() >= SONGS.length) setTimeout(function () { grantAward("maestro", false); }, 600);
+    return { ok: true, msg: "⭐ 「" + sg.title + "」 せんせいの ごうかく！" + (nq ? "" : "（もう ごうかくしているよ）"), song: sg };
     }
     var p = getPass(), nw = !p[sg.c];
     p[sg.c] = todayStr();
     try { localStorage.setItem("fy_pass_" + PID, JSON.stringify(p)); } catch (e) {}
+    if (nw && passCount() >= SONGS.length) setTimeout(function () { grantAward("legend", false); }, 600);
     return { ok: true, msg: "🎉 「" + sg.title + "」 ごうかく！" + (nw ? "" : "（もう ごうかくしているよ）"), song: sg };
   }
   /* コードが ふくすう（「_」「,」「スペース」で くぎる）でも まとめて うけつける */
@@ -967,8 +969,8 @@ function renderScore(bars, beatsPerBar, opt) {
     sc.style.display = "block";
     var ps = getPass(), pl = getPlay();
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
-            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう<br><span style="font-size:14px;color:#2e7d32;">✅ ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ えんそう ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
-            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに ごうかくを もらおう。</div>';
+            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう<br><span style="font-size:14px;color:#2e7d32;">✅ ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ せんせいの ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
+            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひく か うたう（ドレミ）で、せんせいに ごうかくを もらおう。</div>';
     /* きょくを レベルごとの グループに わける（ふえた ときは、GROUPS の ids に c を たす） */
     var inG = {};
     GROUPS.forEach(function (g) { g.list = []; g.ids.forEach(function (c) { SONGS.forEach(function (sg, i) { if (sg.c === c) { g.list.push(i); inG[c] = 1; } }); }); });
@@ -1114,9 +1116,9 @@ function renderScore(bars, beatsPerBar, opt) {
     if (follow.on || pianoOn) { follow.on = false; pianoStop(); }
     follow.on = false;
     try { if (melodyOut) melodyOut.disconnect(); } catch (e) {}
-    var f = document.getElementById("scFollow"); if (f) { f.textContent = "🎹 ひいてみる"; f.style.background = "#5c6bc0"; }
+    var f = document.getElementById("scFollow"); if (f) { f.textContent = "🎹 おとかくにん"; f.style.background = "#5c6bc0"; }
     var d = document.getElementById("scDemo"); if (d) { d.textContent = "▶ おてほん"; d.style.background = "#7e57c2"; }
-    var tg = document.getElementById("scTog"); if (tg) { tg.textContent = "🥁 いっしょに"; tg.style.background = "#00897b"; }
+    var tg = document.getElementById("scTog"); if (tg) { tg.textContent = "🥁 れんしゅう"; tg.style.background = "#00897b"; }
     var cl = document.getElementById("scCntLbl"); if (cl) { cl.style.display = ""; try { cntHi(curSongRef, -1, false); } catch (e) {} }
   }
   /* レベル5：ひきおわった とき（ファンファーレ・はくしゅ・ことば） */
@@ -1330,15 +1332,15 @@ function renderScore(bars, beatsPerBar, opt) {
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + sg.no + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay, ks: sg.ks, dbl: sg.dbl, ts: sg.ts, b4: sg.b4 }) + '</div>' +
-      '<div style="font-size:12px;color:#806c5a;margin:8px 0;">ふえを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
+      '<div style="font-size:12px;color:#806c5a;margin:8px 0;">おんぷを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scAgain" style="margin-top:14px;background:#fb8c00;">🔁 もういちど ひく</button>' +
       '<button class="btn" id="scNext" style="margin-top:8px;background:#43a047;">' + nextLabel(sg) + '</button>' +
       '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:140px;">もどる（きょくを えらぶ）</button>' +
       '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
       '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
-      '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 2px;font-size:14px;flex:1;">🎹 ひいてみる</button>' +
+      '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 2px;font-size:14px;flex:1;">🎹 おとかくにん</button>' +
       '<button class="btn" id="scDemo" style="background:#7e57c2;margin:0;padding:11px 2px;font-size:14px;flex:1;">▶ おてほん</button>' +
-      '<button class="btn" id="scTog" style="background:#00897b;margin:0;padding:11px 2px;font-size:14px;flex:1;">🥁 いっしょに</button></div>' +
+      '<button class="btn" id="scTog" style="background:#00897b;margin:0;padding:11px 2px;font-size:14px;flex:1;">🥁 れんしゅう</button></div>' +
       '<button class="btn" id="scSpd" style="background:#8d6e63;margin:6px auto 0;padding:7px;font-size:13px;display:block;max-width:520px;width:100%;"></button>' +
       '<button class="btn" id="scCnt" style="background:#8d6e63;margin:6px auto 0;padding:7px;font-size:13px;display:block;max-width:520px;width:100%;"></button>' +
       '<div id="scSt" style="font-size:13px;min-height:18px;margin-top:5px;color:#5b4636;text-align:center;"></div></div>';
@@ -1658,7 +1660,7 @@ function renderScore(bars, beatsPerBar, opt) {
         var cn = songCleared("legend", song.id);
         msg += "<br>🎉 ノーミス！ ノーミスの きょく：" + cn + " / " + AWARD_N;
       } else {
-        msg += "<br>ノーミスで クリアすると、100きょくの かずに はいるよ（いま " + songCount("legend") + " / " + AWARD_N + "）";
+        msg += "<br>ノーミスで クリアすると、ノーミスの きょくの かずに はいるよ（いま " + songCount("legend") + " / " + AWARD_N + "）";
       }
     }
     if (level === 5) markSeen(song.id);
@@ -1844,7 +1846,7 @@ function renderScore(bars, beatsPerBar, opt) {
     }).catch(function (e) {
       var inF = false; try { inF = !!(follow && follow.on); } catch (e2) {}
       if (inF) { try { document.getElementById("scFollow").click(); } catch (e3) {} }   /* 「きいてるよ」のままに ならないよう、もとの ボタンに もどす */
-      pSt(inF ? "マイクが つかえません。「🎹 ひいてみる」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。" : "マイクが つかえません。「🎹 ピアノで こたえる」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。");
+      pSt(inF ? "マイクが つかえません。「🎹 おとかくにん」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。" : "マイクが つかえません。「🎹 ピアノで こたえる」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。");
       document.getElementById("pianoOpt").style.display = "block";
     });
   }
@@ -1891,11 +1893,11 @@ function renderScore(bars, beatsPerBar, opt) {
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
-  /* ===== レジェンド・マエストロの 表彰（100曲） ===== */
-  var AWARD_N = 100;
+  /* ===== レジェンド・マエストロの 表彰（ぜんぶの きょくで ごうかく） ===== */
+  var AWARD_N = SONGS.length;
   var AW = {
-    legend:  { type: "legend5", icon: "👑", label: "ふよみレジェンド", sub: "ノーミス 100曲 たっせい！", snd: "awardLegend", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f", fall: ["👑", "✨", "🎉", "⭐"] },
-    maestro: { type: "maestro", icon: "🎹", label: "ふよみマエストロ", sub: "ながい曲 100曲 たっせい！", snd: "awardMaestro", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a", fall: ["🎹", "🎼", "✨", "🎉"] }
+    legend:  { type: "legend5", icon: "👑", label: "ふよみレジェンド", sub: "ぜんぶの きょくで ふよみごうかく！", snd: "awardLegend", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f", fall: ["👑", "✨", "🎉", "⭐"] },
+    maestro: { type: "maestro", icon: "🎹", label: "ふよみマエストロ", sub: "ぜんぶの きょくで せんせいの ごうかく！", snd: "awardMaestro", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a", fall: ["🎹", "🎼", "✨", "🎉"] }
   };
   function codeFor(name, type, n, dateStr) {
     var t = [name, type, n, dateStr, SALT].join("|"), h = 2166136261 >>> 0;
@@ -1911,7 +1913,6 @@ function renderScore(bars, beatsPerBar, opt) {
     var k = "fy_chunk_songs_" + kind + "_" + PID, a = getJSON(k, []);
     if (!Array.isArray(a)) a = [];
     if (a.indexOf(songId) === -1) { a.push(songId); try { localStorage.setItem(k, JSON.stringify(a)); } catch (e) {} }
-    if (a.length >= AWARD_N) grantAward(kind, false);
     return a.length;
   }
   function songCount(kind) { var a = getJSON("fy_chunk_songs_" + kind + "_" + PID, []); return Array.isArray(a) ? a.length : 0; }
@@ -1966,7 +1967,7 @@ function renderScore(bars, beatsPerBar, opt) {
       rows += "<tr><td>レベル" + l + " <span style='font-size:11px'>(" + LEVELS[l - 1] + "音)</span></td><td>" + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + "</td><td>" + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
     rows += "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>ふよみテスト ごうかく <b>" + evPassCount() + "</b> きょく</td></tr>" +
-      "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>⭐ えんそう ごうかく <b>" + evPlayCount() + "</b> きょく</td></tr>";
+      "<tr><td>レベル5 <span style='font-size:11px'>(きょく)</span></td><td colspan='2'>⭐ せんせいの ごうかく <b>" + evPlayCount() + "</b> きょく</td></tr>";
     var c = makeEventCode(), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     document.getElementById("evIn").innerHTML =
