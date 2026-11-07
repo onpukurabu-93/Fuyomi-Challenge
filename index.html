@@ -1661,6 +1661,11 @@ function showTeacherAuth() {
   document.getElementById("mgSelectSection").classList.add("hidden"); document.getElementById("teacherSection").classList.remove("hidden");
   document.getElementById("teacherAuthBox").classList.remove("hidden"); document.getElementById("teacherContentBox").classList.add("hidden");
   document.getElementById("teacherPassInput").value = "";
+  /* ★ 先生パスワードなしで ひらく（まだ だれも つかっていない あいだだけ）。もどすときは、下の true を false に する */
+  const SKIP_TEACHER_PASS = true;
+  if (SKIP_TEACHER_PASS) {
+    document.getElementById("teacherAuthBox").classList.add("hidden"); document.getElementById("teacherContentBox").classList.remove("hidden"); renderTeacherView();
+  }
 }
 function verifyTeacherPass() {
   if (document.getElementById("teacherPassInput").value.trim() === TEACHER_PASSWORD) {
