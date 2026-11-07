@@ -1789,7 +1789,9 @@ function renderScore(bars, beatsPerBar, opt) {
       pSt("きいています。ピアノで こたえてね");
       pLoop();
     }).catch(function (e) {
-      pSt("マイクが つかえません。ボタンを もういちど おしてね。（だめなら アプリを とじて ひらきなおす）");
+      var inF = false; try { inF = !!(follow && follow.on); } catch (e2) {}
+      if (inF) { try { document.getElementById("scFollow").click(); } catch (e3) {} }   /* 「きいてるよ」のままに ならないよう、もとの ボタンに もどす */
+      pSt(inF ? "マイクが つかえません。「🎹 ひいてみる」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。" : "マイクが つかえません。「🎹 ピアノで こたえる」を もういちど おしてね。だめなら アプリを とじて ひらきなおして、マイクを ゆるしてね。");
       document.getElementById("pianoOpt").style.display = "block";
     });
   }
