@@ -692,7 +692,7 @@ function renderScore(bars, beatsPerBar, opt) {
     var avail = RIGHT - x0, lb = 0; ln.forEach(function (x) { lb += x.beats; });
     var curBW = (typeof prevBW === "number") ? prevBW : BW;
     var lastShort = (li === lines.length - 1 && li > 0 && lb < lines[0].reduce(function (a, z) { return a + z.beats; }, 0) * 0.8);
-    if (!lastShort && (explicit[li] || lb >= LINE_BEATS * 0.8 - 1e-6)) curBW = (avail - (PADL + PADR) * ln.length) / lb;   /* 1だんを ちょうど うめる */
+    if (!lastShort && (explicit[li] || lb >= LINE_BEATS * 0.8 - 1e-6)) curBW = (avail - ln.reduce(function (a2, z) { return a2 + z.pl + PADR; }, 0)) / lb;   /* 1だんを ちょうど うめる */
     prevBW = curBW;
     var tot = 0; ln.forEach(function (x) { x.w = x.pl + PADR + x.beats * curBW; tot += x.w; });
     var sc = 1;
@@ -1402,6 +1402,21 @@ function renderScore(bars, beatsPerBar, opt) {
       document.getElementById("scFollow").click();   /* さいしょの おとから 🎹ひいてみる を やりなおす */
     });
     document.getElementById("scNext").addEventListener("click", function () { scStop(); showScore(nextSongOf(sg)); });
+    /* がくふを よこに スワイプ：ひだりへ ＝ つぎの きょく、みぎへ ＝ まえの きょく */
+    (function () {
+      var box0 = document.getElementById("scBox"), sx = 0, sy = 0, st0 = 0, ok = false;
+      if (!box0) return;
+      box0.addEventListener("touchstart", function (e) { var t = e.touches[0]; sx = t.clientX; sy = t.clientY; st0 = Date.now(); ok = e.touches.length === 1; }, { passive: true });
+      box0.addEventListener("touchend", function (e) {
+        if (!ok) return; ok = false;
+        var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Date.now() - st0 > 800 || Math.abs(dx) < 80 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
+        if (follow.on || runSt) return;
+        if (dx < 0) { scStop(); showScore(nextSongOf(sg)); }
+        else { var L = orderedSongs(), k = L.indexOf(sg); if (k >= 0) { scStop(); showScore(L[(k - 1 + L.length) % L.length]); } }
+        window.scrollTo(0, 0);
+      }, { passive: true });
+    })();
     /* きょくを えらんだら、がくふの なまえが 画面の いちばん うえに くるように する（レベルの ボタンは うえに かくれる） */
     function toScoreTop() { try { var y = sc.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0, y)); } catch (e) { window.scrollTo(0, 0); } }
     toScoreTop();
