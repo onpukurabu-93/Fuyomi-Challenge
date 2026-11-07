@@ -906,13 +906,13 @@ function renderScore(bars, beatsPerBar, opt) {
     document.getElementById("kb").style.display = "none";
     document.getElementById("pianoBox").style.display = "none";
     document.getElementById("howTx").style.display = "none";
-    document.getElementById("subTx").textContent = "ト音記号　がくふを みて ひいてみよう";
+    document.getElementById("subTx").textContent = "";
     var sc = document.getElementById("songScr");
     sc.style.display = "block";
     var ps = getPass(), pl = getPlay();
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
-            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう　<span style="font-size:14px;color:#2e7d32;">ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ えんそう ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
-            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに きいてもらおう。</div>';
+            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう<br><span style="font-size:14px;color:#2e7d32;">✅ ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ えんそう ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
+            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひけるように なったら、せんせいに ごうかくを もらおう。</div>';
     /* きょくを レベルごとの グループに わける（ふえた ときは、GROUPS の ids に c を たす） */
     var inG = {};
     GROUPS.forEach(function (g) { g.list = []; g.ids.forEach(function (c) { SONGS.forEach(function (sg, i) { if (sg.c === c) { g.list.push(i); inG[c] = 1; } }); }); });
