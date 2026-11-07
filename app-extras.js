@@ -254,10 +254,10 @@
     treble: { icon: "🎼", label: "ト音記号マスター", bg: "#eaf6ff", bd: "#2a8fd6", tx: "#1a4a7a", ac: "#2a8fd6", cbg: "#fff", ctx: "#1a4a7a" },
     bass:   { icon: "🎼", label: "ヘ音記号マスター", bg: "#eafaf0", bd: "#2fa862", tx: "#1f5a3a", ac: "#2fa862", cbg: "#fff", ctx: "#1f5a3a" },
     master: { icon: "🎓", label: "ふよみマスター", bg: "#fff0f5", bd: "#e0527f", tx: "#7a2b4a", ac: "#e0527f", cbg: "#fff", ctx: "#7a2b4a" },
-    legend: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
+    legend: { icon: "🏅", label: "ふよみ名人", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
     legend5: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
     maestro: { icon: "🎹", label: "ふよみマエストロ", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a" },
-    legend1000: { icon: "👑", label: "ふよみレジェンド", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
+    legend1000: { icon: "🏅", label: "ふよみ名人", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
   };
   function infoOf(rec) {
     if (rec.type === "legend" && rec.n >= 1000) return INFO.legend1000;
@@ -265,14 +265,14 @@
   }
   function titleOf(rec) {
     if (rec.type === "stamp") return "スタンプカード " + rec.n + " まいめ";
-    if (rec.type === "legend") return "ふよみレジェンド";
+    if (rec.type === "legend") return "ふよみ名人";
     return INFO[rec.type].label;
   }
   function subOf(rec) {
     if (rec.type === "stamp") return "かんせい！";
     if (rec.type === "legend") return "パーフェクト " + rec.n + "回 れんぞく！";
-    if (rec.type === "legend5") return "ノーミス 100曲 たっせい！";
-    if (rec.type === "maestro") return "ながい曲 100曲 たっせい！";
+    if (rec.type === "legend5") return "ぜんぶの きょくで ふよみごうかく！";
+    if (rec.type === "maestro") return "ぜんぶの きょくで せんせいの ごうかく！";
     return "おめでとう！";
   }
 
@@ -1216,8 +1216,8 @@
             '<option value="treble">ト音記号マスター</option>' +
             '<option value="bass">ヘ音記号マスター</option>' +
             '<option value="master">ふよみマスター</option>' +
-            '<option value="legend5">ふよみレジェンド（100曲）</option>' +
-            '<option value="maestro">ふよみマエストロ（100曲）</option>' +
+            '<option value="legend5">ふよみレジェンド（ふよみごうかく ぜんぶ）</option>' +
+            '<option value="maestro">ふよみマエストロ（せんせいの ごうかく ぜんぶ）</option>' +
             '<option value="exchange">ポイント こうかん</option>' +
           '</select>' +
           '<input id="fcDate" class="modal-input" type="date">' +
@@ -2168,7 +2168,7 @@
 /* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
 (function () {
   /* ★ もとに もどしたい ときは、下の 1行を false に する */
-  var HIDE_OLD_LEGEND = true;
+  var HIDE_OLD_LEGEND = false;
   if (!HIDE_OLD_LEGEND) return;
 
   /* 名前の前の 👑、トップの「100回達成」の行、金色の おいわい画面 */
