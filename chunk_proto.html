@@ -356,7 +356,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     SONGS.forEach(function (sg, i) {
       if (l.indexOf(sg.id) === -1) return;
       var r = getSongRec(sg.id);
-      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:11px;font-size:15px;">🎼 ' + (sg.no ? sg.no + '. ' : '') + sg.title + (r.bestPerfect ? '　✅ ' + fmt(r.bestPerfect) : '') + '</button>';
+      h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin-top:6px;padding:11px;font-size:15px;">🎼 ' + (sg.no ? grpIcon(sg) + dispNo(sg) + '. ' : '') + sg.title + (r.bestPerfect ? '　✅ ' + fmt(r.bestPerfect) : '') + '</button>';
     });
     h += '<button class="btn back" id="seenBack" style="margin-top:10px;padding:10px;font-size:15px;">もどる</button>';
     ov.style.display = "flex"; ov.style.background = "#fff"; ov.innerHTML = h;
@@ -950,10 +950,19 @@ function renderScore(bars, beatsPerBar, opt) {
   /* ===== レベル5：がくふを みて ひく ===== */
   var groupOpen = null;
   var GROUPS = [
-    { name: "やさしい", icon: "🌱", color: "#43a047", ids: ["11", "08", "13", "05", "12", "01", "19", "23", "25", "35", "37", "41", "43", "44", "46", "50"] },
-    { name: "ふつう", icon: "🌼", color: "#fb8c00", ids: ["15", "03", "02", "04", "07", "18", "20", "24", "26", "27", "28", "30", "31", "33", "36", "38", "39", "40", "42", "45", "47", "49"] },
-    { name: "むずかしい", icon: "🔥", color: "#e53935", ids: ["16", "10", "06", "17", "14", "09", "21", "22", "29", "32", "34", "48"] }
+    { name: "やさしい", icon: "🌱", color: "#43a047", ids: ["46", "11", "12", "37", "05", "13", "08", "44", "19", "01", "23", "25", "41", "50", "43", "35"] },
+    { name: "ふつう", icon: "🌼", color: "#fb8c00", ids: ["15", "03", "02", "18", "04", "07", "31", "39", "40", "47", "38", "49", "20", "30", "42", "28", "33", "26", "27", "45", "36", "24"] },
+    { name: "むずかしい", icon: "🔥", color: "#e53935", ids: ["14", "16", "06", "10", "17", "09", "22", "34", "48", "32", "29", "21"] }
   ];
+  /* がめんの ばんごう：グループの なかの じゅんばん（ごうかくコードの ばんごう c とは べつ） */
+  function dispNo(sg) {
+    for (var gi = 0; gi < GROUPS.length; gi++) { var k = GROUPS[gi].ids.indexOf(sg.c); if (k !== -1) return String(k + 1); }
+    return sg.no;
+  }
+  function grpIcon(sg) {
+    for (var gi = 0; gi < GROUPS.length; gi++) { if (GROUPS[gi].ids.indexOf(sg.c) !== -1) return GROUPS[gi].icon; }
+    return "";
+  }
   function showLevel5() {
     micKs = 0;
     token++; if (typeof scStop === "function") scStop();
@@ -986,7 +995,7 @@ function renderScore(bars, beatsPerBar, opt) {
       h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:8px;padding:14px;font-size:18px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　⭐ ' + okp + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
       if (open) g.list.forEach(function (i) {
         var sg = SONGS[i];
-        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + sg.no + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
+        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + dispNo(sg) + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
       });
     });
     h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
@@ -1323,14 +1332,14 @@ function renderScore(bars, beatsPerBar, opt) {
     return L[(k + 1) % n];
   }
   function nextWraps(sg) { var L = orderedSongs(), nx = nextSongOf(sg); return L.indexOf(nx) <= L.indexOf(sg); }
-  function nextLabel(sg) { var n = nextSongOf(sg); return (nextWraps(sg) ? 'さいしょの きょくへ ▶' : 'つぎの きょくへ ▶') + '<br><span style="font-size:13px;font-weight:700;">' + n.no + '．' + n.title + '</span>'; }
+  function nextLabel(sg) { var n = nextSongOf(sg); return (nextWraps(sg) ? 'さいしょの きょくへ ▶' : 'つぎの きょくへ ▶') + '<br><span style="font-size:13px;font-weight:700;">' + grpIcon(n) + dispNo(n) + '．' + n.title + '</span>'; }
   var curSongRef = null;
   function showScore(sg) {
     curSongRef = sg;
     scStop();
     curScoreSong = sg;
     var sc = document.getElementById("songScr");
-    sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + sg.no + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
+    sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + grpIcon(sg) + ' ' + dispNo(sg) + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay, ks: sg.ks, dbl: sg.dbl, ts: sg.ts, b4: sg.b4 }) + '</div>' +
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;">おんぷを おすと、そこから はじめられるよ。おなじ おとが つづくときは、はっきり きって ひいてね。<br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scAgain" style="margin-top:14px;background:#fb8c00;">🔁 もういちど ひく</button>' +
@@ -2003,7 +2012,7 @@ function renderScore(bars, beatsPerBar, opt) {
   })();
   document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
   document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
-  window.__chunk = { songs: function () { return SONGS; }, micName: micName, renderScore: renderScore, nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: nextSongOf(cur).no, label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk = { songs: function () { return SONGS; }, micName: micName, renderScore: renderScore, nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: dispNo(nextSongOf(cur)), label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   start();
 })();
 </script>
