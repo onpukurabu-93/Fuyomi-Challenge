@@ -96,6 +96,9 @@ body { display: flex; justify-content: center; align-items: center; }
 .select-button.locked {
   opacity: 0.35; filter: grayscale(40%); cursor: not-allowed; box-shadow: none;
 }
+.clef-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.clef-row .select-button { flex: 1 1 0; min-width: 0; width: auto; margin-bottom: 0; font-size: 16px; padding: 6px 4px; white-space: nowrap; min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.35; }
+.clef-row .lock-tag { position: static; transform: none; font-size: 12px; padding: 0 8px; margin-bottom: 2px; }
 .lock-tag {
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
   font-size: 11px; background: rgba(0,0,0,0.2); color: white; padding: 2px 6px; border-radius: 8px;
@@ -319,15 +322,17 @@ body { display: flex; justify-content: center; align-items: center; }
 
     <button class="select-button special" onclick="startDoLesson()">🎵 6つの「ド」をおぼえよう！</button>
 
-    <button id="btnTreble" class="select-button locked" onclick="selectClef('treble')">
-      ト音記号 <span id="lockTreble" class="lock-tag">🔒 ロック</span>
-    </button>
-    <button id="btnBass" class="select-button locked" onclick="selectClef('bass')">
-      ヘ音記号 <span id="lockBass" class="lock-tag">🔒 ロック</span>
-    </button>
-    <button id="btnAll" class="select-button locked" onclick="selectClef('all')">
-      全カード <span id="lockAll" class="lock-tag">🔒 ロック</span>
-    </button>
+    <div class="clef-row">
+      <button id="btnTreble" class="select-button locked" onclick="selectClef('treble')">
+        ト音記号 <span id="lockTreble" class="lock-tag">🔒</span>
+      </button>
+      <button id="btnBass" class="select-button locked" onclick="selectClef('bass')">
+        ヘ音記号 <span id="lockBass" class="lock-tag">🔒</span>
+      </button>
+      <button id="btnAll" class="select-button locked" onclick="selectClef('all')">
+        全カード <span id="lockAll" class="lock-tag">🔒</span>
+      </button>
+    </div>
 
     <button class="select-button challenge" style="margin-top:6px;" onclick="openManagementModal()">
       🔒 管理ページ（保護者・先生）
@@ -1959,6 +1964,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112k"></script>
+<script src="app-extras.js?v=20261112m"></script>
 </body>
 </html>
