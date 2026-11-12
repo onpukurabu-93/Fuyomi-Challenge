@@ -448,7 +448,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var hasLegend = false, hasMaster = false;
     recs.forEach(function (r) {
       if (r.type === "legend") hasLegend = true;
-      if (r.type === "master") hasMaster = true;
+      if (r.type === "master" || r.type === "treble" || r.type === "bass") hasMaster = true;
     });
     var voice = heldVoice;
     heldVoice = null;
