@@ -438,7 +438,6 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:40px;">🎉</div>' +
       '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>';
     recs.forEach(function (r) { body += cardHtml(r); });
-    body += lineSendHtml(recs);
     body += sendText();
     openOverlay(body);
     if (!viewOnly) playCelSounds(recs);
@@ -779,7 +778,6 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
     if (visible.length) {
       visible.forEach(function (r) { html += cardHtml(r); });
-      html += lineSendHtml(visible);
       html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">スクショして せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     } else {
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
