@@ -1038,7 +1038,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (!bar && ttl && ttl.parentNode) {
       bar = document.createElement("div"); bar.id = "fyMeijinBar";
       bar.style.cssText = "font-size:13px;font-weight:900;color:#8a5a00;background:#fff3cd;border-radius:12px;padding:3px 10px;margin:4px auto;display:none;text-align:center;";
-      ttl.parentNode.insertBefore(bar, ttl.nextSibling);
+      /* ヘッダーの 横ならびの 中に 入れると、タイトルが たてに つぶれる。ヘッダーの 下に おく */
+      var hd = ttl.parentNode;
+      if (hd.parentNode) hd.parentNode.insertBefore(bar, hd.nextSibling); else hd.appendChild(bar);
     }
     if (!bar) return;
     var show = (selectedClef === "all" && selectedLevel === 5 && targetValue >= 20 && findAch(idx, "master"));
