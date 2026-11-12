@@ -1613,7 +1613,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try {
       add(doCards);
       [1, 2, 3, 4, 5].forEach(function (n) { add(trebleCards[n]); add(bassCards[n]); add(allCards[n]); });
-      new Image().src = "level_start.png";
+      new Image().src = "level_cover.jpg";
     } catch (e) {}
   }, 800);
 
