@@ -1372,9 +1372,15 @@ function showLevelCover(level) {
     const fails = Storage.getNumber(`fy_lvfail_${activeProfileIndex}_${selectedClef}_${level}`, 0);
     const lvId = (fails >= 4) ? "levelEncourageAudio" : ("levelUp" + level + "Audio");
     playAudioCloned(lvId);
-    levelUpCoverMs = Math.min(3200, (getSoundDurationMs(lvId) || 2400) + 300);
+    levelUpCoverMs = (getSoundDurationMs(lvId) || 2400) + 300;
   } catch (e) {}
   document.getElementById("coverLevelNumber").textContent = level;
+  /* 声が長いときは、タップで すぐ すすめる */
+  document.getElementById("coverScreen").onclick = () => {
+    if (coverTimer !== null) { clearTimeout(coverTimer); coverTimer = null; }
+    document.getElementById("coverScreen").onclick = null;
+    proceedToCards();
+  };
   const coverMs = Math.max(1200, levelUpCoverMs);
   levelUpCoverMs = 0;
   coverTimer = setTimeout(() => {
@@ -1935,6 +1941,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112f"></script>
+<script src="app-extras.js?v=20261112g"></script>
 </body>
 </html>
