@@ -548,6 +548,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🔓 テスト用：全鍵解除</div>
           <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllLevelsForDebug()">🔓 すべてのコース・レベルの鍵を一括解除</button>
+          <button class="modal-btn" style="background:#fb8c00; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockToLevel4ForTest()">🔓 レベル4まで開く（ト音・ヘ音・全カード／レベル5は閉じたまま）</button>
 
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
           <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
@@ -1885,6 +1886,23 @@ function resetLegendForTest() {
   renderTeacherView();
 }
 
+function unlockToLevel4ForTest() {
+  /* いまのプレイヤーの きろくに「合格」を書きこむ（すでに90%以上の きろくは そのまま） */
+  const idx = activeProfileIndex;
+  const rec = { accuracy: 100, time: 60000, count: 20 };
+  const put = (clef, level) => {
+    const k = `onpu_best_20_${idx}_${clef}_${level}`;
+    const old = Storage.get(k);
+    if (!old || old.accuracy < 90) Storage.set(k, rec);
+  };
+  const doBest = getDoTestBest(idx);
+  if (!doBest || doBest.accuracy < 90) Storage.set(`onpu_do_test_best_${idx}`, { accuracy: 100, time: 60000, mode: "count", count: 20 });
+  ["treble", "bass", "all"].forEach(c => { for (let l = 1; l <= 3; l++) put(c, l); });
+  /* 全カードを ひらくために、ト音・ヘ音の レベル5 だけ 合格にしておく（レベル4は 未合格なので、レベル5は ロックのまま） */
+  put("treble", 5); put("bass", 5);
+  alert("レベル4まで開きました！（ト音・ヘ音・全カード）\nレベル5は、レベル4に合格すると開きます。（テスト用）");
+  initProfiles();
+}
 function unlockAllLevelsForDebug() { Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true); alert("すべてのコースとレベルの鍵を解除しました！（テスト用）"); initProfiles(); }
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
