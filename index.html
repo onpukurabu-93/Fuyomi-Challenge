@@ -1153,6 +1153,22 @@ function saveRegistration() {
   initProfiles();
 }
 
+/* 🎉 とうろくの あとの ごあいさつ（はじめて とうろくした ときだけ） */
+function showWelcome(name) {
+  var old = document.getElementById("fyWelcome"); if (old) old.remove();
+  var d = document.createElement("div");
+  d.id = "fyWelcome";
+  d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10001;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:18px;";
+  var safe = String(name).replace(/[&<>"]/g, "");
+  d.innerHTML = '<div style="background:#fffaf0;border:3px solid #ffb74d;border-radius:20px;padding:22px 18px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3);">' +
+    '<div style="font-size:44px;line-height:1.1;">🎉🎼</div>' +
+    '<div style="font-size:21px;font-weight:900;color:#e65100;margin:8px 0;">ようこそ、' + safe + ' さん！</div>' +
+    '<div style="font-size:15px;font-weight:700;color:#5d4037;line-height:1.8;">ふよみチャレンジへ ようこそ。<br>おんぷが すらすら よめるように なる<br>ぼうけんの はじまりだよ。<br><br>まちがえても だいじょうぶ！<br>1もん ずつ、たのしく いこうね。<br>せんせいも おうえんしてるよ 🌟</div>' +
+    '<button id="fyWelcomeGo" style="margin-top:16px;width:100%;padding:14px;font-size:18px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:14px;">はじめる ▶</button></div>';
+  document.body.appendChild(d);
+  document.getElementById("fyWelcomeGo").addEventListener("click", function () { d.remove(); });
+}
+
 /* スタートボタン切替認証
    PINが初期の「0000」のままなら、PINなしで切り替える */
 function switchProfile(idx) {
@@ -1824,6 +1840,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261107b"></script>
+<script src="app-extras.js?v=20261112a"></script>
 </body>
 </html>
