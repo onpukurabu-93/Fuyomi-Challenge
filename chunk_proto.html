@@ -1987,18 +1987,11 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:12px;color:#806c5a;">きろくした日：' + when + '</div>' +
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="evCode" readonly>' + c.code + '</textarea>' +
-      '<button class="btn" id="evCopy" style="background:#5c6bc0;padding:10px;font-size:15px;margin-top:6px;">コードを コピー</button>' +
       window.fyLineCheck('【ふよみイベント】' + (PNAME || '') + ' さんの きろくコード\n' + c.code) +
-      '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
       '<button class="btn back" id="evClose" style="padding:10px;font-size:15px;margin-top:6px;">もどる</button>';
     document.getElementById("evScr").style.display = "block";
     document.getElementById("evScr").scrollTop = 0;
     document.getElementById("evClose").addEventListener("click", function () { document.getElementById("evScr").style.display = "none"; });
-    document.getElementById("evCopy").addEventListener("click", function () {
-      var ta = document.getElementById("evCode"), ok = false;
-      try { ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); ok = document.execCommand("copy"); } catch (e) {}
-      this.textContent = ok ? "コピーしました" : "コードを ながおしして コピーしてね";
-    });
   }
   (function () {
     var eb = document.getElementById("evBtn"), t = todayStr(), forceOn = /[?&]evtest=1/.test(location.search);
