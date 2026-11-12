@@ -791,14 +791,58 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (bbtn) bbtn.addEventListener("click", function () { window.fyShowBackup(); });
   };
 
+  /* ===== 🎴 カードブック（もっている カードを みる） ===== */
+  var CARDBOOK = [
+    ["treble", "ト音記号マスター", "card_treble_front.png"],
+    ["bass", "ヘ音記号マスター", "card_bass_front.png"],
+    ["master", "ふよみマスター", "card_master_front.png"],
+    ["legend", "ふよみ名人", "card_meijin_front.png"],
+    ["legend5", "ふよみレジェンド", "card_legend_front.png"],
+    ["maestro", "ふよみマエストロ", "card_maestro_front.png"]
+  ];
+  function bestAch(idx, type) {
+    if (type !== "legend") return findAch(idx, type);
+    var best = null;
+    getAch(idx).forEach(function (a) { if (a.type === "legend" && (!best || (a.n || 0) > (best.n || 0))) best = a; });
+    return best;
+  }
+  window.showCardBook = function () {
+    var idx = activeProfileIndex, have = 0;
+    var cells = CARDBOOK.map(function (c, i) {
+      var rec = bestAch(idx, c[0]), img = c[2], label = c[1], sub = "";
+      if (rec) have++;
+      if (c[0] === "legend" && rec && rec.n >= 1000) img = "card_legend1000_front.png";
+      if (c[0] === "legend" && rec) sub = (rec.n || 0) + "回";
+      var st = rec ? "" : "filter:grayscale(1) brightness(.55);opacity:.55;";
+      return '<div data-cb="' + i + '" style="text-align:center;' + (rec ? "cursor:pointer;" : "") + '">' +
+        '<div style="position:relative;"><img src="' + img + '" alt="" style="width:100%;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
+        (rec ? "" : '<div style="position:absolute;left:0;right:0;top:42%;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;">🔒 まだ</div>') + '</div>' +
+        '<div style="font-size:12px;font-weight:800;margin-top:4px;color:#5b4636;">' + label + '</div>' +
+        '<div style="font-size:11px;color:#806c5a;min-height:15px;">' + (rec ? dmd(rec) + (sub ? "　" + sub : "") : "") + '</div></div>';
+    }).join("");
+    openOverlay('<div style="font-size:19px;font-weight:900;margin-bottom:2px;">🎴 カード</div>' +
+      '<div style="font-size:12px;color:#806c5a;margin-bottom:10px;">' + (profiles[idx] || "") + ' さんの カード　' + have + ' / ' + CARDBOOK.length + ' まい</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">' + cells + '</div>' +
+      '<div style="font-size:11px;color:#806c5a;">カードを タップすると、コードも みられるよ</div>');
+    Array.prototype.forEach.call(document.querySelectorAll("#fyOvBody [data-cb]"), function (el) {
+      el.addEventListener("click", function () {
+        var c = CARDBOOK[+el.getAttribute("data-cb")], rec = bestAch(idx, c[0]);
+        if (rec) showCel([rec], true);
+      });
+    });
+  };
+
   /* トップ画面：スタンプの表示は やめて、「きろくと コード」のボタンだけ */
   window.renderStampMini = function (idx) {
     var container = document.getElementById("stampMiniBox");
     if (!container) return;
     container.style.cssText = "display:flex;justify-content:center;margin-top:4px;padding:2px;background:transparent;border:none;";
-    container.innerHTML = '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:13px;font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;">🎖 きろくと コード</button>';
+    container.innerHTML = '<button id="fyCodeBtn" style="border:none;background:#ffb300;color:#5b4636;font-size:13px;font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;">🎖 きろくと コード</button>' +
+      '<button id="fyBookBtn" style="border:none;background:#7e57c2;color:#fff;font-size:13px;font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;margin-left:8px;">🎴 カード</button>';
     var b = document.getElementById("fyCodeBtn");
     if (b) b.addEventListener("click", window.showCardCodes);
+    var b2 = document.getElementById("fyBookBtn");
+    if (b2) b2.addEventListener("click", window.showCardBook);
   };
 
   /* ===== 結果画面 =====
