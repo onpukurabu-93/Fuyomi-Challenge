@@ -1181,7 +1181,63 @@ function showWelcome(name) {
     stopped = true;
     try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {}
     d.remove();
+    try { showGuide(); } catch (e) {}
   });
+}
+
+/* 🧭 はじめての ガイド（とうろくの あと 1回だけ。ずんだもんが トップ画面を あんない） */
+function showGuide() {
+  var old = document.getElementById("fyGuide"); if (old) old.remove();
+  var steps = [
+    { sel: "#fyHankoTop", txt: "まいにち トレーニングすると、ハンコが もらえるのだ！" },
+    { sel: "#btnTreble", txt: "まずは ここから！ おんぷを よんでみるのだ！" },
+    { sel: "#btnBass", txt: "かぎの マークは、がんばると だんだん あいていくのだ！" },
+    { sel: "#fyCodeBtn", txt: "がんばった きろくは、LINEで せんせいに おくれるのだ！" },
+    { sel: "", txt: "それじゃあ、スタートなのだ！" }
+  ];
+  var k = 0, au = null;
+  var wrap = document.createElement("div");
+  wrap.id = "fyGuide";
+  wrap.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10002;";
+  var spot = document.createElement("div");
+  spot.style.cssText = "position:fixed;border:3px solid #ffb300;border-radius:14px;box-shadow:0 0 0 9999px rgba(60,40,20,.6);pointer-events:none;transition:all .25s;";
+  var bub = document.createElement("div");
+  bub.style.cssText = "position:fixed;left:12px;right:12px;max-width:360px;margin:0 auto;background:#fffaf0;border:3px solid #7bc67e;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);text-align:center;";
+  wrap.appendChild(spot); wrap.appendChild(bub);
+  document.body.appendChild(wrap);
+  function stopAu() { try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {} au = null; }
+  function close() { stopAu(); wrap.remove(); }
+  function render() {
+    stopAu();
+    var st = steps[k], last = (k === steps.length - 1), el = st.sel ? document.querySelector(st.sel) : null;
+    var r = null;
+    if (el && el.getClientRects().length) {
+      try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+      r = el.getBoundingClientRect();
+    }
+    if (r) {
+      spot.style.display = "block";
+      spot.style.left = (r.left - 5) + "px"; spot.style.top = (r.top - 5) + "px";
+      spot.style.width = (r.width + 10) + "px"; spot.style.height = (r.height + 10) + "px";
+      wrap.style.background = "transparent";
+      var mid = r.top + r.height / 2;
+      if (mid > window.innerHeight * 0.5) { bub.style.top = "14px"; bub.style.bottom = "auto"; }
+      else { bub.style.bottom = "18px"; bub.style.top = "auto"; }
+    } else {
+      spot.style.display = "none";
+      wrap.style.background = "rgba(60,40,20,.6)";
+      bub.style.bottom = "auto"; bub.style.top = "30%";
+    }
+    bub.innerHTML = '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin-bottom:4px;">🟢 ずんだもん</div>' +
+      '<div style="font-size:17px;font-weight:800;color:#5d4037;line-height:1.6;min-height:54px;">' + st.txt + '</div>' +
+      '<div style="font-size:12px;color:#a08c78;margin:4px 0 8px;">' + (k + 1) + ' / ' + steps.length + '</div>' +
+      '<button id="fyGuideNext" style="width:100%;padding:12px;font-size:17px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:12px;">' + (last ? "はじめる ▶" : "つぎへ ▶") + '</button>' +
+      (last ? '' : '<button id="fyGuideSkip" style="width:100%;margin-top:6px;padding:8px;font-size:13px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:10px;">とばす</button>');
+    document.getElementById("fyGuideNext").addEventListener("click", function () { if (last) close(); else { k++; render(); } });
+    var sk = document.getElementById("fyGuideSkip"); if (sk) sk.addEventListener("click", close);
+    try { au = new Audio("zunda-guide" + (k + 1) + ".mp3"); var q = au.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+  }
+  render();
 }
 
 /* スタートボタン切替認証
@@ -1855,6 +1911,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112b"></script>
+<script src="app-extras.js?v=20261112c"></script>
 </body>
 </html>
