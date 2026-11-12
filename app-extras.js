@@ -2198,7 +2198,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       b.id = "fyChunkBtn";
       b.className = "select-button";
       b.style.cssText = "background:#7e57c2;color:#fff;position:relative;";
-      all.parentNode.insertBefore(b, all.nextSibling);
+      var anc = (all.parentNode.classList && all.parentNode.classList.contains("clef-row")) ? all.parentNode : all;
+      anc.parentNode.insertBefore(b, anc.nextSibling);
       b.addEventListener("click", function () {
         if (!isMaster(activeProfileIndex)) { alert("ふよみマスターに なると ひらくよ！"); return; }
         location.href = PAGE;
