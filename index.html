@@ -1166,7 +1166,22 @@ function showWelcome(name) {
     '<div style="font-size:15px;font-weight:700;color:#5d4037;line-height:1.8;">ふよみチャレンジへ ようこそ。<br>おんぷが すらすら よめるように なる<br>ぼうけんの はじまりだよ。<br><br>まちがえても だいじょうぶ！<br>1もん ずつ、たのしく いこうね。<br>せんせいも おうえんしてるよ 🌟</div>' +
     '<button id="fyWelcomeGo" style="margin-top:16px;width:100%;padding:14px;font-size:18px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:14px;">はじめる ▶</button></div>';
   document.body.appendChild(d);
-  document.getElementById("fyWelcomeGo").addEventListener("click", function () { d.remove(); });
+  /* 先生の こえ → ずんだもんの こえ（1つの audio で つづけて ならす。「はじめる」で すぐ とまる） */
+  var au = null, stopped = false;
+  try {
+    var files = ["sensei-welcome.m4a", "zunda-welcome.mp3"], k = 0;
+    au = new Audio(files[0]);
+    au.addEventListener("ended", function () {
+      k++;
+      if (!stopped && k < files.length) { au.src = files[k]; var q = au.play(); if (q && q.catch) q.catch(function () {}); }
+    });
+    var p0 = au.play(); if (p0 && p0.catch) p0.catch(function () {});
+  } catch (e) {}
+  document.getElementById("fyWelcomeGo").addEventListener("click", function () {
+    stopped = true;
+    try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {}
+    d.remove();
+  });
 }
 
 /* スタートボタン切替認証
@@ -1840,6 +1855,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112a"></script>
+<script src="app-extras.js?v=20261112b"></script>
 </body>
 </html>
