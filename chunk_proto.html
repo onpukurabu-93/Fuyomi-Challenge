@@ -465,7 +465,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3" };
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zenc: "zunda-encourage.mp3" };
   var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
@@ -564,6 +564,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     next();
   }
 
+  /* ---- レベルを えらんだときの ずんだもんの こえ（4かい いじょう つづけて クリアできないと、はげましの こえ） ---- */
+  function lvFailKey(l) { return "fy_chunkfail_" + PID + "_" + l; }
+  function lvFails(l) { try { return parseInt(localStorage.getItem(lvFailKey(l)), 10) || 0; } catch (e) { return 0; } }
+  function lvVoice(l) { try { playSeq([lvFails(l) >= 4 ? "zenc" : "zlv" + l]); } catch (e) {} }
   var phase = "ready", t0 = 0, tEnd = 0, token = 0;
   var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false, run = 0, bestRun = 0, missCount = 0;
 
@@ -651,7 +655,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       b.innerHTML = "レベル" + i + "<br>" + (locked ? "🔒" : "") + (i <= 4 ? LEVELS[i - 1] + "音" : "きょく");
       if (i === level) b.className = "on";
       else if (locked) b.className = "off";
-      (function (lv, lk) { if (!lk) b.addEventListener("click", function () { level = lv; if (lv === 5) { song = pickNextSong(); } start(); }); })(i, locked);
+      (function (lv, lk) { if (!lk) b.addEventListener("click", function () { level = lv; if (lv === 5) { song = pickNextSong(); } lvVoice(lv); start(); }); })(i, locked);
       box.appendChild(b);
     }
   }
@@ -1675,6 +1679,7 @@ function renderScore(bars, beatsPerBar, opt) {
     if (level === 5) markSeen(song.id);
     if (level === 5) msg = "🎵 この きょくは 「" + song.title + "」 でした！<br>" + msg;
     document.getElementById("rnext").innerHTML = msg;
+    try { localStorage.setItem(lvFailKey(level), String(firstOk >= needOf(level) ? 0 : lvFails(level) + 1)); } catch (e) {}
     var seq = [];
     if (firstOk === TOTAL) seq = ["sugoi", "fanfare"];
     else if (firstOk >= needOf(level)) seq = ["osi", "fanfare"];
@@ -1689,7 +1694,7 @@ function renderScore(bars, beatsPerBar, opt) {
       nb.onclick = function () { var k = SONGS.indexOf(song); song = SONGS[(k + 1) % SONGS.length]; start(); };
     } else {
       nb.style.display = nextLv ? "block" : "none"; nb.textContent = "つぎの レベルへ";
-      nb.onclick = function () { level = nextLv; if (nextLv === 5) song = pickNextSong(); start(); };
+      nb.onclick = function () { level = nextLv; if (nextLv === 5) song = pickNextSong(); lvVoice(nextLv); start(); };
     }
     stage.style.display = "none";
     document.querySelector(".prog").style.display = "none";
@@ -2005,6 +2010,25 @@ function renderScore(bars, beatsPerBar, opt) {
   document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
   document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
   window.__chunk = { songs: function () { return SONGS; }, micName: micName, renderScore: renderScore, nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: dispNo(nextSongOf(cur)), label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  /* ---- はじめて この ページに はいった ときだけ：ずんだもんの あんない（ボタンを おしてから こえを ならす） ---- */
+  (function () {
+    var IK = "fy_legend_intro_" + PID;
+    try { if (localStorage.getItem(IK)) return; } catch (e) { return; }
+    var d = document.createElement("div");
+    d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10000;background:linear-gradient(#16213f,#2b1b4a);color:#f4e6b0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box;";
+    d.innerHTML = '<div style="font-size:56px;">👑</div>' +
+      '<div style="font-size:26px;font-weight:900;margin:8px 0 6px;">レジェンドへの みち</div>' +
+      '<div style="font-size:15px;line-height:1.8;margin-bottom:22px;">ふよみマスター、おめでとう！<br>ここから きょくに ちょうせんだよ</div>' +
+      '<button id="liGo" style="border:none;border-radius:16px;padding:14px 36px;font-size:20px;font-weight:900;background:#f4d36b;color:#16213f;">はじめる ▶</button>';
+    document.body.appendChild(d);
+    var closed = false;
+    function close() { if (closed) return; closed = true; try { localStorage.setItem(IK, "1"); } catch (e) {} d.remove(); }
+    document.getElementById("liGo").addEventListener("click", function () {
+      var b = this; b.disabled = true; b.textContent = "…";
+      d.addEventListener("click", close);
+      playSeq(["zintro"], close);
+    });
+  })();
   start();
 })();
 </script>
