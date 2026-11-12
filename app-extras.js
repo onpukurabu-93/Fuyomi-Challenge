@@ -2410,9 +2410,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:12px;color:#806c5a;margin-top:2px;">きろくした日：' + when + '</div>' +
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
-      '<button id="fyEvCopy" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#5c6bc0;color:#fff;margin-top:6px;">コードを コピー</button>' +
       window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
-      '<div style="font-size:12px;line-height:1.5;margin-top:6px;text-align:center;">この画面を <b>スクリーンショット</b> して、<br>せんせいに おくってね。</div>' +
       '<div style="font-size:11px;line-height:1.5;color:#806c5a;margin-top:8px;padding:6px;background:#f6ecd8;border-radius:10px;text-align:center;">📌 かいやくの おねがいは、まいつき <b>25日まで</b> に せんせいへ。<br>26日より あとは、つぎの月の かいやくに なります。</div>' +
       (lim ? '' : '<button id="fyEvClose" style="display:block;width:100%;border:none;border-radius:14px;padding:10px;font-size:15px;font-weight:800;background:#f0efec;color:#3b2f27;margin-top:6px;">もどる</button>') +
       '</div>';
@@ -2420,11 +2418,6 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     scr.scrollTop = 0;
     var clo = document.getElementById("fyEvClose");
     if (clo) clo.addEventListener("click", function () { scr.style.display = "none"; });
-    document.getElementById("fyEvCopy").addEventListener("click", function () {
-      var ta = document.getElementById("fyEvCode"), ok = false;
-      try { ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); ok = document.execCommand("copy"); } catch (e) {}
-      this.textContent = ok ? "コピーしました" : "コードを ながおしして コピーしてね";
-    });
   }
   window.fyShowEventScreen = showEventScreen;
 
