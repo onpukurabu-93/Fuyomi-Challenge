@@ -211,9 +211,11 @@
     var map = getMap();
     map[pending.code] = slot;
     setMap(map);
+    var newName = profiles[slot];
     pending = null;
     switchTo(slot);
     openApp();
+    try { if (typeof showWelcome === "function") showWelcome(newName); } catch (e) {}
   });
 
   /* =========================================================
@@ -720,6 +722,15 @@
       Storage.set(kRun, run1);
     }
 
+    /* 🏅 ふよみ名人の れんぞく（全カード レベル5 の 20問だけ）：ここで 数える */
+    var mPrev = 0, mRun = 0, isMjRun = (is20 && selectedClef === "all" && selectedLevel === 5);
+    if (isMjRun) {
+      var kMj = "fy_meijin_run_" + idx;
+      mPrev = Storage.getNumber(kMj, 0);
+      mRun = (acc === 100) ? mPrev + 1 : 0;
+      Storage.set(kMj, mRun);
+    }
+
     /* けっかを 日づけつきで きろく（保護者ページの「今週の頑張り」用） */
     try {
       var log = Storage.get("fy_log_" + idx, []);
@@ -753,6 +764,22 @@
         else if (!is20 && acc === 100) sm.textContent = "20もんにも ちょうせんしてみよう！";
         else sm.textContent = "";
       }
+      /* 🏅 名人に ちょうせん中の ひょうじ（マスターを とったあとから。マスターを とる 1かいめは、とった ときから） */
+      var mj = document.getElementById("fyMeijinMsg");
+      if (!mj && sm && sm.parentNode) {
+        mj = document.createElement("div"); mj.id = "fyMeijinMsg";
+        mj.style.cssText = "font-size:15px;font-weight:900;color:#8a5a00;margin:6px 0;";
+        sm.parentNode.insertBefore(mj, sm.nextSibling);
+      }
+      if (mj) {
+        var mt2 = "";
+        if (isMjRun && (findAch(idx, "master") || acc === 100)) {
+          if (acc === 100) mt2 = "🏅 ふよみ名人に ちょうせん中！ れんぞく " + mRun + " / 100" + (mRun % 10 === 0 && mRun % 100 !== 0 ? "　すごい！ " + mRun + "回 れんぞく！" : "");
+          else if (mPrev > 0) mt2 = "🏅 ざんねん！ また 0から ちょうせん！（これまで " + mPrev + "回 れんぞく）";
+        }
+        mj.textContent = mt2;
+        mj.style.display = mt2 ? "" : "none";
+      }
     } catch (e) {}
 
     /* 10問は「れんしゅう」、20問は「きろくに なる」：色で ちがいを 見せる */
@@ -785,12 +812,6 @@
 
     /* 🏅 ふよみ名人：「全カード レベル5」の 20問を ぜんぶ いっぱつ せいかいする れんぞくが 100回（200回…）に なった ひとかい
        ほかの コース・レベルは 数えない（まちがえたら 0に もどる） */
-    var mRun = 0;
-    if (is20 && selectedClef === "all" && selectedLevel === 5) {
-      var kMj = "fy_meijin_run_" + idx;
-      mRun = (acc === 100) ? Storage.getNumber(kMj, 0) + 1 : 0;
-      Storage.set(kMj, mRun);
-    }
     if (acc === 100 && mRun > 0 && mRun % 100 === 0) {
       var lg = addAch(idx, "legend", mRun);
       if (lg) {
@@ -844,8 +865,30 @@
     firstTry = 0;
     qMistake = false;
     thinkPlayed = false;
-    return origStartTraining.apply(this, arguments);
+    var r0 = origStartTraining.apply(this, arguments);
+    try { showMeijinBar(); } catch (e) {}
+    return r0;
   };
+  var origProceed = window.proceedToCards;
+  if (typeof origProceed === "function") window.proceedToCards = function () {
+    try { var mb0 = document.getElementById("fyMeijinBar"); if (mb0) mb0.style.display = "none"; } catch (e) {}
+    return origProceed.apply(this, arguments);
+  };
+  /* 🏅 名人に ちょうせん中：全カード レベル5の 20問を はじめる ときに、いまの れんぞくを 見せる（マスターを とったあとから） */
+  function showMeijinBar() {
+    var idx = activeProfileIndex;
+    var bar = document.getElementById("fyMeijinBar");
+    var ttl = document.getElementById("cardScreenTitle");
+    if (!bar && ttl && ttl.parentNode) {
+      bar = document.createElement("div"); bar.id = "fyMeijinBar";
+      bar.style.cssText = "font-size:13px;font-weight:900;color:#8a5a00;background:#fff3cd;border-radius:12px;padding:3px 10px;margin:4px auto;display:none;text-align:center;";
+      ttl.parentNode.insertBefore(bar, ttl.nextSibling);
+    }
+    if (!bar) return;
+    var show = (selectedClef === "all" && selectedLevel === 5 && targetValue >= 20 && findAch(idx, "master"));
+    if (show) { bar.textContent = "🏅 ふよみ名人に ちょうせん中　れんぞく " + Storage.getNumber("fy_meijin_run_" + idx, 0) + " / 100"; bar.style.display = ""; }
+    else bar.style.display = "none";
+  }
 
   /* ===== 答えを 見る じかんは、子どもの ペースで =====
      せいかいの キーに ゆびを のせて いる あいだは、答えが のこる。ゆびを はなすと、つぎの問題へ。
