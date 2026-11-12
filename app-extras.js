@@ -427,7 +427,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   function sendText() {
-    return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + CODE_DAYS + '日いないに、上の ボタンで LINEで<br>せんせいに おくってね。（スクショでも OK）<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
+    return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + 'コードは ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
   }
 
   /* おいわい画面：いくつ あっても、1つの がめんに ならべる（スクショが 1回で すむ） */
@@ -778,7 +778,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
     if (visible.length) {
       visible.forEach(function (r) { html += cardHtml(r); });
-      html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">スクショして せんせいに おくってね。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
+      html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     } else {
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
