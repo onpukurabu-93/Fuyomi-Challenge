@@ -123,13 +123,18 @@ body { display: flex; justify-content: center; align-items: center; }
   position: relative; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
 }
-.cover-img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; }
+.cover-screen { background-color: #fff; }
+.cover-img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; position: absolute; top: 0; left: 0; }
+.cover-head { position: absolute; top: 5%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
+.cover-lv { font-size: min(9vw, 40px); font-weight: 900; color: #8a4b24; text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff; line-height: 1.1; }
 .cover-level-number {
-  position: absolute; top: 38.5%; left: 50%; transform: translate(-50%, -50%);
-  font-size: min(18vw, 75px); font-weight: 900; color: #5b4636;
-  text-shadow: 4px 4px 0px #fff, -4px -4px 0px #fff, 4px -4px 0px #fff, -4px 4px 0px #fff;
-  z-index: 10; pointer-events: none; line-height: 1;
+  position: static; transform: none; display: flex; align-items: center; justify-content: center;
+  width: min(26vw, 112px); height: min(26vw, 112px); border-radius: 50%;
+  background: #ffe27a; border: 4px dashed #fff; box-shadow: 0 0 0 4px #ffd84a;
+  font-size: min(16vw, 70px); font-weight: 900; color: #5b4636; text-shadow: none;
+  line-height: 1; margin: 6px 0 8px;
 }
+.cover-chal { background: #7ec3f7; color: #fff; font-size: min(8vw, 34px); font-weight: 900; padding: 4px 26px; border-radius: 14px; border: 3px solid #fff; box-shadow: 0 0 0 3px #7ec3f7; text-shadow: 2px 2px 0 #3a8fd4; }
 
 /* カード画面 */
 .card-screen { padding: 8px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
@@ -374,8 +379,12 @@ body { display: flex; justify-content: center; align-items: center; }
   <!-- レベル表紙画面 -->
   <section id="coverScreen" class="cover-screen hidden">
     <div class="cover-img-container">
-      <img src="level_start.png" class="cover-img" alt="レベルスタート">
-      <div id="coverLevelNumber" class="cover-level-number">1</div>
+      <img src="level_cover.jpg" class="cover-img" alt="">
+      <div class="cover-head">
+        <div class="cover-lv">レベル</div>
+        <div id="coverLevelNumber" class="cover-level-number">1</div>
+        <div class="cover-chal">チャレンジ</div>
+      </div>
     </div>
   </section>
 
@@ -1183,12 +1192,14 @@ function showWelcome(name) {
   /* 先生の こえ → ずんだもんの こえ（1つの audio で つづけて ならす。「はじめる」で すぐ とまる） */
   var au = null, stopped = false;
   try {
-    var files = ["sensei-welcome.m4a", "zunda-welcome.mp3"], k = 0;
+    var files = ["zunda-youkoso.mp3", "zunda-welcome.mp3"], k = 0;
     au = new Audio(files[0]);
-    au.addEventListener("ended", function () {
+    var adv = function () {
       k++;
       if (!stopped && k < files.length) { au.src = files[k]; var q = au.play(); if (q && q.catch) q.catch(function () {}); }
-    });
+    };
+    au.addEventListener("ended", adv);
+    au.addEventListener("error", adv);
     var p0 = au.play(); if (p0 && p0.catch) p0.catch(function () {});
   } catch (e) {}
   document.getElementById("fyWelcomeGo").addEventListener("click", function () {
@@ -1964,6 +1975,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112q"></script>
+<script src="app-extras.js?v=20261113a"></script>
 </body>
 </html>
