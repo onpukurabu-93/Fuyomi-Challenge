@@ -271,6 +271,10 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="audioKanpeki" preload="auto" src="kanpeki.mp3"></audio>
 <audio id="tasseiFanfareAudio" preload="auto" src="Tassei-fanfare.mp3"></audio>
 <audio id="sugoiAudio" preload="auto" src="sugoi.mp3"></audio>
+<audio id="levelUp2Audio" preload="auto" src="zunda-levelup2.mp3"></audio>
+<audio id="levelUp3Audio" preload="auto" src="zunda-levelup3.mp3"></audio>
+<audio id="levelUp4Audio" preload="auto" src="zunda-levelup4.mp3"></audio>
+<audio id="levelUp5Audio" preload="auto" src="zunda-levelup5.mp3"></audio>
 
 <div class="app-container" id="appContainer">
 
@@ -643,6 +647,8 @@ let legendTimer = null;
 let awardTimer = null;
 let resultUnlockTimer = null;
 let fanfareTimer = null;
+let levelUpTimer = null;
+let levelUpPlaying = null;
 let confettiRafId = null;
 
 /* 結果画面のボタンを、自動の表彰式が閉じられるまで薄くしておくための印 */
@@ -655,6 +661,8 @@ function clearPendingTimers() {
   if (awardTimer !== null) { clearTimeout(awardTimer); awardTimer = null; }
   if (resultUnlockTimer !== null) { clearTimeout(resultUnlockTimer); resultUnlockTimer = null; }
   if (fanfareTimer !== null) { clearTimeout(fanfareTimer); fanfareTimer = null; }
+  if (levelUpTimer !== null) { clearTimeout(levelUpTimer); levelUpTimer = null; }
+  if (levelUpPlaying) { try { const sv = activeSources[levelUpPlaying]; if (sv) sv.stop(); } catch (e) {} levelUpPlaying = null; }
 }
 
 function stopConfetti() {
@@ -768,7 +776,8 @@ document.addEventListener('visibilitychange', () => {
 const soundIds = [
   "seikaiAudio", "tfanAudio", "hyoshoFanfare1Audio", "hyoshoFanfareAudio",
   "osiAudio", "ganbatteAudio", "audio6do", "audioToon1", "audioToon2",
-  "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio", "sugoiAudio"
+  "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio", "sugoiAudio",
+  "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio"
 ];
 const soundBuffers = {};
 const activeSources = {};
@@ -1591,6 +1600,10 @@ function showResultScreen() {
       let isAllCase = false;
       if (selectedLevel < 5) {
         btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
+        /* 🟢 ずんだもんの「レベルアップ」の声（ファンファーレが終わってから） */
+        { const lvId = "levelUp" + (selectedLevel + 1) + "Audio";
+          if (levelUpTimer !== null) clearTimeout(levelUpTimer);
+          levelUpTimer = setTimeout(() => { levelUpTimer = null; levelUpPlaying = lvId; playAudioCloned(lvId); }, Math.max(800, resultSoundsEndMs)); }
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
         const bCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
@@ -1678,6 +1691,8 @@ function showResultScreen() {
 }
 
 function goToNextLevelClef(clef, level) {
+  if (levelUpTimer !== null) { clearTimeout(levelUpTimer); levelUpTimer = null; }
+  if (levelUpPlaying) { try { const sv = activeSources[levelUpPlaying]; if (sv) sv.stop(); } catch (e) {} levelUpPlaying = null; }
   selectedClef = clef; selectedLevel = level;
   showLevelCover(level);
 }
@@ -1911,6 +1926,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112c"></script>
+<script src="app-extras.js?v=20261112d"></script>
 </body>
 </html>
