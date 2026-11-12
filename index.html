@@ -271,6 +271,8 @@ body { display: flex; justify-content: center; align-items: center; }
 <audio id="audioKanpeki" preload="auto" src="kanpeki.mp3"></audio>
 <audio id="tasseiFanfareAudio" preload="auto" src="Tassei-fanfare.mp3"></audio>
 <audio id="sugoiAudio" preload="auto" src="sugoi.mp3"></audio>
+<audio id="levelUp1Audio" preload="auto" src="zunda-levelup1.mp3"></audio>
+<audio id="levelEncourageAudio" preload="auto" src="zunda-encourage.mp3"></audio>
 <audio id="levelUp2Audio" preload="auto" src="zunda-levelup2.mp3"></audio>
 <audio id="levelUp3Audio" preload="auto" src="zunda-levelup3.mp3"></audio>
 <audio id="levelUp4Audio" preload="auto" src="zunda-levelup4.mp3"></audio>
@@ -647,8 +649,7 @@ let legendTimer = null;
 let awardTimer = null;
 let resultUnlockTimer = null;
 let fanfareTimer = null;
-let levelUpTimer = null;
-let levelUpPlaying = null;
+let levelUpCoverMs = 0;
 let confettiRafId = null;
 
 /* 結果画面のボタンを、自動の表彰式が閉じられるまで薄くしておくための印 */
@@ -661,8 +662,6 @@ function clearPendingTimers() {
   if (awardTimer !== null) { clearTimeout(awardTimer); awardTimer = null; }
   if (resultUnlockTimer !== null) { clearTimeout(resultUnlockTimer); resultUnlockTimer = null; }
   if (fanfareTimer !== null) { clearTimeout(fanfareTimer); fanfareTimer = null; }
-  if (levelUpTimer !== null) { clearTimeout(levelUpTimer); levelUpTimer = null; }
-  if (levelUpPlaying) { try { const sv = activeSources[levelUpPlaying]; if (sv) sv.stop(); } catch (e) {} levelUpPlaying = null; }
 }
 
 function stopConfetti() {
@@ -777,7 +776,7 @@ const soundIds = [
   "seikaiAudio", "tfanAudio", "hyoshoFanfare1Audio", "hyoshoFanfareAudio",
   "osiAudio", "ganbatteAudio", "audio6do", "audioToon1", "audioToon2",
   "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio", "sugoiAudio",
-  "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio"
+  "levelUp1Audio", "levelEncourageAudio", "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio"
 ];
 const soundBuffers = {};
 const activeSources = {};
@@ -1367,11 +1366,21 @@ function createLevelButtons() {
 function showLevelCover(level) {
   selectedLevel = level;
   navigateTo("coverScreen");
+  /* 🟢 ずんだもんの声：ふだんは「レベル○、スタートなのだ！」。同じレベルで 4回 つまずいたら（5回目から）はげましの声 */
+  levelUpCoverMs = 0;
+  try {
+    const fails = Storage.getNumber(`fy_lvfail_${activeProfileIndex}_${selectedClef}_${level}`, 0);
+    const lvId = (fails >= 4) ? "levelEncourageAudio" : ("levelUp" + level + "Audio");
+    playAudioCloned(lvId);
+    levelUpCoverMs = Math.min(3200, (getSoundDurationMs(lvId) || 2400) + 300);
+  } catch (e) {}
   document.getElementById("coverLevelNumber").textContent = level;
+  const coverMs = Math.max(1200, levelUpCoverMs);
+  levelUpCoverMs = 0;
   coverTimer = setTimeout(() => {
     coverTimer = null;
     if (!document.getElementById("coverScreen").classList.contains("hidden")) proceedToCards();
-  }, 1200);
+  }, coverMs);
 }
 
 function proceedToCards() {
@@ -1508,6 +1517,12 @@ function showResultScreen() {
 
   Storage.set(`onpu_last_acc_${activeProfileIndex}`, accuracy);
 
+  /* 🟢 つまずき回数：同じレベルの20問を、全部正解できないまま 終えた回数（全部正解で 0に もどる） */
+  if (targetValue >= 20 && selectedClef !== "do") {
+    const kF = `fy_lvfail_${activeProfileIndex}_${selectedClef}_${selectedLevel}`;
+    Storage.set(kF, accuracy === 100 ? 0 : Storage.getNumber(kF, 0) + 1);
+  }
+
   let currentStreak = Storage.getNumber(`onpu_perf_streak_${activeProfileIndex}`, 0);
   if (accuracy === 100) {
     currentStreak++;
@@ -1600,10 +1615,6 @@ function showResultScreen() {
       let isAllCase = false;
       if (selectedLevel < 5) {
         btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
-        /* 🟢 ずんだもんの「レベルアップ」の声（ファンファーレが終わってから） */
-        { const lvId = "levelUp" + (selectedLevel + 1) + "Audio";
-          if (levelUpTimer !== null) clearTimeout(levelUpTimer);
-          levelUpTimer = setTimeout(() => { levelUpTimer = null; levelUpPlaying = lvId; playAudioCloned(lvId); }, Math.max(800, resultSoundsEndMs)); }
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
         const bCleared = hasLevelCleared(activeProfileIndex, "bass", 5);
@@ -1691,8 +1702,6 @@ function showResultScreen() {
 }
 
 function goToNextLevelClef(clef, level) {
-  if (levelUpTimer !== null) { clearTimeout(levelUpTimer); levelUpTimer = null; }
-  if (levelUpPlaying) { try { const sv = activeSources[levelUpPlaying]; if (sv) sv.stop(); } catch (e) {} levelUpPlaying = null; }
   selectedClef = clef; selectedLevel = level;
   showLevelCover(level);
 }
@@ -1926,6 +1935,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261112d"></script>
+<script src="app-extras.js?v=20261112f"></script>
 </body>
 </html>
