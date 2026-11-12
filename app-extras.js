@@ -213,6 +213,7 @@
     setMap(map);
     var newName = profiles[slot];
     pending = null;
+    (window.fyVoice1Done = window.fyVoice1Done || {})[slot] = true;   /* はじめての ガイドの あいだは「ハンコを もらおう」の 声を 鳴らさない */
     switchTo(slot);
     openApp();
     try { if (typeof showWelcome === "function") showWelcome(newName); } catch (e) {}
@@ -1644,7 +1645,7 @@
   }
 
   /* ---- トップ画面の ハンコ ---- */
-  var voice1Done = {};   /* きょう この 起動で、声を 鳴らした 枠 */
+  var voice1Done = window.fyVoice1Done = (window.fyVoice1Done || {});   /* きょう この 起動で、声を 鳴らした 枠 */
 
   var glowWait = null;
   function renderTop() {
