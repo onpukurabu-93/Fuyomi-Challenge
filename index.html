@@ -1232,6 +1232,64 @@ function fyGlowCss() {
     ".fyNudge::after{content:\"👆\";position:absolute;left:50%;bottom:-40px;font-size:32px;line-height:1;pointer-events:none;animation:fyBounce2 .7s ease-in-out infinite;z-index:5;}";
   document.head.appendChild(st);
 }
+/* 🎨 いろおんぷ（ようじ むけ：レベル1だけ。くろおんぷは レベル1から べつに すすむ） */
+var FY_HEADS = {"t_c1": [530.5, 591.8, 31.2, 22.0, 140.2], "t_d1": [535.3, 562.5, 32.8, 22.3, 132.1], "t_e1": [528.3, 546.1, 31.0, 21.7, 141.7], "t_f1": [525.0, 521.6, 33.9, 22.5, 126.4], "t_g1": [529.8, 497.6, 31.6, 22.1, 141.4], "t_a1": [527.0, 476.1, 34.4, 22.5, 125.7], "t_b1": [534.3, 452.5, 31.7, 22.1, 141.5], "t_c2": [527.8, 428.2, 33.9, 22.5, 126.7], "h_c1": [534.8, 813.4, 31.2, 22.1, 140.4], "h_b0": [523.9, 842.1, 32.4, 22.4, 133.2], "h_a0": [525.6, 858.9, 31.0, 21.7, 141.4], "h_g": [527.0, 885.3, 34.8, 22.6, 125.6], "h_f": [529.9, 903.0, 31.1, 21.7, 141.5], "h_e": [522.3, 929.0, 34.4, 22.8, 126.0], "h_d": [522.6, 951.9, 31.0, 21.8, 141.6], "h_c00": [528.6, 971.0, 34.5, 22.5, 126.4]};
+var FY_KEYCOL = {"ド":"#e99595","レ":"#e6b26a","ミ":"#d6c45d","ファ":"#8dbb8d","ソ":"#78a9c8","ラ":"#5a82d6","シ":"#b28bb9"};
+var fyColCache = {}, fyColTok = 0;
+function fyColorOn(idx) {
+  try {
+    var v = Storage.get("fy_color_" + idx, null);
+    if (v === "on") return true;
+    if (v === "off") return false;
+    if (Storage.get("onpu_debug_unlocked_" + idx)) return false;
+    return !(hasLevelCleared(idx, "treble", 1) || hasLevelCleared(idx, "bass", 1));
+  } catch (e) { return false; }
+}
+function fyColorActive() { return fyColorOn(activeProfileIndex) && selectedLevel === 1 && (selectedClef === "treble" || selectedClef === "bass"); }
+function fyColorSuffix() { return fyColorActive() ? "c" : ""; }
+function fyColorLv1Cleared(idx, clef) {
+  var b = Storage.get("onpu_best_20c_" + idx + "_" + clef + "_1");
+  return !!(b && b.accuracy >= 90);
+}
+function fyColorize(card, cb) {
+  var h = FY_HEADS[card.id];
+  if (!h || !FY_KEYCOL[card.key]) { cb(card.img); return; }
+  if (fyColCache[card.id]) { cb(fyColCache[card.id]); return; }
+  var im = new Image();
+  im.onload = function () {
+    try {
+      var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
+      var x = c.getContext("2d"); x.drawImage(im, 0, 0);
+      x.fillStyle = FY_KEYCOL[card.key]; x.beginPath();
+      x.ellipse(h[0], h[1], h[2] * 1.1, h[3] * 1.1, h[4] * Math.PI / 180, 0, Math.PI * 2); x.fill();
+      fyColCache[card.id] = c.toDataURL("image/jpeg", 0.92);
+    } catch (e) { fyColCache[card.id] = card.img; }
+    cb(fyColCache[card.id]);
+  };
+  im.onerror = function () { cb(card.img); };
+  im.src = card.img;
+}
+function fyColorSwitch(toColor) {
+  Storage.set("fy_color_" + activeProfileIndex, toColor ? "on" : "off");
+  showLevelScreen();
+}
+function fyColorSwitchAsk(toColor) {
+  var d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10003;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+  var msg = toColor
+    ? "いろおんぷに もどします。<br>いろおんぷは レベル1だけ です。<br>くろおんぷの きろくは のこります。"
+    : "くろい おんぷに かえます。<br><b>レベル1から</b> はじまります。<br>いろおんぷの きろくは のこります。";
+  d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:18px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);">' +
+    '<div style="font-size:12px;color:#a08060;">ほごしゃの かたへ</div>' +
+    '<div style="font-size:34px;">' + (toColor ? "🎨" : "🎼") + '</div>' +
+    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">' + (toColor ? "いろおんぷに もどしますか？" : "くろおんぷに しますか？") + '</div>' +
+    '<div style="font-size:13px;color:#806c5a;line-height:1.7;margin-bottom:14px;">' + msg + '</div>' +
+    '<button id="fyColYes" style="width:100%;padding:12px;font-size:16px;font-weight:900;color:#fff;background:#7bc67e;border:none;border-radius:12px;">' + (toColor ? "いろおんぷに する" : "くろおんぷに する") + '</button>' +
+    '<button id="fyColNo" style="width:100%;margin-top:8px;padding:10px;font-size:14px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:12px;">やめる</button></div>';
+  document.body.appendChild(d);
+  document.getElementById("fyColNo").addEventListener("click", function () { d.remove(); });
+  document.getElementById("fyColYes").addEventListener("click", function () { d.remove(); fyColorSwitch(toColor); });
+}
 /* 🌱 わかばマーク（ぜんいんに さいしょは ついている。うるさく なったら けす） */
 function fyWakabaOn() { try { return Storage.get("fy_wakaba_" + activeProfileIndex, "on") !== "off"; } catch (e) { return true; } }
 function fyWakabaSet(on) {
@@ -1567,17 +1625,33 @@ function createLevelButtons() {
   const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const list = document.getElementById("levelList");
   list.innerHTML = "";
+  const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex);
   for (let level = 1; level <= 5; level++) {
     const button = document.createElement("button");
     button.className = "level-button";
     let isLocked = false;
+    const colorLock = level > 1 && colorMode;
     if (level > 1 && !isDebugUnlocked) {
       if (!hasLevelCleared(activeProfileIndex, selectedClef, level - 1)) isLocked = true;
     }
+    if (colorLock) isLocked = true;
     if (isLocked) button.classList.add("locked");
-    button.innerHTML = `<span class="level-number">レベル ${level}</span>` + (isLocked ? `<span class="locked-badge">🔒 ロック</span>` : "");
-    button.onclick = () => isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level);
+    button.innerHTML = `<span class="level-number">レベル ${level}${(level === 1 && colorMode) ? " 🎨" : ""}</span>` + (isLocked ? `<span class="locked-badge">🔒 ロック</span>` : "");
+    button.onclick = () => colorLock ? alert("いろおんぷは レベル1だけだよ。\nくろおんぷに すると、つぎの レベルに すすめるよ！\n（ほごしゃの かたが、したの ボタンを おしてね）") : (isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level));
     list.appendChild(button);
+  }
+  if (selectedClef === "treble" || selectedClef === "bass") {
+    const sw = document.createElement("button");
+    sw.id = "fyColorSwitchBtn";
+    if (colorMode) {
+      sw.style.cssText = "display:block;width:100%;margin-top:14px;padding:12px;font-size:14px;font-weight:900;color:#fff;background:#8a6bbf;border:none;border-radius:14px;";
+      sw.textContent = "🎼 くろおんぷに する（ほごしゃの かたへ）";
+    } else {
+      sw.style.cssText = "display:block;margin:14px auto 0;padding:6px 12px;font-size:11px;font-weight:700;color:#a09080;background:#f0ebe3;border:none;border-radius:10px;";
+      sw.textContent = "🎨 いろおんぷに もどす（ほごしゃの かたへ）";
+    }
+    sw.onclick = () => fyColorSwitchAsk(!colorMode);
+    list.appendChild(sw);
   }
 }
 
@@ -1587,7 +1661,7 @@ function showLevelCover(level) {
   /* 🟢 ずんだもんの声：ふだんは「レベル○、スタートなのだ！」。同じレベルで 4回 つまずいたら（5回目から）はげましの声 */
   levelUpCoverMs = 0;
   try {
-    const fails = Storage.getNumber(`fy_lvfail_${activeProfileIndex}_${selectedClef}_${level}`, 0);
+    const fails = Storage.getNumber(`fy_lvfail${fyColorSuffix()}_${activeProfileIndex}_${selectedClef}_${level}`, 0);
     const lvId = (fails >= 4) ? "levelEncourageAudio" : ("levelUp" + level + "Audio");
     playAudioCloned(lvId);
     levelUpCoverMs = (getSoundDurationMs(lvId) || 2400) + 300;
@@ -1611,7 +1685,7 @@ function proceedToCards() {
   currentCards = (selectedClef === "treble") ? trebleCards[selectedLevel] : (selectedClef === "bass") ? bassCards[selectedLevel] : allCards[selectedLevel];
   currentIndex = 0; trainingMode = false;
   navigateTo("cardScreen");
-  document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}`;
+  document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}` + (fyColorActive() ? " 🎨" : "");
   document.getElementById("cardScreenTitle").textContent = "おんぷカード";
   document.getElementById("qCountBadge").classList.add("hidden");
   showCurrentCard();
@@ -1619,7 +1693,13 @@ function proceedToCards() {
 
 function showCurrentCard() {
   if (!currentCards || !currentCards.length) return;
-  document.getElementById("noteCardImg").src = currentCards[currentIndex].img;
+  (function () {
+    var _c = currentCards[currentIndex], _img = document.getElementById("noteCardImg");
+    if (fyColorActive()) {
+      var _t = ++fyColTok; _img.style.opacity = "0";
+      fyColorize(_c, function (src) { if (_t !== fyColTok) return; _img.src = src; _img.style.opacity = "1"; });
+    } else { fyColTok++; _img.style.opacity = "1"; _img.src = _c.img; }
+  })();
   document.getElementById("trainingCover").classList.toggle("hidden", !trainingMode);
   document.getElementById("trainingCover").classList.remove("reveal");
   document.getElementById("correctCircle").classList.remove("show");
@@ -1701,13 +1781,14 @@ function pressKey(key) {
 }
 
 function saveCountBest(profileIndex, clef, level, accuracy, duration) {
-  const key = targetValue === 20 ? `onpu_best_20_${profileIndex}_${clef}_${level}` : `onpu_best_10_${profileIndex}_${clef}_${level}`;
+  const cs = fyColorSuffix();
+  const key = targetValue === 20 ? `onpu_best_20${cs}_${profileIndex}_${clef}_${level}` : `onpu_best_10${cs}_${profileIndex}_${clef}_${level}`;
   const oldBest = Storage.get(key);
   
   if (!oldBest || accuracy > oldBest.accuracy || (accuracy === oldBest.accuracy && duration < (oldBest.time ?? Infinity))) {
     Storage.set(key, { accuracy, time: duration, count: targetValue });
   }
-  if (targetValue === 20) {
+  if (targetValue === 20 && !cs) {
     Storage.set(`onpu_count_best_${profileIndex}_${clef}_${level}`, { accuracy, time: duration, count: 20 });
   }
 }
@@ -1744,7 +1825,7 @@ function showResultScreen() {
 
   /* 🟢 つまずき回数：同じレベルの20問を、全部正解できないまま 終えた回数（全部正解で 0に もどる） */
   if (targetValue >= 20 && selectedClef !== "do") {
-    const kF = `fy_lvfail_${activeProfileIndex}_${selectedClef}_${selectedLevel}`;
+    const kF = `fy_lvfail${fyColorSuffix()}_${activeProfileIndex}_${selectedClef}_${selectedLevel}`;
     Storage.set(kF, accuracy === 100 ? 0 : Storage.getNumber(kF, 0) + 1);
   }
 
@@ -1838,7 +1919,18 @@ function showResultScreen() {
       btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問トレーニングにすすむ</button>`;
     } else if (targetValue >= 20 && isPerfect) {
       let isAllCase = false;
-      if (selectedLevel < 5) {
+      if (fyColorActive()) {
+        const pk = `fy_color_perfect_${activeProfileIndex}_${selectedClef}`;
+        const pn = Storage.getNumber(pk, 0) + 1; Storage.set(pk, pn);
+        if (pn >= 3) {
+          btnWrap.innerHTML += `<div style="font-size:13px;color:#6a4fa0;font-weight:800;line-height:1.6;margin:4px 0 8px;">🎉 いろおんぷ、よく できたね！<br>ほごしゃの かたへ：そろそろ くろおんぷに すすんでも だいじょうぶです。</div>`;
+          btnWrap.innerHTML += `<button class="select-button accent" style="background:#8a6bbf;" onclick="fyColorSwitchAsk(false)">🎼 くろおんぷに すすむ（ほごしゃの かたへ）</button>`;
+          btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
+        } else {
+          btnWrap.innerHTML += `<div style="font-size:13px;color:#6a4fa0;font-weight:800;line-height:1.6;margin:4px 0 8px;">🎉 いろおんぷ ぜんぶ せいかい！<br>なんども あそぶと、くろおんぷに すすむ じゅんびが できるよ。</div>`;
+          btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
+        }
+      } else if (selectedLevel < 5) {
         btnWrap.innerHTML += `<button class="select-button accent" onclick="goToNextLevelClef('${selectedClef}', ${selectedLevel + 1})">🚀 つぎの レベルへ！</button>`;
       } else {
         const tCleared = hasLevelCleared(activeProfileIndex, "treble", 5);
@@ -1859,7 +1951,7 @@ function showResultScreen() {
         /* 全カード：「もういちど20問」を一番目立たせ、表彰式ボタンは白で2番目 */
         btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
         btnWrap.innerHTML += `<button class="select-button" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
-      } else {
+      } else if (!fyColorActive()) {
         btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
       }
     } else if (targetValue >= 20 && !isPerfect) {
@@ -2177,6 +2269,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113f"></script>
+<script src="app-extras.js?v=20261113g"></script>
 </body>
 </html>
