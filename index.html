@@ -694,6 +694,7 @@ function navigateTo(screenId) {
   resultButtonsLockedForAward = false;
   document.querySelectorAll(".screen, .card-screen, .cover-screen").forEach(s => s.classList.add("hidden"));
   document.getElementById(screenId)?.classList.remove("hidden");
+  try { fyClearNudges(); if (screenId === "selectScreen") setTimeout(fyWakabaTop, 600); } catch (e) {}
 }
 
 /* 🔊 高速サウンド処理 (Web Audio API) */
@@ -1216,9 +1217,78 @@ function fyGlowCss() {
   var st = document.createElement("style"); st.id = "fyGlowCss";
   st.textContent = "@keyframes fyPulse{0%{box-shadow:0 0 0 0 rgba(255,179,0,.85);transform:scale(1)}50%{transform:scale(1.05)}100%{box-shadow:0 0 0 18px rgba(255,179,0,0);transform:scale(1)}}" +
     "@keyframes fyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}" +
-    ".fyPulseRing{animation:fyPulse 1.1s ease-out infinite}";
+    ".fyPulseRing{animation:fyPulse 1.1s ease-out infinite}" +
+    "@keyframes fyBounce2{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}" +
+    ".fyNudge{position:relative;outline:4px solid #ffb300;outline-offset:2px;animation:fyPulse 1.2s ease-out infinite;}" +
+    ".fyNudge::after{content:\"👆\";position:absolute;left:50%;bottom:-40px;font-size:32px;line-height:1;pointer-events:none;animation:fyBounce2 .7s ease-in-out infinite;z-index:5;}";
   document.head.appendChild(st);
 }
+/* 🌱 わかばマーク（ぜんいんに さいしょは ついている。うるさく なったら けす） */
+function fyWakabaOn() { try { return Storage.get("fy_wakaba_" + activeProfileIndex, "on") !== "off"; } catch (e) { return true; } }
+function fyWakabaSet(on) {
+  try { Storage.set("fy_wakaba_" + activeProfileIndex, on ? "on" : "off"); } catch (e) {}
+  if (!on) fyClearNudges();
+  try { fyWakabaChipRefresh(); } catch (e) {}
+}
+function fyWakabaChipRefresh() {
+  var c = document.getElementById("fyWakabaChip"); if (!c) return;
+  var on = fyWakabaOn();
+  c.textContent = on ? "🌱 わかばマーク：つけている" : "🌱 わかばマーク：けしている";
+  c.style.background = on ? "#e3f4dc" : "#eee";
+  c.style.color = on ? "#2e7d32" : "#999";
+  c.style.border = on ? "2px solid #7bc67e" : "2px solid #ddd";
+}
+function fyWakabaAsk() {
+  if (!fyWakabaOn()) { fyWakabaSet(true); return; }
+  var d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10003;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+  d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:18px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);">' +
+    '<div style="font-size:34px;">🌱</div>' +
+    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">わかばマークを けしますか？</div>' +
+    '<div style="font-size:13px;color:#806c5a;line-height:1.7;margin-bottom:14px;">けすと、ひかる あんないと、<br>ずんだもんの こえの あんないが でなくなります。<br>（あとから また つけられます）</div>' +
+    '<button id="fyWkKeep" style="width:100%;padding:12px;font-size:16px;font-weight:900;color:#fff;background:#7bc67e;border:none;border-radius:12px;">のこす</button>' +
+    '<button id="fyWkOff" style="width:100%;margin-top:8px;padding:10px;font-size:14px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:12px;">けす</button></div>';
+  document.body.appendChild(d);
+  document.getElementById("fyWkKeep").addEventListener("click", function () { d.remove(); });
+  document.getElementById("fyWkOff").addEventListener("click", function () { d.remove(); fyWakabaSet(false); });
+}
+/* ひかる ボタン（つぎは ここ、が わかる） */
+function fyClearNudges() {
+  Array.prototype.forEach.call(document.querySelectorAll(".fyNudge"), function (n) { n.classList.remove("fyNudge"); });
+}
+function fyNudge(el) {
+  if (!el || !fyWakabaOn()) return;
+  fyGlowCss(); fyClearNudges();
+  el.classList.add("fyNudge");
+  var off = function () { el.classList.remove("fyNudge"); el.removeEventListener("pointerdown", off); };
+  el.addEventListener("pointerdown", off);
+}
+/* わかばマークが ついている ときだけ、まいかい ならす こえ */
+function fyWakabaVoice(file, delayMs, guard) {
+  if (!fyWakabaOn()) return;
+  setTimeout(function () {
+    try { if (!fyWakabaOn()) return; if (guard && !guard()) return; var a = new Audio(file); var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+  }, delayMs || 0);
+}
+/* トップ画面：つぎに おす ボタンを ひからせる */
+function fyWakabaTop() {
+  try {
+    if (!fyWakabaOn()) return;
+    var ss = document.getElementById("selectScreen");
+    if (!ss || ss.classList.contains("hidden")) return;
+    if (document.getElementById("fyGuide") || document.getElementById("fyWelcome") || document.getElementById("fyPractice")) return;
+    var list = [["treble", "btnTreble"], ["bass", "btnBass"], ["all", "btnAll"]], pick = null;
+    for (var i = 0; i < list.length; i++) {
+      var b = document.getElementById(list[i][1]);
+      if (!b || b.classList.contains("locked")) continue;
+      if (hasLevelCleared(activeProfileIndex, list[i][0], 5)) continue;
+      pick = b; break;
+    }
+    if (pick) fyNudge(pick);
+    if (!window.__fyWkTopVoice && pick) { window.__fyWkTopVoice = true; fyWakabaVoice("zunda-guide2.mp3", 300); }
+  } catch (e) {}
+}
+
 /* 1かいだけ ならす こえ */
 function fyVoiceOnce(flagKey, file, delayMs, guard) {
   try {
@@ -1286,7 +1356,9 @@ function fyPracticeGuide() {
       } catch (e) { timer = setTimeout(next, 2500); }
     }
     show();
+    return true;
   } catch (e) {}
+  return false;
 }
 
 /* 🧭 はじめての ガイド（とうろくの あと 1回だけ。ずんだもんが トップ画面を あんない） */
@@ -1311,11 +1383,11 @@ function showGuide() {
   fing.style.cssText = "position:fixed;font-size:38px;pointer-events:none;z-index:2;animation:fyBounce .7s ease-in-out infinite;display:none;";
   wrap.appendChild(fing);
   var bub = document.createElement("div");
-  bub.style.cssText = "position:fixed;left:12px;right:12px;max-width:360px;margin:0 auto;background:#fffaf0;border:3px solid #7bc67e;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);text-align:center;";
+  bub.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);";
   wrap.appendChild(spot); wrap.appendChild(bub);
   document.body.appendChild(wrap);
   function stopAu() { try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {} au = null; }
-  function close() { stopAu(); wrap.remove(); }
+  function close() { stopAu(); wrap.remove(); try { setTimeout(fyWakabaTop, 300); } catch (e) {} }
   function render() {
     stopAu();
     var st = steps[k], last = (k === steps.length - 1), el = st.sel ? document.querySelector(st.sel) : null;
@@ -1337,16 +1409,21 @@ function showGuide() {
     } else {
       spot.style.display = "none"; fing.style.display = "none";
       wrap.style.background = "rgba(60,40,20,.6)";
-      bub.style.bottom = "auto"; bub.style.top = "30%";
+      bub.style.top = "auto"; bub.style.bottom = "18px";
     }
-    bub.innerHTML = '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin-bottom:4px;">🟢 ずんだもん</div>' +
-      '<div style="font-size:17px;font-weight:800;color:#5d4037;line-height:1.6;min-height:54px;">' + st.txt + '</div>' +
-      '<div style="font-size:12px;color:#a08c78;margin:4px 0 8px;">' + (k + 1) + ' / ' + steps.length + '</div>' +
-      '<button id="fyGuideNext" style="width:100%;padding:12px;font-size:17px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:12px;">' + (last ? "はじめる ▶" : "つぎへ ▶") + '</button>' +
-      (last ? '' : '<button id="fyGuideSkip" style="width:100%;margin-top:6px;padding:8px;font-size:13px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:10px;">とばす</button>');
-    document.getElementById("fyGuideNext").addEventListener("click", function () { if (last) close(); else { k++; render(); } });
-    var sk = document.getElementById("fyGuideSkip"); if (sk) sk.addEventListener("click", close);
-    try { au = new Audio("zunda-guide" + (k + 1) + ".mp3"); var q = au.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+    /* もじは だしません（こえ ＋ ひかる わく ＋ ゆびだけ）。おうちの人 むけに、ちいさな「とじる」だけ */
+    bub.innerHTML = '<button id="fyGuideSkip" style="border:none;background:rgba(255,255,255,.92);color:#806c5a;font-size:12px;font-weight:800;border-radius:12px;padding:7px 12px;box-shadow:0 2px 6px rgba(0,0,0,.25);">とじる ✕</button>';
+    var sk = document.getElementById("fyGuideSkip");
+    if (sk) sk.addEventListener("click", function (e) { e.stopPropagation(); close(); });
+    var goNext = function () { if (done) return; done = true; if (last) close(); else { k++; render(); } };
+    var done = false;
+    wrap.onclick = goNext;   /* どこを さわっても つぎへ（3さいでも まよわない） */
+    try {
+      au = new Audio("zunda-guide" + (k + 1) + ".mp3");
+      au.addEventListener("ended", function () { setTimeout(goNext, 600); });
+      au.addEventListener("error", function () { setTimeout(goNext, 2500); });
+      var q = au.play(); if (q && q.catch) q.catch(function () { setTimeout(goNext, 2500); });
+    } catch (e) { setTimeout(goNext, 2500); }
   }
   render();
 }
@@ -2061,6 +2138,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113b"></script>
+<script src="app-extras.js?v=20261113c"></script>
 </body>
 </html>
