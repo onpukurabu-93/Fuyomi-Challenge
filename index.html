@@ -1464,7 +1464,6 @@ function fyPracticeGuide() {
     var skip = document.createElement("button");
     skip.textContent = "とじる ✕";
     skip.style.cssText = "position:fixed;bottom:112px;left:50%;transform:translateX(-50%);pointer-events:auto;border:none;background:rgba(255,255,255,.92);color:#806c5a;font-size:13px;font-weight:800;border-radius:12px;padding:8px 12px;box-shadow:0 2px 6px rgba(0,0,0,.25);";
-    wrap.appendChild(skip);
     var i = 0, au = null, timer = null, closed = false;
     function clear() { if (timer) { clearTimeout(timer); timer = null; } try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {} au = null; Array.prototype.slice.call(wrap.querySelectorAll(".fyItem")).forEach(function (n) { n.remove(); }); }
     function close() { if (closed) return; closed = true; clear(); wrap.remove(); try { fyKeyNudge(); } catch (e) {} }
@@ -1555,9 +1554,7 @@ function showGuide() {
       bub.style.top = "auto"; bub.style.bottom = "18px";
     }
     /* もじは だしません（こえ ＋ ひかる わく ＋ ゆびだけ）。おうちの人 むけに、ちいさな「とじる」だけ */
-    bub.innerHTML = '<button id="fyGuideSkip" style="border:none;background:rgba(255,255,255,.92);color:#806c5a;font-size:12px;font-weight:800;border-radius:12px;padding:7px 12px;box-shadow:0 2px 6px rgba(0,0,0,.25);">とじる ✕</button>';
-    var sk = document.getElementById("fyGuideSkip");
-    if (sk) sk.addEventListener("click", function (e) { e.stopPropagation(); close(); });
+    bub.innerHTML = "";
     var goNext = function () { if (done) return; done = true; if (last) close(); else { k++; render(); } };
     var done = false;
     wrap.onclick = goNext;   /* どこを さわっても つぎへ（3さいでも まよわない） */
@@ -2316,6 +2313,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113l"></script>
+<script src="app-extras.js?v=20261113m"></script>
 </body>
 </html>
