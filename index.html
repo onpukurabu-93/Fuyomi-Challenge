@@ -562,6 +562,10 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
         <!-- タブ3: データリセット＆デバッグ機能 -->
         <div id="teacherTab3" class="hidden">
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">✨ ふよみマスターのあとの「光るボタン」（いまのプレイヤー）</div>
+          <button id="fyGlowLegendBtn" class="modal-btn" style="background:#7e57c2; font-size:12px; padding:8px; margin-bottom:6px;" onclick="fyToggleGlow('legend')">🟣 レジェンドの光</button>
+          <button id="fyGlowMeijinBtn" class="modal-btn" style="background:#c9962b; font-size:12px; padding:8px; margin-bottom:12px;" onclick="fyToggleGlow('meijin')">🟡 名人の光</button>
+
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🧪 100回目のテスト（使っていない生徒枠で試してね）</div>
           <button class="modal-btn" style="background:#43a047; font-size:12px; padding:8px; margin-bottom:6px;" onclick="setStreak99ForTest()">🧪 いまのプレイヤーの連続を99回にする</button>
           <button class="modal-btn" style="background:#2e7d32; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetLegendForTest()">🧪 いまのプレイヤーの 👑と連続をリセット</button>
@@ -1248,9 +1252,27 @@ function fyGlowCss() {
     ".fyNudge::after{content:\"👆\";position:absolute;left:50%;bottom:-40px;font-size:32px;line-height:1;pointer-events:none;animation:fyBounce2 .7s ease-in-out infinite;z-index:5;}";
   document.head.appendChild(st);
 }
+/* ✨ マスターのあとの 光るボタン：生徒さんごとに、先生が 入／切 できる */
+function fyGlowOn(idx, kind) { try { return Storage.get("fy_glow_" + kind + "_" + idx, "on") !== "off"; } catch (e) { return true; } }
+function fyGlowLabels() {
+  try {
+    var l = document.getElementById("fyGlowLegendBtn"), m = document.getElementById("fyGlowMeijinBtn");
+    if (l) l.textContent = "🟣 レジェンドの光：" + (fyGlowOn(activeProfileIndex, "legend") ? "入（光る）" : "切（光らない）");
+    if (m) m.textContent = "🟡 名人の光：" + (fyGlowOn(activeProfileIndex, "meijin") ? "入（光る）" : "切（光らない）");
+  } catch (e) {}
+}
+function fyToggleGlow(kind) {
+  Storage.set("fy_glow_" + kind + "_" + activeProfileIndex, fyGlowOn(activeProfileIndex, kind) ? "off" : "on");
+  fyGlowLabels();
+  try { if (window.fyRefreshLegendBtn) window.fyRefreshLegendBtn(); } catch (e) {}
+}
+(function () {
+  var o = window.renderTeacherView || renderTeacherView;
+  window.renderTeacherView = function () { var r = o.apply(this, arguments); fyGlowLabels(); return r; };
+})();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1113t";
+var FY_INDEX_VER = "1113v";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2307,7 +2329,9 @@ function unlockAllCardsToLevel5ForTest() {
   fyTestBasics(idx);
   ["treble", "bass"].forEach(c => { for (let l = 1; l <= 5; l++) fyTestPass(idx, c, l); });
   for (let l = 1; l <= 4; l++) fyTestPass(idx, "all", l);
-  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。");
+  Storage.set(`fy_test_master_${idx}`, true);   /* レジェンドへのみちを ひらく（テスト用） */
+  Storage.set(`fy_legend_opened_${idx}`, false);
+  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。\nレジェンドへのみちも 開き、光ります。");
   initProfiles();
 }
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
@@ -2365,6 +2389,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113t"></script>
+<script src="app-extras.js?v=20261113v"></script>
 </body>
 </html>
