@@ -1393,7 +1393,7 @@ function fyCorrectKeyEl() {
   return null;
 }
 function fyKeyNudge() {
-  if (trainingMode || !fyWakabaOn() || (fyPracQuiet() && !fyColorActive())) return;
+  if (trainingMode || !fyWakabaOn() || (!fyColorActive() && (fyPracQuiet() || selectedLevel > 1))) return;
   var cs = document.getElementById("cardScreen");
   if (!cs || cs.classList.contains("hidden")) return;
   if (document.getElementById("fyPractice")) return;
@@ -1402,7 +1402,7 @@ function fyKeyNudge() {
   if (k) { fyNudge(k); k.classList.add("fyUp"); }
 }
 function fyAfterPracticePress() {
-  if (!fyWakabaOn() || trainingMode || (fyPracQuiet() && !fyColorActive())) return;
+  if (!fyWakabaOn() || trainingMode || (!fyColorActive() && (fyPracQuiet() || selectedLevel > 1))) return;
   window.__fyPracCount = (window.__fyPracCount || 0) + 1;
   if (window.__fyPracCount === 3) {
     fyNudge(document.getElementById("trainingButton"));
@@ -2316,6 +2316,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113k"></script>
+<script src="app-extras.js?v=20261113l"></script>
 </body>
 </html>
