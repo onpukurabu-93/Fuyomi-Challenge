@@ -295,6 +295,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
   <!-- トップ画面 -->
   <section id="selectScreen" class="screen">
+    <div id="fyVerBar" style="display:none;text-align:center;font-size:10px;color:#b0a090;margin:-4px 0 4px;"></div>
     <div class="main-title">ふよみチャレンジ</div>
     <div class="main-subtitle">おんぷを よんで みよう！</div>
 
@@ -566,8 +567,8 @@ input, textarea { -webkit-user-select:text; user-select:text; }
           <button class="modal-btn" style="background:#2e7d32; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetLegendForTest()">🧪 いまのプレイヤーの 👑と連続をリセット</button>
 
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🔓 テスト用：全鍵解除</div>
-          <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllLevelsForDebug()">🔓 すべてのコース・レベルの鍵を一括解除</button>
-          <button class="modal-btn" style="background:#fb8c00; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockToLevel4ForTest()">🔓 レベル4まで開く（ト音・ヘ音・全カード／レベル5は閉じたまま）</button>
+          <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:8px;" onclick="unlockClefsToLevel5ForTest()">🔓 ト音記号・ヘ音記号を レベル5まで開く</button>
+          <button class="modal-btn" style="background:#fb8c00; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllCardsToLevel5ForTest()">🔓 全カードを レベル5まで開く</button>
 
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
           <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
@@ -1247,6 +1248,20 @@ function fyGlowCss() {
     ".fyNudge::after{content:\"👆\";position:absolute;left:50%;bottom:-40px;font-size:32px;line-height:1;pointer-events:none;animation:fyBounce2 .7s ease-in-out infinite;z-index:5;}";
   document.head.appendChild(st);
 }
+/* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
+var SHOW_VERSION = true;
+var FY_INDEX_VER = "1113t";
+function fyShowVersion() {
+  try {
+    var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
+    var ex = window.FY_EXTRAS_VER || "（app-extras なし）";
+    var ok = (ex === FY_INDEX_VER);
+    el.style.display = "block";
+    el.style.color = ok ? "#b0a090" : "#d32f2f"; el.style.fontWeight = ok ? "400" : "800";
+    el.textContent = ok ? ("版 " + FY_INDEX_VER) : ("⚠ ファイルが そろっていません　index " + FY_INDEX_VER + " / app-extras " + ex);
+  } catch (e) {}
+}
+window.addEventListener("load", function () { setTimeout(fyShowVersion, 400); });
 /* 🎨 いろおんぷ（ようじ むけ：レベル1だけ。くろおんぷは レベル1から べつに すすむ） */
 var FY_HEADS = {"t_c1": [530.5, 591.8, 31.2, 22.0, 140.2], "t_d1": [535.3, 562.5, 32.8, 22.3, 132.1], "t_e1": [528.3, 546.1, 31.0, 21.7, 141.7], "t_f1": [525.0, 521.6, 33.9, 22.5, 126.4], "t_g1": [529.8, 497.6, 31.6, 22.1, 141.4], "t_a1": [527.0, 476.1, 34.4, 22.5, 125.7], "t_b1": [534.3, 452.5, 31.7, 22.1, 141.5], "t_c2": [527.8, 428.2, 33.9, 22.5, 126.7], "h_c1": [534.8, 813.4, 31.2, 22.1, 140.4], "h_b0": [523.9, 842.1, 32.4, 22.4, 133.2], "h_a0": [525.6, 858.9, 31.0, 21.7, 141.4], "h_g": [527.0, 885.3, 34.8, 22.6, 125.6], "h_f": [529.9, 903.0, 31.1, 21.7, 141.5], "h_e": [522.3, 929.0, 34.4, 22.8, 126.0], "h_d": [522.6, 951.9, 31.0, 21.8, 141.6], "h_c00": [528.6, 971.0, 34.5, 22.5, 126.4]};
 var FY_KEYCOL = {"ド":"#e8505b","レ":"#f28a1e","ミ":"#f5d90a","ファ":"#43a047","ソ":"#29b6f6","ラ":"#3f51b5","シ":"#9c4dcc"};
@@ -1391,10 +1406,20 @@ function fyNudge(el) {
   el.addEventListener("pointerdown", off);
 }
 /* わかばマークが ついている ときだけ、まいかい ならす こえ */
+var fyVoiceNow = null, fyVoiceLast = {};
 function fyWakabaVoice(file, delayMs, guard) {
   if (!fyWakabaOn()) return;
+  var t0 = Date.now();
+  /* おなじ こえが つづけて よばれたら、2かいめは ならさない（トレーニングを 2かい タップしたとき など） */
+  if (fyVoiceLast[file] && t0 - fyVoiceLast[file] < 5000) return;
+  fyVoiceLast[file] = t0;
   setTimeout(function () {
-    try { if (!fyWakabaOn()) return; if (guard && !guard()) return; var a = new Audio(file); var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+    try {
+      if (!fyWakabaOn()) return; if (guard && !guard()) return;
+      if (fyVoiceNow) { try { fyVoiceNow.pause(); } catch (e) {} }
+      var a = new Audio(file); fyVoiceNow = a;
+      var q = a.play(); if (q && q.catch) q.catch(function () {});
+    } catch (e) {}
   }, delayMs || 0);
 }
 /* カード画面（れんしゅう）：ただしい けんばんを ひからせる → おしたら ›（つぎ）→ 3かいで トレーニング */
@@ -2257,24 +2282,34 @@ function resetLegendForTest() {
   renderTeacherView();
 }
 
-function unlockToLevel4ForTest() {
-  /* いまのプレイヤーの きろくに「合格」を書きこむ（すでに90%以上の きろくは そのまま） */
-  const idx = activeProfileIndex;
-  const rec = { accuracy: 100, time: 60000, count: 20 };
-  const put = (clef, level) => {
-    const k = `onpu_best_20_${idx}_${clef}_${level}`;
-    const old = Storage.get(k);
-    if (!old || old.accuracy < 90) Storage.set(k, rec);
-  };
+function fyTestPass(idx, clef, level) {
+  const k = `onpu_best_20_${idx}_${clef}_${level}`;
+  const old = Storage.get(k);
+  if (!old || old.accuracy < 90) Storage.set(k, { accuracy: 100, time: 60000, count: 20 });
+}
+function fyTestBasics(idx) {
   const doBest = getDoTestBest(idx);
   if (!doBest || doBest.accuracy < 90) Storage.set(`onpu_do_test_best_${idx}`, { accuracy: 100, time: 60000, mode: "count", count: 20 });
-  ["treble", "bass", "all"].forEach(c => { for (let l = 1; l <= 3; l++) put(c, l); });
-  /* 全カードを ひらくために、ト音・ヘ音の レベル5 だけ 合格にしておく（レベル4は 未合格なので、レベル5は ロックのまま） */
-  put("treble", 5); put("bass", 5);
-  alert("レベル4まで開きました！（ト音・ヘ音・全カード）\nレベル5は、レベル4に合格すると開きます。（テスト用）");
+  /* 色おんぷは レベル1だけ。テストでは 黒おんぷに して、レベル2いじょうを ひらく */
+  Storage.set(`fy_color_${idx}_treble`, "off"); Storage.set(`fy_color_${idx}_bass`, "off");
+}
+/* ト音記号・ヘ音記号を レベル5まで開く（レベル4までに 合格を 書きこむ。全カードは まだ 閉じたまま） */
+function unlockClefsToLevel5ForTest() {
+  const idx = activeProfileIndex;
+  fyTestBasics(idx);
+  ["treble", "bass"].forEach(c => { for (let l = 1; l <= 4; l++) fyTestPass(idx, c, l); });
+  alert("ト音記号・ヘ音記号を レベル5まで開きました！（テスト用）\n全カードは、ト音・ヘ音のレベル5に合格すると開きます。");
   initProfiles();
 }
-function unlockAllLevelsForDebug() { Storage.set(`onpu_debug_unlocked_${activeProfileIndex}`, true); alert("すべてのコースとレベルの鍵を解除しました！（テスト用）"); initProfiles(); }
+/* 全カードを レベル5まで開く（ト音・ヘ音は レベル5まで合格。全カードは レベル4まで合格） */
+function unlockAllCardsToLevel5ForTest() {
+  const idx = activeProfileIndex;
+  fyTestBasics(idx);
+  ["treble", "bass"].forEach(c => { for (let l = 1; l <= 5; l++) fyTestPass(idx, c, l); });
+  for (let l = 1; l <= 4; l++) fyTestPass(idx, "all", l);
+  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。");
+  initProfiles();
+}
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
 
@@ -2330,6 +2365,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113r"></script>
+<script src="app-extras.js?v=20261113t"></script>
 </body>
 </html>
