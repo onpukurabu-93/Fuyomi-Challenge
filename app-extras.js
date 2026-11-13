@@ -1307,9 +1307,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   function progressText(idx, clef, label) {
     var c = clefProgress(idx, clef);
     var colorTxt = "";
-    try { if ((clef === "treble" || clef === "bass") && fyColorOn(idx)) colorTxt = "（🎨いろおんぷ：レベル1 " + (fyColorLv1Cleared(idx, clef) ? "合格" : "挑戦中") + "）"; else if ((clef === "treble" || clef === "bass") && fyColorLv1Cleared(idx, clef)) colorTxt = "（🎨いろおんぷ レベル1：合格ずみ）"; } catch (e) {}
+    try { if ((clef === "treble" || clef === "bass") && fyColorOn(idx, clef)) colorTxt = "（🎨いろおんぷ：レベル1 " + (fyColorLv1Cleared(idx, clef) ? "合格" : "挑戦中") + "）"; else if ((clef === "treble" || clef === "bass") && fyColorLv1Cleared(idx, clef)) colorTxt = "（🎨いろおんぷ レベル1：合格ずみ）"; } catch (e) {}
     if (clef === "bass" && !hasLevelCleared(idx, "treble", 1) && !fyColorLv1Cleared(idx, "treble") && c === 0) return label + "：まだ始めていません（ト音記号レベル1の合格後）";
-    if (colorTxt && c === 0) return label + "：" + (fyColorOn(idx) ? "" : "くろおんぷ レベル1に挑戦中 ") + colorTxt;
+    if (colorTxt && c === 0) return label + "：" + (fyColorOn(idx, clef) ? "" : "くろおんぷ レベル1に挑戦中 ") + colorTxt;
     if (clef === "all" && !(hasLevelCleared(idx, "treble", 5) && hasLevelCleared(idx, "bass", 5)) && c === 0) return label + "：まだ解放されていません";
     if (c >= 5) return label + "：全レベル合格";
     if (c === 0) return label + "：レベル1に挑戦中";
