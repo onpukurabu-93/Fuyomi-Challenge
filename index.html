@@ -562,6 +562,9 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
         <!-- タブ3: データリセット＆デバッグ機能 -->
         <div id="teacherTab3" class="hidden">
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🚀 チェック場所へ ジャンプ（いまのプレイヤー）</div>
+          <div id="fyJumpBox" style="margin-bottom:12px;"></div>
+
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">✨ ふよみマスターのあとの「光るボタン」（いまのプレイヤー）</div>
           <button id="fyGlowLegendBtn" class="modal-btn" style="background:#7e57c2; font-size:12px; padding:8px; margin-bottom:6px;" onclick="fyToggleGlow('legend')">🟣 レジェンドの光</button>
           <button id="fyGlowMeijinBtn" class="modal-btn" style="background:#c9962b; font-size:12px; padding:8px; margin-bottom:12px;" onclick="fyToggleGlow('meijin')">🟡 名人の光</button>
@@ -1272,7 +1275,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1113v";
+var FY_INDEX_VER = "1113w";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2334,6 +2337,32 @@ function unlockAllCardsToLevel5ForTest() {
   alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。\nレジェンドへのみちも 開き、光ります。");
   initProfiles();
 }
+
+/* チェック場所ジャンプ：jump_list.js（入れ替え用ファイル）から ボタンを つくる */
+function fyRenderJumps() {
+  var box = document.getElementById("fyJumpBox"); if (!box) return;
+  box.innerHTML = "";
+  var L = window.FY_JUMPS;
+  if (!Array.isArray(L)) { box.textContent = "（jump_list.js が みつかりません）"; return; }
+  L.forEach(function (j) {
+    var b = document.createElement("button");
+    b.className = "modal-btn";
+    b.style.cssText = "background:#00897b; font-size:12px; padding:8px; margin-bottom:4px; text-align:left;";
+    b.innerHTML = j.label + (j.note ? '<div style="font-size:10px;font-weight:normal;opacity:.9;">' + j.note + '</div>' : "");
+    b.onclick = function () {
+      if (j.confirm && !confirm("いまのプレイヤーの記録を消します。よろしいですか？")) return;
+      try { j.run(activeProfileIndex); } catch (e) { alert("ジャンプに しっぱい：" + e.message); }
+    };
+    box.appendChild(b);
+  });
+}
+(function () {
+  var s = document.createElement("script");
+  s.src = "jump_list.js?t=" + Date.now();
+  s.onload = fyRenderJumps;
+  s.onerror = fyRenderJumps;
+  document.head.appendChild(s);
+})();
 function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
 
@@ -2389,6 +2418,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113v"></script>
+<script src="app-extras.js?v=20261113w"></script>
 </body>
 </html>
