@@ -1210,6 +1210,85 @@ function showWelcome(name) {
   });
 }
 
+/* ✨ ひかる あんない（3さいでも わかる：こえ ＋ ひかる わく ＋ ゆび） */
+function fyGlowCss() {
+  if (document.getElementById("fyGlowCss")) return;
+  var st = document.createElement("style"); st.id = "fyGlowCss";
+  st.textContent = "@keyframes fyPulse{0%{box-shadow:0 0 0 0 rgba(255,179,0,.85);transform:scale(1)}50%{transform:scale(1.05)}100%{box-shadow:0 0 0 18px rgba(255,179,0,0);transform:scale(1)}}" +
+    "@keyframes fyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}" +
+    ".fyPulseRing{animation:fyPulse 1.1s ease-out infinite}";
+  document.head.appendChild(st);
+}
+/* 1かいだけ ならす こえ */
+function fyVoiceOnce(flagKey, file, delayMs, guard) {
+  try {
+    var k = flagKey + "_" + activeProfileIndex;
+    if (Storage.get(k, false)) return;
+    setTimeout(function () {
+      try { if (Storage.get(k, false)) return; if (guard && !guard()) return; Storage.set(k, true); var a = new Audio(file); var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+    }, delayMs || 0);
+  } catch (e) {}
+}
+/* カード画面に はじめて はいったとき：1かいだけ、ひかる あんない */
+function fyPracticeGuide() {
+  try {
+    var k = "fy_practice_guide_" + activeProfileIndex;
+    if (Storage.get(k, false)) return;
+    if (trainingMode) return;
+    var cs = document.getElementById("cardScreen");
+    if (!cs || cs.classList.contains("hidden")) return;
+    Storage.set(k, true);
+    fyGlowCss();
+    var steps = [
+      { sel: [".note-card-wrap"], snd: "zunda-practice1.mp3" },
+      { sel: ["#arrowLeft", "#arrowRight"], snd: "zunda-practice2.mp3" },
+      { sel: [".keyboard"], snd: "zunda-practice3.mp3" },
+      { sel: ["#trainingButton"], snd: "zunda-practice4.mp3" }
+    ];
+    var wrap = document.createElement("div");
+    wrap.id = "fyPractice";
+    wrap.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10002;pointer-events:none;";
+    document.body.appendChild(wrap);
+    var skip = document.createElement("button");
+    skip.textContent = "とじる ✕";
+    skip.style.cssText = "position:fixed;bottom:112px;left:50%;transform:translateX(-50%);pointer-events:auto;border:none;background:rgba(255,255,255,.92);color:#806c5a;font-size:13px;font-weight:800;border-radius:12px;padding:8px 12px;box-shadow:0 2px 6px rgba(0,0,0,.25);";
+    wrap.appendChild(skip);
+    var i = 0, au = null, timer = null, closed = false;
+    function clear() { if (timer) { clearTimeout(timer); timer = null; } try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {} au = null; Array.prototype.slice.call(wrap.querySelectorAll(".fyItem")).forEach(function (n) { n.remove(); }); }
+    function close() { if (closed) return; closed = true; clear(); wrap.remove(); }
+    skip.addEventListener("click", close);
+    function show() {
+      clear();
+      if (closed) return;
+      if (i >= steps.length) { close(); return; }
+      var st = steps[i], atTop = false;
+      st.sel.forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (!el || !el.getClientRects().length) return;
+        var r = el.getBoundingClientRect();
+        var ring = document.createElement("div");
+        ring.className = "fyItem fyPulseRing";
+        ring.style.cssText = "position:fixed;border:4px solid #ffb300;border-radius:14px;left:" + (r.left - 4) + "px;top:" + (r.top - 4) + "px;width:" + (r.width + 8) + "px;height:" + (r.height + 8) + "px;";
+        wrap.appendChild(ring);
+        var f = document.createElement("div");
+        f.className = "fyItem";
+        var below = (r.top + r.height / 2) < window.innerHeight * 0.55;
+        f.textContent = below ? "👆" : "👇";
+        f.style.cssText = "position:fixed;font-size:38px;animation:fyBounce .7s ease-in-out infinite;left:" + (r.left + r.width / 2 - 19) + "px;top:" + (below ? (r.bottom + 4) : Math.max(0, r.top - 50)) + "px;";
+        wrap.appendChild(f);
+      });
+      var next = function () { if (closed) return; timer = setTimeout(function () { i++; show(); }, 500); };
+      try {
+        au = new Audio(st.snd);
+        au.addEventListener("ended", next);
+        au.addEventListener("error", function () { timer = setTimeout(next, 2500); });
+        var q = au.play(); if (q && q.catch) q.catch(function () { timer = setTimeout(next, 2500); });
+      } catch (e) { timer = setTimeout(next, 2500); }
+    }
+    show();
+  } catch (e) {}
+}
+
 /* 🧭 はじめての ガイド（とうろくの あと 1回だけ。ずんだもんが トップ画面を あんない） */
 function showGuide() {
   var old = document.getElementById("fyGuide"); if (old) old.remove();
@@ -1225,7 +1304,12 @@ function showGuide() {
   wrap.id = "fyGuide";
   wrap.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10002;";
   var spot = document.createElement("div");
-  spot.style.cssText = "position:fixed;border:3px solid #ffb300;border-radius:14px;box-shadow:0 0 0 9999px rgba(60,40,20,.6);pointer-events:none;transition:all .25s;";
+  fyGlowCss();
+  spot.style.cssText = "position:fixed;border:4px solid #ffb300;border-radius:14px;box-shadow:0 0 0 9999px rgba(60,40,20,.6);pointer-events:none;transition:all .25s;";
+  spot.className = "fyPulseRing";
+  var fing = document.createElement("div");
+  fing.style.cssText = "position:fixed;font-size:38px;pointer-events:none;z-index:2;animation:fyBounce .7s ease-in-out infinite;display:none;";
+  wrap.appendChild(fing);
   var bub = document.createElement("div");
   bub.style.cssText = "position:fixed;left:12px;right:12px;max-width:360px;margin:0 auto;background:#fffaf0;border:3px solid #7bc67e;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);text-align:center;";
   wrap.appendChild(spot); wrap.appendChild(bub);
@@ -1246,10 +1330,12 @@ function showGuide() {
       spot.style.width = (r.width + 10) + "px"; spot.style.height = (r.height + 10) + "px";
       wrap.style.background = "transparent";
       var mid = r.top + r.height / 2;
+      fing.style.display = "block"; fing.style.left = (r.left + r.width / 2 - 19) + "px";
+      if (mid > window.innerHeight * 0.5) { fing.textContent = "👇"; fing.style.top = Math.max(0, r.top - 50) + "px"; } else { fing.textContent = "👆"; fing.style.top = (r.bottom + 4) + "px"; }
       if (mid > window.innerHeight * 0.5) { bub.style.top = "14px"; bub.style.bottom = "auto"; }
       else { bub.style.bottom = "18px"; bub.style.top = "auto"; }
     } else {
-      spot.style.display = "none";
+      spot.style.display = "none"; fing.style.display = "none";
       wrap.style.background = "rgba(60,40,20,.6)";
       bub.style.bottom = "auto"; bub.style.top = "30%";
     }
@@ -1975,6 +2061,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113a"></script>
+<script src="app-extras.js?v=20261113b"></script>
 </body>
 </html>
