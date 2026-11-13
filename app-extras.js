@@ -1023,12 +1023,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     thinkPlayed = false;
     var r0 = origStartTraining.apply(this, arguments);
     try { showMeijinBar(); } catch (e) {}
+    try { fyVoiceOnce("fy_training_voice", "zunda-training.mp3", 900, function () { return trainingMode; }); } catch (e) {}
     return r0;
   };
   var origProceed = window.proceedToCards;
   if (typeof origProceed === "function") window.proceedToCards = function () {
     try { var mb0 = document.getElementById("fyMeijinBar"); if (mb0) mb0.style.display = "none"; } catch (e) {}
-    return origProceed.apply(this, arguments);
+    var rp0 = origProceed.apply(this, arguments);
+    try { setTimeout(function () { if (typeof fyPracticeGuide === "function") fyPracticeGuide(); }, 800); } catch (e) {}
+    return rp0;
   };
   /* 🏅 名人に ちょうせん中：全カード レベル5の 20問を はじめる ときに、いまの れんぞくを 見せる（マスターを とったあとから） */
   function showMeijinBar() {
@@ -1981,6 +1984,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var prevResult = window.showResultScreen;
   window.showResultScreen = function () {
     var r = prevResult.apply(this, arguments);
+    try { if (targetValue === 10 && selectedClef !== "do") fyVoiceOnce("fy_next20_voice", "zunda-next20.mp3", 3800, function () { var rs = document.getElementById("resultScreen"); return rs && !rs.classList.contains("hidden"); }); } catch (e) {}
     try {
       var old = document.getElementById("fyHankoResult");
       if (old) old.remove();
