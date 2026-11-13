@@ -1,7 +1,7 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1113t";
+window.FY_EXTRAS_VER = "1113v";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2217,7 +2217,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   function isMaster(idx) {
     try {
-      if (Storage.get("onpu_debug_unlocked_" + idx)) return true;
+      if (Storage.get("onpu_debug_unlocked_" + idx) || Storage.get("fy_test_master_" + idx)) return true;
       var a = Storage.get("fy_ach_" + idx, []);
       if (!Array.isArray(a)) return false;
       for (var i = 0; i < a.length; i++) { if (a[i] && a[i].type === "master") return true; }
@@ -2241,13 +2241,37 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       anc.parentNode.insertBefore(b, anc.nextSibling);
       b.addEventListener("click", function () {
         if (!isMaster(activeProfileIndex)) { alert("ふよみマスターに なると ひらくよ！"); return; }
+        try { Storage.set("fy_legend_opened_" + activeProfileIndex, true); } catch (e) {}
         location.href = PAGE;
       });
     }
     var ok = isMaster(activeProfileIndex);
-    b.innerHTML = "🎼 レジェンドへの みち" + (ok ? "" : ' <span class="lock-tag">🔒 ロック</span>');
-    b.className = "select-button" + (ok ? "" : " locked");
+    /* ふよみマスターを とったら、レジェンドへのみちを ひらくまで、ずっと ひからせる */
+    var glow = false;
+    try { glow = ok && !Storage.get("fy_legend_opened_" + activeProfileIndex, false) && fyGlowOn(activeProfileIndex, "legend"); } catch (e) {}
+    b.innerHTML = "🎼 レジェンドへの みち" + (ok ? "" : ' <span class="lock-tag">🔒 ロック</span>') + (glow ? '<div style="font-size:12px;font-weight:800;margin-top:2px;">👆 つぎは ここ！</div>' : "");
+    b.className = "select-button" + (ok ? "" : " locked") + (glow ? " fyPulseRing" : "");
+    if (glow) { try { fyGlowCss(); } catch (e) {} }
+    /* 🏅 名人：全カードを ひからせる（ふよみマスターを とって、まだ 名人に なっていない あいだ） */
+    try {
+      var hasMeijin = false;
+      var aa = Storage.get("fy_ach_" + activeProfileIndex, []);
+      if (Array.isArray(aa)) aa.forEach(function (x) { if (x && (x.type === "legend" || x.type === "legend1000")) hasMeijin = true; });
+      var mg = ok && !hasMeijin && fyGlowOn(activeProfileIndex, "meijin");
+      if (!document.getElementById("fyMeijinCss")) {
+        var st = document.createElement("style"); st.id = "fyMeijinCss";
+        st.textContent = "@keyframes fyGold{0%{box-shadow:0 0 0 0 rgba(212,160,23,.9);transform:scale(1)}50%{transform:scale(1.05)}100%{box-shadow:0 0 0 16px rgba(212,160,23,0);transform:scale(1)}}.fyGoldRing{animation:fyGold 1.1s ease-out infinite;outline:3px solid #d4a017}.fyMeijinTag{display:block;font-size:10px;font-weight:800;color:#8a5a00;margin-top:2px}";
+        document.head.appendChild(st);
+      }
+      all.classList.toggle("fyGoldRing", !!mg);
+      var tg = document.getElementById("fyMeijinTag");
+      if (mg) {
+        if (!tg) { tg = document.createElement("span"); tg.id = "fyMeijinTag"; tg.className = "fyMeijinTag"; all.appendChild(tg); }
+        tg.textContent = "🏅 名人に ちょうせん";
+      } else if (tg) { tg.remove(); }
+    } catch (e) {}
   }
+  window.fyRefreshLegendBtn = function () { try { renderBtn(); } catch (e) {} };
   var prev = window.initProfiles;
   window.initProfiles = function () {
     var r = prev.apply(this, arguments);
