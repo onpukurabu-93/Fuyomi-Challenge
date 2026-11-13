@@ -1029,13 +1029,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var origProceed = window.proceedToCards;
   if (typeof origProceed === "function") window.proceedToCards = function () {
     try { var mb0 = document.getElementById("fyMeijinBar"); if (mb0) mb0.style.display = "none"; } catch (e) {}
+    window.__fyPracCount = 0;
     var rp0 = origProceed.apply(this, arguments);
     try { setTimeout(function () {
       var started = (typeof fyPracticeGuide === "function") ? fyPracticeGuide() : false;
-      if (!started && typeof fyWakabaOn === "function" && fyWakabaOn()) {
-        fyNudge(document.getElementById("trainingButton"));
-        fyWakabaVoice("zunda-practice4.mp3", 0, function () { var cs = document.getElementById("cardScreen"); return cs && !cs.classList.contains("hidden") && !trainingMode; });
-      }
+      if (!started) { try { fyKeyNudge(); } catch (e) {} }
     }, 800); } catch (e) {}
     return rp0;
   };
