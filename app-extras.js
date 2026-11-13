@@ -459,6 +459,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       try { playAudioCloned(fan); } catch (e) {}
       voiceDelay = (getSoundDurationMs(fan) || 3500) + 200;
     }
+    /* ふよみマスター（全カード）：声は「zunda-master.mp3」（ファイルが ないときは、ならさない） */
+    var isFuyomiMaster = recs.some(function (r) { return r.type === "master"; });
+    if (!voice && isFuyomiMaster) {
+      setTimeout(function () { try { var am = new Audio("zunda-master.mp3"); var pm = am.play(); if (pm && pm.catch) pm.catch(function () {}); } catch (e) {} }, voiceDelay);
+    }
     if (voice) {
       if (voiceDelay > 0) setTimeout(function () { try { playAudioCloned(voice); } catch (e) {} }, voiceDelay);
       else { try { playAudioCloned(voice); } catch (e) {} }
