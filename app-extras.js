@@ -5,7 +5,7 @@ window.FY_OA = "@892rfjzh";
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
 window.fyLineBtn = function (text, label, bg, toOA) {
-  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>';
+  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>' + (toOA ? '<div style="font-size:12px;font-weight:700;line-height:1.5;color:#806c5a;text-align:center;margin-top:5px;">おくったら、LINEの したの メニューを もういちど おしてね<br>（アプリに もどれるよ）</div>' : '');
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
