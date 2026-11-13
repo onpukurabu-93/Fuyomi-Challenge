@@ -443,7 +443,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (!viewOnly) playCelSounds(recs);
   }
 
-  /* 画面が出た しゅんかんに、マスターの声 → （おわってから）ファンファーレ */
+  /* 画面が出た しゅんかんに、ファンファーレ → （おわってから）マスターの声 */
   function playCelSounds(recs) {
     var hasLegend = false, hasMaster = false;
     recs.forEach(function (r) {
@@ -452,15 +452,16 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     });
     var voice = heldVoice;
     heldVoice = null;
-    var delay = 0;
-    if (voice) {
-      try { playAudioCloned(voice); } catch (e) {}
-      delay = (getSoundDurationMs(voice) || 2500) + 300;
-    }
     var fan = hasLegend ? "hyoshoFanfareAudio" : (hasMaster ? "hyoshoFanfare1Audio" : null);
+    /* ファンファーレが先 → そのあとに、マスターの声 */
+    var voiceDelay = 0;
     if (fan) {
-      if (delay > 0) setTimeout(function () { try { playAudioCloned(fan); } catch (e) {} }, delay);
-      else { try { playAudioCloned(fan); } catch (e) {} }
+      try { playAudioCloned(fan); } catch (e) {}
+      voiceDelay = (getSoundDurationMs(fan) || 3500) + 200;
+    }
+    if (voice) {
+      if (voiceDelay > 0) setTimeout(function () { try { playAudioCloned(voice); } catch (e) {} }, voiceDelay);
+      else { try { playAudioCloned(voice); } catch (e) {} }
     }
   }
 
