@@ -1,6 +1,7 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
+window.FY_EXTRAS_VER = "1113t";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1024,6 +1025,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   var origStartTraining = window.startTrainingWithConfig;
   window.startTrainingWithConfig = function () {
+    /* トレーニングボタンを 2かい つづけて さわっても、1かいだけ はじめる */
+    var nowT = Date.now();
+    if (window.__fyTrainAt && nowT - window.__fyTrainAt < 1500) return;
+    window.__fyTrainAt = nowT;
     firstTry = 0;
     qMistake = false;
     thinkPlayed = false;
