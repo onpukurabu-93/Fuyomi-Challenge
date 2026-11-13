@@ -1254,16 +1254,17 @@ var fyColCache = {}, fyColTok = 0;
   st.textContent = "img{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none;}";
   document.head.appendChild(st);
 })();
-function fyColorOn(idx) {
+function fyColorOn(idx, clef) {
   try {
-    var v = Storage.get("fy_color_" + idx, null);
+    clef = clef || selectedClef;
+    var v = Storage.get("fy_color_" + idx + "_" + clef, null);
     if (v === "on") return true;
     if (v === "off") return false;
     if (Storage.get("onpu_debug_unlocked_" + idx)) return false;
-    return !(hasLevelCleared(idx, "treble", 1) || hasLevelCleared(idx, "bass", 1));
+    return !hasLevelCleared(idx, clef, 1);
   } catch (e) { return false; }
 }
-function fyColorActive() { return fyColorOn(activeProfileIndex) && selectedLevel === 1 && (selectedClef === "treble" || selectedClef === "bass"); }
+function fyColorActive() { return fyColorOn(activeProfileIndex, selectedClef) && selectedLevel === 1 && (selectedClef === "treble" || selectedClef === "bass"); }
 function fyColorSuffix() { return fyColorActive() ? "c" : ""; }
 function fyColorLv1Cleared(idx, clef) {
   var b = Storage.get("onpu_best_20c_" + idx + "_" + clef + "_1");
@@ -1289,7 +1290,7 @@ function fyColorize(card, cb) {
 }
 function fyPracQuiet() { try { return !!Storage.get("fy_noprac_" + activeProfileIndex, false); } catch (e) { return false; } }
 function fyColorSwitch(toColor) {
-  Storage.set("fy_color_" + activeProfileIndex, toColor ? "on" : "off");
+  Storage.set("fy_color_" + activeProfileIndex + "_" + selectedClef, toColor ? "on" : "off");
   /* 色で つかいかたを おぼえているので、くろおんぷでは 説明を くりかえさない */
   if (!toColor) { Storage.set("fy_practice_guide_" + activeProfileIndex, true); Storage.set("fy_noprac_" + activeProfileIndex, true); }
   showLevelScreen();
@@ -1669,7 +1670,7 @@ function createLevelButtons() {
   const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const list = document.getElementById("levelList");
   list.innerHTML = "";
-  const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex);
+  const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex, selectedClef);
   for (let level = 1; level <= 5; level++) {
     const button = document.createElement("button");
     button.className = "level-button";
@@ -2313,6 +2314,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113n"></script>
+<script src="app-extras.js?v=20261113o"></script>
 </body>
 </html>
