@@ -920,6 +920,7 @@ function playAudioElementFallback(audioId) {
   if (!el) return;
   try {
     el.currentTime = 0;
+    el.volume = (audioId === "seikaiAudio") ? 0.55 : 1;
     const p = el.play();
     if (p && p.catch) p.catch(() => {});
   } catch (e) {}
@@ -937,7 +938,13 @@ function playAudioCloned(audioId) {
         }
         const src = ctx.createBufferSource();
         src.buffer = buf;
-        src.connect(masterGain);
+        /* 正解の「ピンポン」は はやく つづくと みみに ひびくので、すこし ちいさく */
+        if (audioId === "seikaiAudio") {
+          const g = ctx.createGain(); g.gain.value = 0.55;
+          src.connect(g); g.connect(masterGain);
+        } else {
+          src.connect(masterGain);
+        }
         src.onended = () => {
           if (activeSources[audioId] === src) activeSources[audioId] = null;
           try { src.disconnect(); } catch (e) {}
@@ -1289,6 +1296,11 @@ function fyColorize(card, cb) {
   im.src = card.img;
 }
 function fyPracQuiet() { try { return !!Storage.get("fy_noprac_" + activeProfileIndex, false); } catch (e) { return false; } }
+function fyColorBackNow() {
+  Storage.set("fy_color_" + activeProfileIndex + "_" + selectedClef, "on");
+  selectedLevel = 1;
+  proceedToCards();
+}
 function fyColorSwitch(toColor) {
   Storage.set("fy_color_" + activeProfileIndex + "_" + selectedClef, toColor ? "on" : "off");
   /* 色で つかいかたを おぼえているので、くろおんぷでは 説明を くりかえさない */
@@ -2006,6 +2018,10 @@ function showResultScreen() {
     btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もう一度チャレンジ！</button>`;
   }
 
+  /* 黒おんぷのレベル1で うまく いかなかったとき：いろおんぷに もどれる */
+  if ((selectedClef === "treble" || selectedClef === "bass") && selectedLevel === 1 && !fyColorActive() && !fyColorOn(activeProfileIndex, selectedClef) && accuracy < 90) {
+    btnWrap.innerHTML += `<button class="select-button" style="margin-top:10px;background:#8a6bbf;color:#fff;" onclick="fyColorBackNow()">🎨 もういちど いろおんぷで れんしゅう</button>`;
+  }
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
   /* 🎉 紙吹雪は100%のときだけ（通常30個、100回目は150個） */
@@ -2314,6 +2330,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113o"></script>
+<script src="app-extras.js?v=20261113q"></script>
 </body>
 </html>
