@@ -190,6 +190,10 @@ body { display: flex; justify-content: center; align-items: center; }
   display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
   padding: 6px 4px 4px; background: #e0d0ba; border-radius: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
+.fyPadBtn { padding:12px 0; font-size:20px; font-weight:900; color:#5d4037; background:#efe6d6; border:none; border-radius:10px; }
+.fyPadBtn:active { transform:scale(.95); }
+html, body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+input, textarea { -webkit-user-select:text; user-select:text; }
 .key-btn {
   border: none; border-radius: 8px; min-height: 60px; color: #ffffff; font-size: 16px; font-weight: 900;
   cursor: pointer; position: relative;
@@ -198,8 +202,9 @@ body { display: flex; justify-content: center; align-items: center; }
   transition: transform 0.05s ease, box-shadow 0.05s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
 }
 .key-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 2px 3px rgba(0,0,0,0.1); }
-.key-do { background: #e99595; } .key-re { background: #e6b26a; } .key-mi { background: #d6c45d; }
-.key-fa { background: #8dbb8d; } .key-so { background: #78a9c8; } .key-la { background: #5a82d6; } .key-si { background: #b28bb9; }
+.key-do { background: #e8505b; } .key-re { background: #f28a1e; } .key-mi { background: #f5d90a; }
+.key-fa { background: #43a047; } .key-so { background: #29b6f6; } .key-la { background: #3f51b5; } .key-si { background: #9c4dcc; }
+.key-mi { color: #5a3b00; text-shadow: none; }
 
 /* モーダル */
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
@@ -1237,8 +1242,18 @@ function fyGlowCss() {
 }
 /* 🎨 いろおんぷ（ようじ むけ：レベル1だけ。くろおんぷは レベル1から べつに すすむ） */
 var FY_HEADS = {"t_c1": [530.5, 591.8, 31.2, 22.0, 140.2], "t_d1": [535.3, 562.5, 32.8, 22.3, 132.1], "t_e1": [528.3, 546.1, 31.0, 21.7, 141.7], "t_f1": [525.0, 521.6, 33.9, 22.5, 126.4], "t_g1": [529.8, 497.6, 31.6, 22.1, 141.4], "t_a1": [527.0, 476.1, 34.4, 22.5, 125.7], "t_b1": [534.3, 452.5, 31.7, 22.1, 141.5], "t_c2": [527.8, 428.2, 33.9, 22.5, 126.7], "h_c1": [534.8, 813.4, 31.2, 22.1, 140.4], "h_b0": [523.9, 842.1, 32.4, 22.4, 133.2], "h_a0": [525.6, 858.9, 31.0, 21.7, 141.4], "h_g": [527.0, 885.3, 34.8, 22.6, 125.6], "h_f": [529.9, 903.0, 31.1, 21.7, 141.5], "h_e": [522.3, 929.0, 34.4, 22.8, 126.0], "h_d": [522.6, 951.9, 31.0, 21.8, 141.6], "h_c00": [528.6, 971.0, 34.5, 22.5, 126.4]};
-var FY_KEYCOL = {"ド":"#e99595","レ":"#e6b26a","ミ":"#d6c45d","ファ":"#8dbb8d","ソ":"#78a9c8","ラ":"#5a82d6","シ":"#b28bb9"};
+var FY_KEYCOL = {"ド":"#e8505b","レ":"#f28a1e","ミ":"#f5d90a","ファ":"#43a047","ソ":"#29b6f6","ラ":"#3f51b5","シ":"#9c4dcc"};
 var fyColCache = {}, fyColTok = 0;
+/* 長押しで 範囲指定（文字や画像の選択）に ならないように する */
+(function () {
+  function isField(t) { return t && t.tagName && /^(INPUT|TEXTAREA)$/.test(t.tagName); }
+  document.addEventListener("selectstart", function (e) { if (!isField(e.target)) e.preventDefault(); }, true);
+  document.addEventListener("contextmenu", function (e) { if (!isField(e.target)) e.preventDefault(); }, true);
+  document.addEventListener("dragstart", function (e) { e.preventDefault(); }, true);
+  var st = document.createElement("style");
+  st.textContent = "img{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none;}";
+  document.head.appendChild(st);
+})();
 function fyColorOn(idx) {
   try {
     var v = Storage.get("fy_color_" + idx, null);
@@ -1264,7 +1279,7 @@ function fyColorize(card, cb) {
       var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
       var x = c.getContext("2d"); x.drawImage(im, 0, 0);
       x.fillStyle = FY_KEYCOL[card.key]; x.beginPath();
-      x.ellipse(h[0], h[1], h[2] * 1.1, h[3] * 1.1, h[4] * Math.PI / 180, 0, Math.PI * 2); x.fill();
+      x.ellipse(h[0], h[1], h[2] * 1.1, h[3] * 1.1, h[4] * Math.PI / 180, 0, Math.PI * 2); x.fill(); x.lineWidth = 3; x.strokeStyle = "#222"; x.stroke();
       fyColCache[card.id] = c.toDataURL("image/jpeg", 0.92);
     } catch (e) { fyColCache[card.id] = card.img; }
     cb(fyColCache[card.id]);
@@ -1282,16 +1297,41 @@ function fyColorSwitchAsk(toColor) {
   var msg = toColor
     ? "いろおんぷに もどします。<br>いろおんぷは レベル1だけ です。<br>くろおんぷの きろくは のこります。"
     : "くろい おんぷに かえます。<br><b>レベル1から</b> はじまります。<br>いろおんぷの きろくは のこります。";
-  d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:18px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);">' +
-    '<div style="font-size:12px;color:#a08060;">ほごしゃの かたへ</div>' +
-    '<div style="font-size:34px;">' + (toColor ? "🎨" : "🎼") + '</div>' +
-    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">' + (toColor ? "いろおんぷに もどしますか？" : "くろおんぷに しますか？") + '</div>' +
-    '<div style="font-size:13px;color:#806c5a;line-height:1.7;margin-bottom:14px;">' + msg + '</div>' +
-    '<button id="fyColYes" style="width:100%;padding:12px;font-size:16px;font-weight:900;color:#fff;background:#7bc67e;border:none;border-radius:12px;">' + (toColor ? "いろおんぷに する" : "くろおんぷに する") + '</button>' +
-    '<button id="fyColNo" style="width:100%;margin-top:8px;padding:10px;font-size:14px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:12px;">やめる</button></div>';
+  var a, b, ans, typed = "";
+  function newQ() { a = 6 + Math.floor(Math.random() * 4); b = 6 + Math.floor(Math.random() * 4); ans = a + b; typed = ""; }
+  function pad() {
+    var h = "";
+    [1,2,3,4,5,6,7,8,9].forEach(function (n) { h += '<button class="fyPadBtn" data-n="' + n + '">' + n + '</button>'; });
+    h += '<button class="fyPadBtn" data-n="c" style="font-size:14px;">けす</button><button class="fyPadBtn" data-n="0">0</button><button class="fyPadBtn" data-n="ok" style="background:#7bc67e;color:#fff;font-size:14px;">OK</button>';
+    return h;
+  }
+  newQ();
+  d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:16px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);">' +
+    '<div style="font-size:18px;font-weight:900;color:#b3541e;">ほごしゃの かたへ</div>' +
+    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">' + (toColor ? "🎨 いろおんぷに もどしますか？" : "🎼 くろおんぷに しますか？") + '</div>' +
+    '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-bottom:8px;">' + msg + '</div>' +
+    '<div style="font-size:12px;color:#806c5a;">まちがいを ふせぐため、けいさんしてください</div>' +
+    '<div id="fyQ" style="font-size:28px;font-weight:900;color:#5d4037;margin:6px 0 2px;"></div>' +
+    '<div id="fyA" style="font-size:26px;font-weight:900;color:#3f51b5;min-height:36px;border-bottom:2px solid #d8c8b0;margin:0 40px 8px;"></div>' +
+    '<div id="fyErr" style="font-size:12px;color:#d32f2f;min-height:16px;"></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">' + pad() + '</div>' +
+    '<button id="fyColNo" style="width:100%;margin-top:10px;padding:10px;font-size:14px;font-weight:800;color:#806c5a;background:#eee;border:none;border-radius:12px;">やめる</button></div>';
   document.body.appendChild(d);
-  document.getElementById("fyColNo").addEventListener("click", function () { d.remove(); });
-  document.getElementById("fyColYes").addEventListener("click", function () { d.remove(); fyColorSwitch(toColor); });
+  var qEl = d.querySelector("#fyQ"), aEl = d.querySelector("#fyA"), eEl = d.querySelector("#fyErr");
+  function draw() { qEl.textContent = a + " + " + b + " = ?"; aEl.textContent = typed; }
+  draw();
+  d.querySelector("#fyColNo").addEventListener("click", function () { d.remove(); });
+  Array.prototype.forEach.call(d.querySelectorAll(".fyPadBtn"), function (btn) {
+    btn.addEventListener("click", function () {
+      var n = btn.getAttribute("data-n");
+      if (n === "c") { typed = ""; eEl.textContent = ""; }
+      else if (n === "ok") {
+        if (parseInt(typed, 10) === ans) { d.remove(); fyColorSwitch(toColor); }
+        else { eEl.textContent = "ちがいます。もういちど どうぞ"; newQ(); }
+      } else if (typed.length < 2) { typed += n; eEl.textContent = ""; }
+      draw();
+    });
+  });
 }
 /* 🌱 わかばマーク（ぜんいんに さいしょは ついている。うるさく なったら けす） */
 function fyWakabaOn() { try { return Storage.get("fy_wakaba_" + activeProfileIndex, "on") !== "off"; } catch (e) { return true; } }
@@ -2273,6 +2313,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113h"></script>
+<script src="app-extras.js?v=20261113j"></script>
 </body>
 </html>
