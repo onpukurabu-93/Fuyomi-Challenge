@@ -35,7 +35,7 @@ body { display: flex; justify-content: center; align-items: center; }
 
 /* ヘッダー */
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.back-btn { border: none; background: transparent; color: #5b4636; font-size: 16px; cursor: pointer; font-weight: bold; }
+.back-btn { border: none; background: #ff9800; color: #fff; font-size: 17px; cursor: pointer; font-weight: 900; padding: 9px 16px; border-radius: 16px; box-shadow: 0 2px 0 #c77700; }
 .header-title { flex: 1; text-align: center; color: #5b4636; font-size: 20px; font-weight: 700; }
 .header-spacer { width: 60px; }
 
@@ -139,7 +139,7 @@ body { display: flex; justify-content: center; align-items: center; }
 /* カード画面 */
 .card-screen { padding: 8px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .card-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 4px; gap: 6px; }
-.card-back { border: none; background: transparent; color: #5b4636; font-size: 16px; cursor: pointer; font-weight: bold; }
+.card-back { border: none; background: #ff9800; color: #fff; font-size: 17px; cursor: pointer; font-weight: 900; padding: 9px 16px; border-radius: 16px; box-shadow: 0 2px 0 #c77700; }
 .card-title { flex: 1; text-align: center; color: #5b4636; font-size: 18px; font-weight: 700; }
 .level-badge { background: #eadcc8; color: #5b4636; border-radius: 20px; padding: 4px 8px; font-size: 12px; font-weight: 700; }
 .training-btn { border: none; background: #8dbb8d; color: white; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -237,6 +237,9 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 .award-desc { font-size: 12px; color: #806c5a; line-height: 1.4; margin-bottom: 12px; }
 .award-box.theme-game .award-desc { color: #b0bec5; }
 
+/* ★古い仕組み（いまは つかわれていません）★ この「100回れんぞく」「onpu_perf_streak」「legendModal」は、むかしの ふよみ名人の しくみ。
+   app-extras.js が れんぞくを 0に もどしてから よぶので、ここは 動きません。
+   いまの ふよみ名人＝「全カード レベル5・20問・ぜんぶ いっぱつ せいかい」の 100回れんぞく（app-extras.js の fy_meijin_run_）。 */
 /* 👑 100回れんぞく ふよみレジェンド */
 .legend-bg { background: rgba(30,20,0,0.65); }
 .legend-box {
@@ -353,7 +356,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
   <!-- 🏆 みんなの成績・ランキング画面 -->
   <section id="rankingScreen" class="screen hidden">
     <div class="header">
-      <button class="back-btn" onclick="showSelectScreen()">＜ もどる</button>
+      <button class="back-btn" onclick="showSelectScreen()">◀ もどる</button>
       <div class="header-title">みんなのランキング</div>
       <div class="header-spacer"></div>
     </div>
@@ -375,7 +378,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
   <!-- レベル選択画面 -->
   <section id="levelScreen" class="screen hidden">
     <div class="header">
-      <button class="back-btn" onclick="showSelectScreen()">＜ もどる</button>
+      <button class="back-btn" onclick="showSelectScreen()">◀ もどる</button>
       <div class="header-title" id="levelTitle">レベル</div>
       <div class="header-spacer"></div>
     </div>
@@ -397,7 +400,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
   <!-- カード画面 -->
   <section id="cardScreen" class="card-screen hidden">
     <div class="card-header">
-      <button class="card-back" onclick="handleCardBack()">＜ もどる</button>
+      <button class="card-back" onclick="handleCardBack()">◀ もどる</button>
       <div class="level-badge" id="levelBadge">Lv.1</div>
       <div class="card-title" id="cardScreenTitle">おんぷカード</div>
       <button id="trainingButton" class="training-btn" onclick="startTrainingDirect(false)">トレーニング</button>
@@ -659,6 +662,9 @@ function toggleModal(modalId, show = true) {
   if (modal) modal.classList.toggle("hidden", !show);
 }
 
+/* ★古い仕組み（いまは つかわれていません）★ この「100回れんぞく」「onpu_perf_streak」「legendModal」は、むかしの ふよみ名人の しくみ。
+   app-extras.js が れんぞくを 0に もどしてから よぶので、ここは 動きません。
+   いまの ふよみ名人＝「全カード レベル5・20問・ぜんぶ いっぱつ せいかい」の 100回れんぞく（app-extras.js の fy_meijin_run_）。 */
 /* 👑 100回れんぞく達成の記録（回数）と称号（名前の前につく王冠） */
 function getLegendCount(idx) {
   const n = Storage.getNumber(`onpu_legend_count_${idx}`, 0);
@@ -1275,7 +1281,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1113w";
+var FY_INDEX_VER = "1114b";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1728,10 +1734,40 @@ function selectClef(clef) {
   selectedClef = clef; showLevelScreen();
 }
 
+
+/* 🏅 全カードの レベル画面：ふよみマスターのあと、名人に なるまで レベル5を 金色に ひからせる */
+function fyIsMasterNow(idx) {
+  try {
+    if (Storage.get("onpu_debug_unlocked_" + idx) || Storage.get("fy_test_master_" + idx)) return true;
+    var a = Storage.get("fy_ach_" + idx, []);
+    if (Array.isArray(a)) for (var i = 0; i < a.length; i++) { if (a[i] && a[i].type === "master") return true; }
+  } catch (e) {}
+  return false;
+}
+function fyMeijinGlowNow(idx) {
+  try {
+    if (!fyIsMasterNow(idx) || !fyGlowOn(idx, "meijin")) return false;
+    var a = Storage.get("fy_ach_" + idx, []);
+    if (Array.isArray(a)) for (var i = 0; i < a.length; i++) { if (a[i] && (a[i].type === "legend" || a[i].type === "legend1000")) return false; }
+    return true;
+  } catch (e) { return false; }
+}
+function fyGoldCss2() {
+  if (document.getElementById("fyGoldCss2")) return;
+  var st = document.createElement("style"); st.id = "fyGoldCss2";
+  st.textContent = "@keyframes fyGold2{0%{box-shadow:0 0 0 0 rgba(212,160,23,.9);transform:scale(1)}50%{transform:scale(1.04)}100%{box-shadow:0 0 0 16px rgba(212,160,23,0);transform:scale(1)}}.fyGoldRing2{animation:fyGold2 1.1s ease-out infinite;outline:3px solid #d4a017;background:#fff8dc!important}";
+  document.head.appendChild(st);
+}
 function createLevelButtons() {
   const isDebugUnlocked = Storage.get(`onpu_debug_unlocked_${activeProfileIndex}`);
   const list = document.getElementById("levelList");
   list.innerHTML = "";
+  if (selectedClef === "all" && fyMeijinGlowNow(activeProfileIndex)) {
+    const bn = document.createElement("div");
+    bn.style.cssText = "background:#fff3b0;border:3px solid #d4a017;border-radius:14px;padding:10px 12px;font-weight:900;font-size:15px;color:#5a3a00;text-align:center;line-height:1.5;";
+    bn.innerHTML = "🏅 ふよみ名人を めざそう！<br><span style=\"font-size:12px;font-weight:700;\">レベル5の 20もんを ぜんぶ いっぱつで せいかい！ これを 100かい れんぞくで 名人だよ</span>";
+    list.appendChild(bn);
+  }
   const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex, selectedClef);
   for (let level = 1; level <= 5; level++) {
     const button = document.createElement("button");
@@ -1744,6 +1780,10 @@ function createLevelButtons() {
     if (colorLock) isLocked = true;
     if (isLocked) button.classList.add("locked");
     button.innerHTML = `<span class="level-number">レベル ${level}${(level === 1 && colorMode) ? " 🎨" : ""}</span>` + (isLocked ? `<span class="locked-badge">🔒 ロック</span>` : "");
+    if (level === 5 && selectedClef === "all" && !isLocked && fyMeijinGlowNow(activeProfileIndex)) {
+      fyGoldCss2(); button.classList.add("fyGoldRing2");
+      button.innerHTML += `<span style="display:block;font-size:12px;font-weight:800;color:#8a5a00;margin-top:2px;">🏅 名人に ちょうせん！</span>`;
+    }
     button.onclick = () => colorLock ? alert("いろおんぷは レベル1だけだよ。\nくろおんぷに すると、つぎの レベルに すすめるよ！\n（ほごしゃの かたが、したの ボタンを おしてね）") : (isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level));
     list.appendChild(button);
   }
@@ -2007,6 +2047,9 @@ function showResultScreen() {
     playAudioCloned("ganbatteAudio");
   }
 
+  /* ★古い仕組み（いまは つかわれていません）★ この「100回れんぞく」「onpu_perf_streak」「legendModal」は、むかしの ふよみ名人の しくみ。
+     app-extras.js が れんぞくを 0に もどしてから よぶので、ここは 動きません。
+     いまの ふよみ名人＝「全カード レベル5・20問・ぜんぶ いっぱつ せいかい」の 100回れんぞく（app-extras.js の fy_meijin_run_）。 */
   /* 👑 パーフェクト連続がちょうど100回になった瞬間 */
   const isLegendMoment = (accuracy === 100 && currentStreak === 100);
 
@@ -2332,9 +2375,10 @@ function unlockAllCardsToLevel5ForTest() {
   fyTestBasics(idx);
   ["treble", "bass"].forEach(c => { for (let l = 1; l <= 5; l++) fyTestPass(idx, c, l); });
   for (let l = 1; l <= 4; l++) fyTestPass(idx, "all", l);
-  Storage.set(`fy_test_master_${idx}`, true);   /* レジェンドへのみちを ひらく（テスト用） */
+  /* ふよみマスターの印は つけない（全カードの レベル5に 合格して はじめて ふよみマスター） */
+  Storage.set(`fy_test_master_${idx}`, false);
   Storage.set(`fy_legend_opened_${idx}`, false);
-  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。\nレジェンドへのみちも 開き、光ります。");
+  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。\n全カードのレベル5に 合格すると ふよみマスターです。");
   initProfiles();
 }
 
@@ -2418,6 +2462,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261113w"></script>
+<script src="app-extras.js?v=20261114b"></script>
 </body>
 </html>
