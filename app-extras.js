@@ -1,7 +1,7 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1113w";
+window.FY_EXTRAS_VER = "1114b";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -824,12 +824,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       return '<div data-cb="' + i + '" style="text-align:center;' + (rec ? "cursor:pointer;" : "") + '">' +
         '<div style="position:relative;"><img src="' + img + '" alt="" style="width:100%;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
         (rec ? "" : '<div style="position:absolute;left:0;right:0;top:42%;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;">🔒 まだ</div>') + '</div>' +
-        '<div style="font-size:12px;font-weight:800;margin-top:4px;color:#5b4636;">' + label + '</div>' +
+        '<div style="font-size:10px;font-weight:800;margin-top:3px;color:#5b4636;">' + label + '</div>' +
         '<div style="font-size:11px;color:#806c5a;min-height:15px;">' + (rec ? dmd(rec) + (sub ? "　" + sub : "") : "") + '</div></div>';
     }).join("");
     openOverlay('<div style="font-size:19px;font-weight:900;margin-bottom:2px;">🎴 カード</div>' +
       '<div style="font-size:12px;color:#806c5a;margin-bottom:10px;">' + (profiles[idx] || "") + ' さんの カード　' + have + ' / ' + CARDBOOK.length + ' まい</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">' + cells + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">' + cells + '</div>' +
       '<div style="font-size:11px;color:#806c5a;">カードを タップすると、コードも みられるよ</div>');
     Array.prototype.forEach.call(document.querySelectorAll("#fyOvBody [data-cb]"), function (el) {
       el.addEventListener("click", function () {
