@@ -2,7 +2,7 @@
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 window.FY_JUMPS = [
-  { label: "1️⃣ レジェンドへのみち（はじめて入る）", note: "ようこそ画面→声1つ→レベル画面で声→🎹だけ光る→スタートが光る",
+  { label: "1️⃣ レジェンドへのみち（はじめて入る）", note: "ようこそ(声1つ)→レベル画面で声→大きい🎹だけ光る→押すか「つかわない」→スタートが光る＋声",
     run: function (idx) {
       Storage.set("fy_test_master_" + idx, true);
       fyJmpClear(idx, ["fy_legend_intro_", "fy_legend_pianohint_", "fy_legend_pianoset_", "fy_legend_lv5voice_", "fy_lv5_openall_", "fy_chunk_max_"]);
