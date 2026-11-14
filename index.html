@@ -1289,7 +1289,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1114e";
+var FY_INDEX_VER = "1114f";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1375,7 +1375,9 @@ function fySay(msg, voice) {
 }
 /* 🔇 こえは「あとから ならした ほうが かち」：まえの こえを とめる（こうかおん・ファンファーレは とめない） */
 var FY_VOICE_IDS = ["audio6do", "audioToon1", "audioToon2", "audioHeon1", "audioHeon2", "audioKanpeki", "levelUp1Audio", "levelEncourageAudio", "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio", "zundaMasterAudio", "zundaOmedetoAudio"];
+function fyCelBusy() { try { return Date.now() < (window.__fyCelUntil || 0); } catch (e) { return false; } }
 function fyStopVoices(exceptId) {
+  if (fyCelBusy()) return;   /* おいわいの こえは とめない */
   try { if (fyVoiceNow) { fyVoiceNow.pause(); fyVoiceNow = null; } } catch (e) {}
   try { FY_VOICE_IDS.forEach(function (id) { if (id === exceptId) return; var sr = activeSources[id]; if (sr) { try { sr.stop(); } catch (e) {} activeSources[id] = null; } var el = document.getElementById(id); if (el && !el.paused) { try { el.pause(); el.currentTime = 0; } catch (e) {} } }); } catch (e) {}
 }
@@ -1489,6 +1491,7 @@ function fyWakabaVoice(file, delayMs, guard) {
   setTimeout(function () {
     try {
       if (!fyWakabaOn()) return; if (guard && !guard()) return;
+      if (fyCelBusy()) return;   /* おいわいの あいだは、あんないの こえを ならさない */
       fyStopVoices();
       var a = new Audio(file); fyVoiceNow = a;
       var q = a.play(); if (q && q.catch) q.catch(function () {});
@@ -2550,6 +2553,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261114e"></script>
+<script src="app-extras.js?v=20261114f"></script>
 </body>
 </html>
