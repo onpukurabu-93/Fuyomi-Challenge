@@ -195,7 +195,7 @@ body { display: flex; justify-content: center; align-items: center; }
 html, body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
 input, textarea { -webkit-user-select:text; user-select:text; }
 .key-btn {
-  border: none; border-radius: 8px; min-height: 60px; color: #ffffff; font-size: 16px; font-weight: 900;
+  border: none; border-radius: 8px; min-height: 88px; color: #ffffff; touch-action: manipulation; font-size: 16px; font-weight: 900;
   cursor: pointer; position: relative;
   box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 5px 6px rgba(0,0,0,0.15);
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px;
@@ -1283,7 +1283,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1114c";
+var FY_INDEX_VER = "1114d";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2525,6 +2525,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261114c"></script>
+<script src="app-extras.js?v=20261114d"></script>
 </body>
 </html>
