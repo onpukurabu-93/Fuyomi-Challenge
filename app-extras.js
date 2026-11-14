@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1114c";
+window.FY_EXTRAS_VER = "1114d";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2795,7 +2795,6 @@ window.resetLegendForTest = function () {
     var wrap = document.createElement("div"); wrap.style.cssText = "background:#fff;border-radius:10px;padding:8px;margin:8px 0;";
     var tx = document.createElement("div"); tx.style.cssText = "font-size:12px;white-space:pre-wrap;word-break:break-all;"; tx.textContent = text; wrap.appendChild(tx);
     if (window.fyLineBtn) { var h = document.createElement("div"); h.innerHTML = window.fyLineBtn(text, "LINEで おくる"); wrap.appendChild(h); }
-    wrap.appendChild(copyBtn(text));
     parent.appendChild(wrap);
   }
   function hr(t) { return '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin:14px 0 4px;border-top:2px solid #c8e6c9;padding-top:10px;">' + t + '</div>'; }
@@ -2813,16 +2812,15 @@ window.resetLegendForTest = function () {
         '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">① 生徒の なまえ（ひらがな・すうじ。アプリと おなじに）</div>' +
         '<input type="text" id="fuName" class="modal-input" style="font-size:16px;" placeholder="例：たろう">' +
         '<div id="fuNames" style="margin:4px 0;"></div>' +
-        hr('② ごうかくコードを だす（レベル5）') +
+        '<details id="fuPassBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">② ごうかくコードを だす（レベル5）</summary>' +
         '<div style="font-size:11px;color:#806c5a;margin-bottom:2px;">どちらの ごうかく？</div>' +
         '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="pass" checked style="width:18px;height:18px;"> ✅ ふよみテスト ごうかく</label>' +
         '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="play" style="width:18px;height:18px;"> ⭐ えんそう ごうかく（先生が うたえる えんそう）</label>' +
         '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">ごうかくした きょくに チェック</div>' +
         '<div id="fuSongs"></div>' +
         '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;" id="fuPassBtn">ごうかくコードを つくる</button>' +
-        '<div id="fuPassOut"></div>' +
-        hr('③ 復元コードを だす（機種変更の とき）') +
-        '<details id="fuRestoreBox"><summary style="font-size:13px;font-weight:800;color:#3949ab;padding:6px 0;">ひらく</summary>' +
+        '<div id="fuPassOut"></div></details>' +
+        '<details id="fuRestoreBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">③ 復元コードを だす（機種変更の とき）</summary>' +
         '<div style="text-align:left;font-size:11px;color:#806c5a;">マスターの たっせい日（とっていなければ 空らん）</div>' +
         '<div style="font-size:11px;">ト音記号マスター<input id="fuDt" class="modal-input" type="date"></div>' +
         '<div style="font-size:11px;">ヘ音記号マスター<input id="fuDb" class="modal-input" type="date"></div>' +
@@ -2839,8 +2837,7 @@ window.resetLegendForTest = function () {
         '</div>' +
         '<button class="modal-btn" style="background:#5c6bc0;font-size:13px;padding:9px;" id="fuRestBtn">復元コードを つくる</button>' +
         '<div id="fuRestOut"></div></details>' +
-        hr('④ コードを しらべる') +
-        '<div id="fuCheckSlot"></div>' +
+        '<details id="fuCheckBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">④ コードを しらべる（LINEの リンクが ひらかない とき）</summary><div id="fuCheckSlot"></div></details>' +
         '<details id="fuOldBox" style="margin-top:8px;"><summary style="font-size:12px;font-weight:800;color:#806c5a;padding:6px 0;">15日より 前の コードを しらべる（ふだんは つかいません）</summary>' +
         '<div style="font-size:11px;color:#806c5a;margin-bottom:4px;">なまえは ① を つかいます。しゅるい・ひづけ を えらんで、正しい コードを 出して くらべます。</div>' +
         '<select id="fuType" class="modal-input"><option value="">▼ しゅるいを えらんでね</option><option value="treble">ト音記号マスター</option><option value="bass">ヘ音記号マスター</option><option value="master">ふよみマスター</option><option value="legend5">ふよみレジェンド（100曲）</option><option value="maestro">ふよみマエストロ（100曲）</option><option value="exchange">ポイント こうかん</option></select>' +
@@ -2869,6 +2866,14 @@ window.resetLegendForTest = function () {
             if (localStorage.getItem("fy_lv5_openall_" + pi)) openN = 9999;
           }
         } catch (e) {}
+        /* すでに ごうかくした きょく（黒の✓）＝先生が この たんまつで 出した コード ＋ この たんまつの 生徒の きろく。いま えらぶのは 赤 */
+        var kindEl0 = document.querySelector('input[name="fuKind"]:checked'), kind0 = kindEl0 ? kindEl0.value : "pass", done = {};
+        try {
+          var nmx = $("fuName") ? $("fuName").value.trim().normalize("NFKC") : "";
+          var iss = JSON.parse(localStorage.getItem("fy_issued_" + nmx) || "{}") || {};
+          (iss[kind0] || []).forEach(function (c) { done[c] = 1; });
+          if (nmx && typeof profiles !== "undefined") profiles.forEach(function (p, i) { if (String(p || "").normalize("NFKC") === nmx) { var rec = JSON.parse(localStorage.getItem((kind0 === "play" ? "fy_play_" : "fy_pass_") + i) || "{}") || {}; Object.keys(rec).forEach(function (c) { done[c] = 1; }); } });
+        } catch (e) {}
         var pos = 0;
         groups.concat([{ name: "そのほか", icon: "🎵", ids: all.filter(function (s) { return !seen[s[0]]; }).map(function (s) { return s[0]; }) }]).forEach(function (g) {
           if (!g.ids || !g.ids.length) return;
@@ -2878,12 +2883,13 @@ window.resetLegendForTest = function () {
             var s = byC[c], op = openN >= 0 && pos < openN; pos++;
             var l = document.createElement("label");
             l.style.cssText = "display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:3px 0;padding:6px;background:" + (op ? "#fff8e1" : "#fff") + ";border-radius:8px;";
-            l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;"> ' + (k + 1) + '．' + esc(s[1]) + (op ? ' <span style="font-size:11px;color:#e65100;margin-left:auto;">🔓 いま ひらいている</span>' : '');
+            l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;accent-color:#d32f2f;"> ' + (done[c] ? '<span style="color:#000;font-weight:900;">✔</span> ' : '') + (k + 1) + '．' + esc(s[1]) + (op ? ' <span style="font-size:11px;color:#e65100;margin-left:auto;">🔓 いま ひらいている</span>' : '');
             sd.appendChild(l);
           });
         });
       }
       drawSongs();
+      try { Array.prototype.forEach.call(document.querySelectorAll('input[name="fuKind"]'), function (r) { r.addEventListener("change", function () { var ck = {}; Array.prototype.forEach.call(sd.querySelectorAll("input:checked"), function (x) { ck[x.value] = 1; }); drawSongs(); Array.prototype.forEach.call(sd.querySelectorAll("input"), function (x) { if (ck[x.value]) x.checked = true; }); }); }); } catch (e) {}
       try { $("fuName").addEventListener("input", function () { var ck = {}; Array.prototype.forEach.call(sd.querySelectorAll("input:checked"), function (x) { ck[x.value] = 1; }); drawSongs(); Array.prototype.forEach.call(sd.querySelectorAll("input"), function (x) { if (ck[x.value]) x.checked = true; }); }); } catch (e) {}
       var dt = $("fuDate"); if (dt) { var d0 = new Date(); dt.value = d0.getFullYear() + "-" + ("0" + (d0.getMonth() + 1)).slice(-2) + "-" + ("0" + d0.getDate()).slice(-2); }
       function nameVal() { return $("fuName").value.trim().normalize("NFKC"); }
@@ -2895,6 +2901,7 @@ window.resetLegendForTest = function () {
         if (!picked.length) { out.innerHTML = '<div style="padding:8px;">きょくを えらんでね</div>'; return; }
         remember(name); showNames();
         var kindEl = document.querySelector('input[name="fuKind"]:checked'), kind = kindEl ? kindEl.value : "pass";
+        try { var ik = "fy_issued_" + name, io = JSON.parse(localStorage.getItem(ik) || "{}") || {}; io[kind] = io[kind] || []; picked.forEach(function (c) { if (io[kind].indexOf(c) === -1) io[kind].push(c); }); localStorage.setItem(ik, JSON.stringify(io)); } catch (e) {}
         function titleOfSong(c) { var title = ""; songs().forEach(function (s) { if (s[0] === c) title = s[1]; }); return title; }
         var okLabel = (kind === "play" ? "えんそう ごうかく！⭐" : "ごうかく！🎉");
         if (picked.length === 1) {
