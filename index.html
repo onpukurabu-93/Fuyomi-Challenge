@@ -317,7 +317,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
       <button class="reg-open-btn" onclick="openRegistration(false)">✏️ なまえを とうろく・かえる</button>
 
-      <div class="my-stats-summary">
+      <div class="my-stats-summary" style="display:none;">
         <div class="my-stat-item">
           <div>ぜんかい</div>
           <div class="my-stat-val" id="myLastScore">-- %</div>
@@ -410,6 +410,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
     <div id="cardArea" class="card-area">
       <div id="qCountBadge" class="q-count-badge hidden">あと 10 問</div>
+      <div id="fyProg" class="hidden" style="height:12px;background:#eadcc8;border-radius:8px;margin:4px 10px 2px;position:relative;overflow:visible;"><div id="fyProgIn" style="height:100%;width:0%;background:linear-gradient(90deg,#ffd54f,#ff9800);border-radius:8px;transition:width .25s;"></div><span id="fyProgStar" style="position:absolute;right:-4px;top:-9px;font-size:22px;">⭐</span></div>
       <button id="arrowLeft" class="arrow arrow-left" onclick="previousCard()">‹</button>
 
       <div class="note-card-wrap">
@@ -547,7 +548,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
         <div class="teacher-tabs">
           <button id="tTab1" class="teacher-tab-btn active" onclick="switchTeacherTab(1)">⚡生徒登録</button>
           <button id="tTab2" class="teacher-tab-btn" onclick="switchTeacherTab(2)">🎨表彰カード</button>
-          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">⚙管理・リセット</button>
+          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">🔑コード・管理</button>
         </div>
 
         <!-- タブ1: 生徒名前・区分・PIN登録 -->
@@ -567,6 +568,14 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 
         <!-- タブ3: データリセット＆デバッグ機能 -->
         <div id="teacherTab3" class="hidden">
+          <details id="fyOtherDrawer" style="margin-top:10px;border-top:2px solid #eadcc8;text-align:left;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">⚙ そのほか（パスワード・初期化）</summary>
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
+          <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
+          
+          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">全データの完全初期化</div>
+          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="resetAllDataForTest()">⚠️ 全データを消去して初期状態に戻す</button>
+          </details>
+          <details id="fyTestDrawer" style="margin-top:6px;border-top:2px solid #eadcc8;text-align:left;"><summary style="font-size:14px;font-weight:900;color:#00897b;padding:10px 0;">🧪 テスト用（チェック場所へジャンプ など）</summary>
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🚀 チェック場所へ ジャンプ（いまのプレイヤー）</div>
           <div id="fyJumpBox" style="margin-bottom:12px;"></div>
 
@@ -582,11 +591,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
           <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:8px;" onclick="unlockClefsToLevel5ForTest()">🔓 ト音記号・ヘ音記号を レベル5まで開く</button>
           <button class="modal-btn" style="background:#fb8c00; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllCardsToLevel5ForTest()">🔓 全カードを レベル5まで開く</button>
 
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
-          <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
-          
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">全データの完全初期化</div>
-          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="resetAllDataForTest()">⚠️ 全データを消去して初期状態に戻す</button>
+          </details>
         </div>
 
         <button class="modal-btn cancel" style="margin-top:12px;" onclick="toggleModal('managementModal', false)">閉じる</button>
@@ -944,6 +949,7 @@ function playAudioElementFallback(audioId) {
 
 /* 効果音再生（読み込み済みの音を使い回し、同じ音は前の音を止めて最初から鳴らす） */
 function playAudioCloned(audioId) {
+  try { if (FY_VOICE_IDS.indexOf(audioId) !== -1) fyStopVoices(audioId); } catch (e) {}
   runWithAudio(ctx => {
     const buf = soundBuffers[audioId];
     if (ctx && buf && ctx.state === 'running') {
@@ -1174,7 +1180,7 @@ function closeRegistration() {
 function saveRegistration() {
   const rawName = document.getElementById("regNameInput").value.trim();
   if (!rawName || !/^[\u3040-\u309Fー0-9a-zA-Z]+$/.test(rawName)) {
-    alert("なまえは、ひらがな・すうじ・アルファベットで、いれてね！");
+    fySay("なまえは、ひらがな・すうじ・\nアルファベットで いれてね！");
     return;
   }
   const category = document.getElementById("regCategorySelect").value;
@@ -1182,7 +1188,7 @@ function saveRegistration() {
 
   for (let i = 0; i < 3; i++) {
     if (i !== slot && isRegistered(i) && profiles[i] === rawName) {
-      alert("おなじ なまえが あるよ。ちがう なまえに してね！");
+      fySay("おなじ なまえが あるよ。\nちがう なまえに してね！");
       return;
     }
   }
@@ -1283,7 +1289,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1114d";
+var FY_INDEX_VER = "1114e";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1354,6 +1360,24 @@ function fyColorSwitch(toColor) {
   /* 色で つかいかたを おぼえているので、くろおんぷでは 説明を くりかえさない */
   if (!toColor) { Storage.set("fy_practice_guide_" + activeProfileIndex, true); Storage.set("fy_noprac_" + activeProfileIndex, true); }
   showLevelScreen();
+}
+/* 💬 おしらせ（はいいろの はこ の かわりに、アプリの なかの ふきだし）。voice＝あれば ならす こえの ファイル */
+function fySay(msg, voice) {
+  try {
+    var old = document.getElementById("fySayBox"); if (old) old.remove();
+    var d = document.createElement("div"); d.id = "fySayBox";
+    d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10005;background:rgba(60,40,20,.45);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;";
+    d.innerHTML = '<div style="background:#fffaf0;border-radius:20px;padding:18px 16px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);"><div style="font-size:40px;">' + (voice ? "🔒" : "💬") + '</div><div style="font-size:17px;font-weight:900;color:#5d4037;line-height:1.7;margin:6px 0 14px;">' + String(msg).replace(/\n/g, "<br>") + '</div><button style="width:100%;padding:13px;font-size:18px;font-weight:900;color:#fff;background:#ff9800;border:none;border-radius:16px;">OK</button></div>';
+    d.addEventListener("click", function () { d.remove(); });
+    document.body.appendChild(d);
+    if (voice) { try { fyStopVoices(); var a = new Audio(voice); fyVoiceNow = a; var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {} }
+  } catch (e) { alert(msg); }
+}
+/* 🔇 こえは「あとから ならした ほうが かち」：まえの こえを とめる（こうかおん・ファンファーレは とめない） */
+var FY_VOICE_IDS = ["audio6do", "audioToon1", "audioToon2", "audioHeon1", "audioHeon2", "audioKanpeki", "levelUp1Audio", "levelEncourageAudio", "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio", "zundaMasterAudio", "zundaOmedetoAudio"];
+function fyStopVoices(exceptId) {
+  try { if (fyVoiceNow) { fyVoiceNow.pause(); fyVoiceNow = null; } } catch (e) {}
+  try { FY_VOICE_IDS.forEach(function (id) { if (id === exceptId) return; var sr = activeSources[id]; if (sr) { try { sr.stop(); } catch (e) {} activeSources[id] = null; } var el = document.getElementById(id); if (el && !el.paused) { try { el.pause(); el.currentTime = 0; } catch (e) {} } }); } catch (e) {}
 }
 function fyGateLockLeft() {
   try { var t = Storage.get("fy_gatelock_" + activeProfileIndex, 0); var left = (t || 0) + 10 * 60 * 1000 - Date.now(); return left > 0 ? left : 0; } catch (e) { return 0; }
@@ -1465,7 +1489,7 @@ function fyWakabaVoice(file, delayMs, guard) {
   setTimeout(function () {
     try {
       if (!fyWakabaOn()) return; if (guard && !guard()) return;
-      if (fyVoiceNow) { try { fyVoiceNow.pause(); } catch (e) {} }
+      fyStopVoices();
       var a = new Audio(file); fyVoiceNow = a;
       var q = a.play(); if (q && q.catch) q.catch(function () {});
     } catch (e) {}
@@ -1542,7 +1566,7 @@ function fyVoiceOnce(flagKey, file, delayMs, guard) {
     var k = flagKey + "_" + activeProfileIndex;
     if (Storage.get(k, false)) return;
     setTimeout(function () {
-      try { if (Storage.get(k, false)) return; if (guard && !guard()) return; Storage.set(k, true); var a = new Audio(file); var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+      try { if (Storage.get(k, false)) return; if (guard && !guard()) return; Storage.set(k, true); fyStopVoices(); var a = new Audio(file); fyVoiceNow = a; var q = a.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
     }, delayMs || 0);
   } catch (e) {}
 }
@@ -1752,7 +1776,7 @@ function startDoLesson() {
   navigateTo("cardScreen");
   document.getElementById("levelBadge").textContent = "6つのド";
   document.getElementById("cardScreenTitle").textContent = "おんぷカード";
-  document.getElementById("qCountBadge").classList.add("hidden");
+  document.getElementById("qCountBadge").classList.add("hidden"); try { document.getElementById("fyProg").classList.add("hidden"); } catch (e) {}
   showCurrentCard();
 }
 
@@ -1764,8 +1788,8 @@ function selectClef(clef) {
   const bassCleared = isDebugUnlocked || hasLevelCleared(activeProfileIndex, "bass", 5);
   const allUnlocked = isDebugUnlocked || (clefUnlocked && trebleCleared && bassCleared);
 
-  if ((clef === 'treble' || clef === 'bass') && !clefUnlocked) return alert("まずは「6つの『ド』」でトレーニング（20問）をやろう！");
-  if (clef === 'all' && !allUnlocked) return alert("ト音記号とヘ音記号をすべてクリアすると遊べるよ！");
+  if ((clef === 'treble' || clef === 'bass') && !clefUnlocked) return fySay("まずは「6つの ド」の\nトレーニングを やろう！", "zunda-lock.mp3");
+  if (clef === 'all' && !allUnlocked) return fySay("ト音記号と ヘ音記号に\nごうかくすると ひらくよ！", "zunda-lock.mp3");
   
   selectedClef = clef; showLevelScreen();
 }
@@ -1831,7 +1855,7 @@ function createLevelButtons() {
       button.innerHTML += `<span style="display:block;font-size:12px;font-weight:800;color:#8a5a00;margin-top:2px;">🏅 名人に ちょうせん！</span>`;
     }
     if (level === fyHereLv && !isLocked && fyWakabaOn() && !button.classList.contains("fyGoldRing2")) { button.classList.add("fyHere"); button.innerHTML += `<span style="display:block;font-size:12px;font-weight:800;color:#e65100;margin-top:2px;">👈 いまここ</span>`; }
-    button.onclick = () => colorLock ? alert("いろおんぷは レベル1だけだよ。\nくろおんぷに すると、つぎの レベルに すすめるよ！\n（ほごしゃの かたが、したの ボタンを おしてね）") : (isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level));
+    button.onclick = () => colorLock ? fySay("いろおんぷは レベル1だけだよ。\nくろおんぷに すると、つぎに すすめるよ！\n（おうちの かたが、したの ボタンを おしてね）") : (isLocked ? fySay("まえの レベルに\nごうかくすると ひらくよ！", "zunda-lock.mp3") : showLevelCover(level));
     list.appendChild(button);
   }
   if (selectedClef === "treble" || selectedClef === "bass") {
@@ -1881,7 +1905,7 @@ function proceedToCards() {
   navigateTo("cardScreen");
   document.getElementById("levelBadge").textContent = `Lv.${selectedLevel}` + (fyColorActive() ? " 🎨" : "");
   document.getElementById("cardScreenTitle").textContent = "おんぷカード";
-  document.getElementById("qCountBadge").classList.add("hidden");
+  document.getElementById("qCountBadge").classList.add("hidden"); try { document.getElementById("fyProg").classList.add("hidden"); } catch (e) {}
   showCurrentCard();
 }
 
@@ -1928,6 +1952,7 @@ function showRandomTrainingQuestion() {
   if (trainingCorrectCount >= targetValue) { showResultScreen(); return; }
   const remaining = targetValue - trainingCorrectCount;
   document.getElementById("qCountBadge").textContent = `あと ${remaining} 問`;
+  try { var fp = document.getElementById("fyProg"); fp.classList.remove("hidden"); document.getElementById("fyProgIn").style.width = Math.round((targetValue - remaining) / targetValue * 100) + "%"; var fs = document.getElementById("fyProgStar"); if (remaining === Math.floor(targetValue / 2) || remaining === 5) { fs.style.transition = "transform .25s"; fs.style.transform = "scale(1.8)"; setTimeout(function () { fs.style.transform = ""; }, 400); } } catch (e) {}
 
   let nextIdx;
   if (currentCards.length > 1) {
@@ -2011,7 +2036,7 @@ function unlockResultButtons() {
 
 function showResultScreen() {
   trainingMode = false;
-  document.getElementById("qCountBadge").classList.add("hidden");
+  document.getElementById("qCountBadge").classList.add("hidden"); try { document.getElementById("fyProg").classList.add("hidden"); } catch (e) {}
   const duration = Math.round((Date.now() - trainingStartTime) / 1000);
   const totalAttempts = trainingCorrectCount + trainingMistakes;
   const accuracy = totalAttempts > 0 ? Math.round((trainingCorrectCount / totalAttempts) * 100) : 0;
@@ -2103,10 +2128,10 @@ function showResultScreen() {
     }, sugoiMs + 200);
     resultSoundsEndMs = sugoiMs + 200 + fanfareMs + 600;
   } else if (accuracy >= 90) {
-    document.getElementById("resultTitleBig").textContent = "もうすこし！";
+    document.getElementById("resultTitleBig").textContent = "おしい！";
     playAudioCloned("osiAudio");
   } else {
-    document.getElementById("resultTitleBig").textContent = "がんばれ！";
+    document.getElementById("resultTitleBig").textContent = accuracy >= 70 ? "あと すこし！" : "れんしゅう しよう！";
     playAudioCloned("ganbatteAudio");
   }
 
@@ -2128,8 +2153,8 @@ function showResultScreen() {
       btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">🚀 レベル${selectedLevel} の20問トレーニングへ！</button>`;
       btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start10QuestionTraining()">もういちど 10問にチャレンジ</button>`;
     } else if (targetValue === 10 && !isPerfect) {
-      btnWrap.innerHTML += `<button class="select-button accent" onclick="start10QuestionTraining()">もう一度 10問チャレンジ（100%をめざそう！）</button>`;
-      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問トレーニングにすすむ</button>`;
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start10QuestionTraining()">もういちど 10問に チャレンジ</button>`;
+      btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">20問トレーニングに すすむ</button>`;
     } else if (targetValue >= 20 && isPerfect) {
       let isAllCase = false;
       if (fyColorActive()) {
@@ -2168,17 +2193,17 @@ function showResultScreen() {
         btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
       }
     } else if (targetValue >= 20 && !isPerfect) {
-      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もう一度 20問にチャレンジ（100%をめざそう！）</button>`;
+      btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もういちど 20問に チャレンジ</button>`;
     }
   } else {
-    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もう一度チャレンジ！</button>`;
+    btnWrap.innerHTML += `<button class="select-button accent" onclick="restartTrainingDirect()">もういちど チャレンジ！</button>`;
   }
 
   /* 黒おんぷのレベル1で うまく いかなかったとき：いろおんぷに もどれる */
   if ((selectedClef === "treble" || selectedClef === "bass") && selectedLevel === 1 && !fyColorActive() && !fyColorOn(activeProfileIndex, selectedClef) && accuracy < 90) {
     btnWrap.innerHTML += `<button class="select-button accent" style="margin-top:10px;background:#8a6bbf;color:#fff;font-size:20px;padding:18px;" onclick="fyColorBackNow()">🎨 いろおんぷに もどる</button>`;
   }
-  btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
+  btnWrap.innerHTML += `<button class="back-btn" style="margin-top:14px;" onclick="handleCardBack()">◀ もどる</button>`;
 
   /* 🎉 紙吹雪は100%のときだけ（通常30個、100回目は150個） */
   if (isPerfect) startConfetti(isLegendMoment ? 150 : 30);
@@ -2378,7 +2403,7 @@ function renderTeacherView() {
 
 function saveStudentByTeacher(slot) {
   let rawName = document.getElementById(`tName_${slot}`).value.trim();
-  if (!/^[\u3040-\u309Fー0-9a-zA-Z\s]+$/.test(rawName) || !rawName) return alert("正しいお名前を入力してください！");
+  if (!/^[\u3040-\u309Fー0-9a-zA-Z\s]+$/.test(rawName) || !rawName) return fySay("なまえを いれてね！");
   const category = document.getElementById(`tCategory_${slot}`).value;
   const newPin = document.getElementById(`tPin_${slot}`).value.trim() || "0000";
   
@@ -2525,6 +2550,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261114d"></script>
+<script src="app-extras.js?v=20261114e"></script>
 </body>
 </html>
