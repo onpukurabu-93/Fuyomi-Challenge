@@ -73,7 +73,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 <body>
 <div id="app">
   <h1>🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1114e</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1114f</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
   <div style="font-size:13px;"><a href="index.html" style="display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;">◀ トップへ もどる</a></div>
   <div class="sub" id="who"></div>
@@ -515,7 +515,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlstart: "zunda-legend-start.mp3", zlpiano: "zunda-legend-piano.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zlv5b: "zunda-legend-lv5.mp3", zlplay: "zunda-legend-play.mp3", zlock: "zunda-lock.mp3", zs1: "zunda-song1.mp3", zs2: "zunda-song2.mp3", zs3: "zunda-song3.mp3", zs4: "zunda-song4.mp3", zlcount: "zunda-legend-count.mp3", zlclear: "zunda-legend-clear.mp3", zom: "zunda-omedeto.mp3", zenc: "zunda-encourage.mp3" };
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlstart: "zunda-legend-start.mp3", zlpiano: "zunda-legend-piano.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zlv5b: "zunda-legend-lv5.mp3", zlplay: "zunda-legend-play.mp3", zlock: "zunda-lock.mp3", kansei: "kansei.mp3", zmae: "zunda-maestro.mp3", znext: "zunda-next-meijin.mp3", zcomp: "zunda-complete.mp3", zs1: "zunda-song1.mp3", zs2: "zunda-song2.mp3", zs3: "zunda-song3.mp3", zs4: "zunda-song4.mp3", zlcount: "zunda-legend-count.mp3", zlclear: "zunda-legend-clear.mp3", zom: "zunda-omedeto.mp3", zenc: "zunda-encourage.mp3" };
   var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
@@ -593,7 +593,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   window.__playLog = [];
   var seqId = 0, seqSrc = null;
   /* あたらしい こえを ならすと、まえの こえは とまる（いちばん あたらしいものが かち） */
-  function playSeq(keys, cb) {
+  var celHold = 0;   /* おいわいの こえが おわる じこく（それまで ほかの こえは ならさない） */
+  function playSeq(keys, cb, force) {
+    if (!force && Date.now() < celHold) { if (cb) { try { cb(); } catch (e) {} } return; }
     var c = ensureCtx(), i = 0, my = ++seqId;
     try { if (seqSrc) { seqSrc.onended = null; seqSrc.stop(0); } } catch (e) {}
     seqSrc = null;
@@ -637,7 +639,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try {
       var K = "fy_legend_songguide_" + PID;
       if (localStorage.getItem(K)) return;
-      var steps = [["scDemo", "zs1"], ["scBox", "zs2"], ["scFollow", "zs3"], ["scTog", "zs4"]];
+      var steps = [["scDemo", "zs1"], ["scBox", "zs2"], ["scFollow", "zs3"], ["scTog", "zs4"]];   /* ボタンは ひだりから おてほん・おとかくにん・れんしゅう */
       if (!steps.every(function (x) { return bufs[x[1]]; })) return;      /* こえが そろって いなければ、まだ やらない */
       localStorage.setItem(K, "1");
       var cover = document.createElement("div"); cover.id = "fySongGuide";
@@ -646,7 +648,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var i = 0, last = null;
       function next() {
         if (last) { last.classList.remove("fyPianoGlow"); last.style.position = last.__pos || ""; last.style.zIndex = ""; }
-        if (i >= steps.length || !document.getElementById("scBar")) { cover.remove(); return; }
+        if (i >= steps.length || !document.getElementById("scBar")) { cover.remove(); try { if (window.__fyDemoGlow) window.__fyDemoGlow(); } catch (e) {} return; }
         var st = steps[i++], el = document.getElementById(st[0]);
         if (el) { el.classList.add("fyPianoGlow"); try { if (st[0] === "scBox") el.scrollIntoView({ block: "center" }); } catch (e) {} last = el; }
         playSeq([st[1]], function () { setTimeout(next, 250); });
@@ -658,6 +660,22 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   /* ---- レベルを えらんだときの ずんだもんの こえ（4かい いじょう つづけて クリアできないと、はげましの こえ） ---- */
   function lvFailKey(l) { return "fy_chunkfail_" + PID + "_" + l; }
   function lvFails(l) { try { return parseInt(localStorage.getItem(lvFailKey(l)), 10) || 0; } catch (e) { return 0; } }
+  /* いっしょに かさねて ならす（はくしゅ など）。ほかの こえを とめない */
+  function playOver(k, delayMs) { setTimeout(function () { try { var c = ensureCtx(), b = bufs[k]; if (!c || !b) return; var src = c.createBufferSource(); src.buffer = b; src.connect(c.destination); src.start(0); } catch (e) {} }, delayMs || 0); }
+  /* 🎁 トレーニングポイントを ふやす（おなじ ごほうびは 1かいだけ） */
+  var PT = { pass: 1, play: 1, legend: 10, maestro: 15 };
+  try { var ptc = JSON.parse(localStorage.getItem("fy_pt_cfg") || "{}") || {}; for (var pk in PT) if (typeof ptc[pk] === "number") PT[pk] = ptc[pk]; } catch (e) {}
+  function givePt(tag, n) {
+    try {
+      if (!n || PID === "x") return 0;
+      var k = "fy_ptgiven_" + PID, g = JSON.parse(localStorage.getItem(k) || "{}") || {};
+      if (g[tag]) return 0;
+      g[tag] = n; localStorage.setItem(k, JSON.stringify(g));
+      var cur = 0; try { cur = +JSON.parse(localStorage.getItem("fy_tp_" + PID) || "0") || 0; } catch (e2) {}
+      localStorage.setItem("fy_tp_" + PID, JSON.stringify(cur + n));
+      return n;
+    } catch (e) { return 0; }
+  }
   function lvVoice(l) { try { var q = [lvFails(l) >= 4 ? "zenc" : "zlv" + l]; if (l === 5 && bufs.zlv5b && !getPlay5Seen()) { q.push("zlv5b"); } playSeq(q); } catch (e) {} }
   /* レベル5の せつめいの こえは、はじめの 1かいだけ（きいたら しるし） */
   function getPlay5Seen() { try { if (localStorage.getItem("fy_legend_lv5voice_" + PID)) return true; localStorage.setItem("fy_legend_lv5voice_" + PID, "1"); } catch (e) {} return false; }
@@ -740,6 +758,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* 🏅👑🎹 3つの ちょうせん（どこまで すすんだか） */
+  /* 名人の いちばん おおい かいすう（100, 200 …）。まだなら 0 */
+  function meijinBest() { try { var a = getJSON("fy_ach_" + PID, []), b = 0; if (Array.isArray(a)) a.forEach(function (r) { if (r && (r.type === "legend" || r.type === "legend1000")) b = Math.max(b, r.n || 100); }); return b; } catch (e) { return 0; } }
   function renderChal() {
     try {
       var el0 = document.getElementById("fyChal");
@@ -753,7 +773,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       }
       el0.style.cssText = "margin:8px 0;padding:6px;background:#fff;border-radius:14px;";
       el0.innerHTML = '<div style="font-size:12px;font-weight:900;color:#806c5a;margin:0 0 2px 4px;">🏁 3つの ちょうせん</div>' +
-        row("🏅", "ふよみ名人", has("legend"), "れんぞく " + run + " / 100") +
+        (function () { var mb = meijinBest(), goal = (Math.floor(Math.max(mb, 0) / 100) + 1) * 100; return row("🏅", mb ? "ふよみ名人 " + mb + "かい ✓　つぎは " + goal + "かい" : "ふよみ名人", false, "あと " + Math.max(0, goal - run) + "かい"); })() +
         row("👑", "ふよみレジェンド", has("legend5"), "✅ " + pn + " / " + N) +
         row("🎹", "ふよみマエストロ", has("maestro"), "⭐ " + pl + " / " + N);
     } catch (e) {}
@@ -1028,14 +1048,16 @@ function renderScore(bars, beatsPerBar, opt) {
       var q = getPlay(), nq = !q[sg.c];
       q[sg.c] = todayStr();
       try { localStorage.setItem("fy_play_" + PID, JSON.stringify(q)); } catch (e) {}
+      var g1 = nq ? givePt("play_" + sg.c, PT.play) : 0;
       if (nq && playCount() >= SONGS.length) setTimeout(function () { grantAward("maestro", false); }, 600);
-    return { ok: true, msg: "⭐ 「" + sg.title + "」 せんせいの ごうかく！" + (nq ? "" : "（もう ごうかくしているよ）"), song: sg };
+    return { ok: true, msg: "⭐ 「" + sg.title + "」 せんせいの ごうかく！" + (nq ? (g1 ? "　🎁 +" + g1 + "ポイント" : "") : "（もう ごうかくしているよ）"), song: sg };
     }
     var p = getPass(), nw = !p[sg.c];
     p[sg.c] = todayStr();
     try { localStorage.setItem("fy_pass_" + PID, JSON.stringify(p)); } catch (e) {}
+    var g2 = nw ? givePt("pass_" + sg.c, PT.pass) : 0;
     if (nw && passCount() >= SONGS.length) setTimeout(function () { grantAward("legend", false); }, 600);
-    return { ok: true, msg: "🎉 「" + sg.title + "」 ごうかく！" + (nw ? "" : "（もう ごうかくしているよ）"), song: sg };
+    return { ok: true, msg: "🎉 「" + sg.title + "」 ごうかく！" + (nw ? (g2 ? "　🎁 +" + g2 + "ポイント" : "") : "（もう ごうかくしているよ）"), song: sg };
   }
   /* コードが ふくすう（「_」「,」「スペース」で くぎる）でも まとめて うけつける */
   function applyPassMany(raw) {
@@ -1123,10 +1145,10 @@ function renderScore(bars, beatsPerBar, opt) {
         h += '<button class="btn" data-i="' + i + '"' + (so ? '' : ' data-lock="1"') + ' style="background:' + (so ? '#7e57c2' : '#b0a6c4') + ';margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;' + (so ? '' : 'opacity:.75;') + '">' + (so ? '' : '🔒 ') + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + dispNo(sg) + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
       });
     });
-    h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
+    h += '<details id="passBox"' + (passBanner ? ' open' : '') + ' style="margin-top:14px;padding:6px 10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;"><summary style="font-weight:800;padding:4px 0;">🔑 コードを いれる</summary>' +
          '<input id="passIn" type="text" autocomplete="off" autocapitalize="characters" placeholder="例：03-AB12CD" style="font-size:16px;padding:8px;width:60%;border:2px solid #e0d0ba;border-radius:8px;"> ' +
          '<button id="passBtn" style="font-size:15px;font-weight:800;padding:9px 12px;border:none;border-radius:8px;background:#ff7043;color:#fff;">おくる</button>' +
-         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></div>' +
+         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></details>' +
          '<button class="btn back" id="lvTop" style="margin-top:14px;margin-bottom:24px;padding:16px;font-size:17px;">◀ トップへ もどる</button>';
     passBanner = "";
     sc.innerHTML = h;
@@ -1148,9 +1170,8 @@ function renderScore(bars, beatsPerBar, opt) {
   }
   var demoTimers = [];
   /* ===== いっしょに ひく／おてほん：はくに あわせて うごく せん ===== */
-  var tempoSlow = false;
-  try { tempoSlow = localStorage.getItem("fy_tempo") === "slow"; } catch (e) {}
-  function bsOf(sg) { return sg.beat / (tempoSlow ? 0.7 : 1); }
+  var tempoStep = 2, TEMPO_F = [0.5, 0.7, 0.85, 1, 1.15];
+  function bsOf(sg) { return sg.beat / TEMPO_F[tempoStep - 1]; }
   var runSt = null;
   var flowOffFn = null, flowActive = false, flowPlayX = 110;
   /* ながれる ひょうじ：いまの じかん tb（はく）に あわせて、がくふを よこに うごかす */
@@ -1182,7 +1203,7 @@ function renderScore(bars, beatsPerBar, opt) {
     ph.style.display = "";
   }
   /* opt.sound：おてほんの おと／opt.count：はじまる まえの カウント／opt.click：1はくごとの クリック */
-  var cntSnd = true; try { cntSnd = localStorage.getItem("fy_cnt") !== "off"; } catch (e) {}
+  var cntSnd = true;   /* かぞえる おとは いつも あり（ボタンは なくした） */
   function runStart(sg, opt) {
     runStop(true);
     var bs = bsOf(sg), ev = [], tt = 0, ni = 0;
@@ -1469,6 +1490,10 @@ function renderScore(bars, beatsPerBar, opt) {
     curScoreSong = sg;
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + grpIcon(sg) + ' ' + dispNo(sg) + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
+      '<div id="scSpdBar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 8px;">' +
+        '<button id="scSlow" style="font-size:22px;border:none;background:#8d6e63;color:#fff;border-radius:16px;padding:6px 14px;font-weight:900;touch-action:manipulation;">🐢 −</button>' +
+        '<span id="scDots" style="font-size:20px;letter-spacing:5px;color:#ff9800;min-width:112px;text-align:center;"></span>' +
+        '<button id="scFast" style="font-size:22px;border:none;background:#8d6e63;color:#fff;border-radius:16px;padding:6px 14px;font-weight:900;touch-action:manipulation;">+ 🐇</button></div>' +
       '<div id="scBox" style="background:#fff;border-radius:14px;padding:6px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);">' + renderScore(sg.bars, sg.bp, { lay: sg.lay, ks: sg.ks, dbl: sg.dbl, ts: sg.ts, b4: sg.b4 }) + '</div>' +
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;"><br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scAgain" style="margin-top:14px;background:#fb8c00;">🔁 もういちど ひく</button>' +
@@ -1476,11 +1501,9 @@ function renderScore(bars, beatsPerBar, opt) {
       '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:140px;">◀ もどる</button>' +
       '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
       '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
-      '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 2px;font-size:14px;flex:1;">🎹 おとかくにん</button>' +
       '<button class="btn" id="scDemo" style="background:#7e57c2;margin:0;padding:11px 2px;font-size:14px;flex:1;">▶ おてほん</button>' +
+      '<button class="btn" id="scFollow" style="background:#5c6bc0;margin:0;padding:11px 2px;font-size:14px;flex:1;">🎹 おとかくにん</button>' +
       '<button class="btn" id="scTog" style="background:#00897b;margin:0;padding:11px 2px;font-size:14px;flex:1;">🥁 れんしゅう</button></div>' +
-      '<button class="btn" id="scSpd" style="background:#8d6e63;margin:6px auto 0;padding:7px;font-size:13px;display:block;max-width:520px;width:100%;"></button>' +
-      '<button class="btn" id="scCnt" style="background:#8d6e63;margin:6px auto 0;padding:7px;font-size:13px;display:block;max-width:520px;width:100%;"></button>' +
       '<div id="scSt" style="font-size:13px;min-height:18px;margin-top:5px;color:#5b4636;text-align:center;"></div></div>';
     var sens = document.getElementById("scSens"); sens.value = String(pThr === 3 || pThr === 1.5 ? pThr : 6);
     sens.addEventListener("change", function () { pThr = +this.value; try { localStorage.setItem("fy_piano_sens", this.value); } catch (e) {} });
@@ -1538,18 +1561,30 @@ function renderScore(bars, beatsPerBar, opt) {
       var cl = document.getElementById("scCntLbl"); if (cl) cl.style.display = "none";
       pianoStart();
     });
-    function spdLabel() { var b = document.getElementById("scSpd"); if (b) b.textContent = tempoSlow ? "🐢 はやさ：ゆっくり（おすと ふつうに）" : "🐇 はやさ：ふつう（おすと ゆっくりに）"; }
-    spdLabel();
-    function cntLabel() { var b = document.getElementById("scCnt"); if (b) b.textContent = cntSnd ? "🔔 かぞえる おと：あり（おすと なしに）" : "🔕 かぞえる おと：なし（すうじだけ。おすと ありに）"; }
-    cntLabel();
-    document.getElementById("scCnt").addEventListener("click", function () {
-      cntSnd = !cntSnd; try { localStorage.setItem("fy_cnt", cntSnd ? "on" : "off"); } catch (e) {}
-      scStop(); document.getElementById("scSt").textContent = ""; cntLabel();
-    });
-    document.getElementById("scSpd").addEventListener("click", function () {
-      tempoSlow = !tempoSlow; try { localStorage.setItem("fy_tempo", tempoSlow ? "slow" : "fast"); } catch (e) {}
-      scStop(); document.getElementById("scSt").textContent = ""; spdLabel();
-    });
+    /* はやさ：5だんかい（1＝とても ゆっくり … 4＝ふつう、5＝はやい）。きょくごとに おぼえる。はじめての きょくは 2（ゆっくり） */
+    (function () {
+      var TK = "fy_tempo_" + PID + "_" + (sg.c || sg.id);
+      try { var tv = parseInt(localStorage.getItem(TK), 10); tempoStep = (tv >= 1 && tv <= 5) ? tv : 2; } catch (e) { tempoStep = 2; }
+      function dots() { var d = document.getElementById("scDots"), t = ""; for (var i = 1; i <= 5; i++) t += i <= tempoStep ? "●" : "○"; if (d) d.textContent = t; }
+      function chg(dv) {
+        var nv = Math.max(1, Math.min(5, tempoStep + dv)); if (nv === tempoStep) return;
+        tempoStep = nv; try { localStorage.setItem(TK, String(nv)); } catch (e) {}
+        dots();
+        /* れんしゅう・おてほんの とちゅうなら、あたらしい はやさで はじめから やりなおす */
+        var act = null; ["scDemo", "scTog"].forEach(function (id) { var bb = document.getElementById(id); if (bb && bb.textContent.indexOf("■") === 0) act = bb; });
+        if (act) { act.click(); setTimeout(function () { try { act.click(); } catch (e) {} }, 250); }
+      }
+      dots();
+      document.getElementById("scSlow").addEventListener("click", function () { chg(-1); });
+      document.getElementById("scFast").addEventListener("click", function () { chg(1); });
+    })();
+    /* ▶ おてほん：きょくごとに、はじめての 1かいだけ ひかる（おしたら きえる） */
+    (function () {
+      var DK = "fy_legend_demoseen_" + PID + "_" + (sg.c || sg.id), db = document.getElementById("scDemo");
+      function glow() { try { if (!localStorage.getItem(DK) && db && !document.getElementById("fySongGuide")) db.classList.add("fyPianoGlow"); } catch (e) {} }
+      window.__fyDemoGlow = glow; glow();
+      db.addEventListener("click", function () { try { localStorage.setItem(DK, "1"); } catch (e) {} db.classList.remove("fyPianoGlow"); });
+    })();
     document.getElementById("scDemo").addEventListener("click", function () {
       if (runSt) { scStop(); document.getElementById("scSt").textContent = ""; return; }
       scStop();
@@ -2078,7 +2113,7 @@ function renderScore(bars, beatsPerBar, opt) {
   ["pointerdown", "touchend", "click"].forEach(function (ev) { document.addEventListener(ev, tryUnlock, true); });
   document.getElementById("kb").addEventListener("pointerdown", function (e) {
     var b = e.target.closest ? e.target.closest(".key-btn") : null;
-    if (b) { e.preventDefault(); press(b.getAttribute("data-k")); }
+    if (b) { e.preventDefault(); try { if (pianoOn) { pianoStop(); localStorage.setItem("fy_piano_pref", "0"); } } catch (e9) {} press(b.getAttribute("data-k")); }
   });
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
@@ -2117,7 +2152,7 @@ function renderScore(bars, beatsPerBar, opt) {
       for (var i = 0; i < list.length; i++) if (list[i] && list[i].type === f.type) rec = list[i];
       if (!rec) {
         var now = new Date(), d = todayStr();
-        rec = { type: f.type, n: 0, t: now.getTime(), d: d, name: PNAME, code: codeFor(PNAME, f.type, 0, d) };
+        rec = { type: f.type, n: 0, t: now.getTime(), d: d, name: PNAME, code: codeFor(PNAME, f.type, 0, d), us: 1 };
         list.push(rec);
         try { localStorage.setItem(ak, JSON.stringify(list)); } catch (e) {}
       }
@@ -2130,6 +2165,7 @@ function renderScore(bars, beatsPerBar, opt) {
   }
   function showAward(kind, rec, test) {
     var f = AW[kind], p = rec.d.split("-"), dt = (+p[1]) + "/" + (+p[2]);
+    var gp = test ? 0 : givePt("award_" + kind, PT[kind]);
     var scr = document.getElementById("awScr");
     if (!scr) { scr = document.createElement("div"); scr.id = "awScr"; document.body.appendChild(scr); }
     var fall = "";
@@ -2146,10 +2182,35 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:13px;">' + dt + '</div>' +
       '<div style="font-size:36px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:12px;padding:8px 0;margin:10px 0;">' + rec.code + '</div>' +
       window.fyLineCheck('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code) +
+      (gp ? '<div style="font-size:20px;font-weight:900;color:' + f.ac + ';margin-top:10px;">🎁 +' + gp + ' ポイント</div>' : '') +
       '<button class="btn back" id="awClose" style="margin-top:16px;">とじる</button></div>';
     scr.scrollTop = 0;
-    document.getElementById("awClose").addEventListener("click", function () { scr.style.display = "none"; });
-    setTimeout(function () { playSeq([f.snd, (kind === "legend" && bufs.zlclear) ? "zlclear" : "zom"]); }, 300);   /* ファンファーレ → レジェンド用の こえ（なければ「おめでとう」） */
+    /* 「LINEで おくる」を おしたら、おくった しるしを つける（トップの「きろくと コード」の ひかりが きえる） */
+    scr.onclick = function (ev) { try { if (!test && ev.target.closest && ev.target.closest("a")) { var al = getJSON("fy_ach_" + PID, []); if (Array.isArray(al)) { al.forEach(function (r) { if (r && r.code === rec.code && !r.sentAt) r.sentAt = Date.now(); }); localStorage.setItem("fy_ach_" + PID, JSON.stringify(al)); } } } catch (e) {} };
+    document.getElementById("awClose").addEventListener("click", function () {
+      scr.style.display = "none"; celHold = 0;
+      /* おいわいの あと：つぎの ちょうせんを おしえる（3つ ぜんぶ とれたら とくべつな こえ） */
+      try {
+        if (test) return;
+        var allDone = passCount() >= SONGS.length && playCount() >= SONGS.length && meijinBest() >= 100;
+        var q = []; if (allDone && bufs.zcomp) q.push("zcomp"); if (bufs.znext) q.push("znext");
+        renderChal(); var ch = document.getElementById("fyChal"); if (ch) { try { ch.scrollIntoView({ block: "center" }); } catch (e2) {} }
+        if (q.length) playSeq(q);
+      } catch (e3) {}
+    });
+    /* ファンファーレ → おいわいの こえ。おいわいの あいだは、ほかの こえを ならさない */
+    var vKey = kind === "legend" ? (bufs.zlclear ? "zlclear" : "zom") : (bufs.zmae ? "zmae" : "zom");
+    var fanSec = bufs[f.snd] ? bufs[f.snd].duration : 3, vSec = bufs[vKey] ? bufs[vKey].duration : 2;
+    if (kind === "maestro") {
+      /* マエストロ：ながい ファンファーレに、はくしゅ（3びょうめ）と こえ（まんなか）を かさねる */
+      celHold = Date.now() + (fanSec + 1) * 1000;
+      setTimeout(function () { playSeq([f.snd], null, true); }, 300);
+      playOver("kansei", 300 + 3000);
+      playOver(vKey, 300 + Math.max(4000, fanSec * 500));
+    } else {
+      celHold = Date.now() + (fanSec + vSec + 1.5) * 1000;
+      setTimeout(function () { playSeq([f.snd, vKey], null, true); }, 300);
+    }
   }
   function md(ds) { var p = ds.split("-"); return (+p[1]) + "月" + (+p[2]) + "日"; }
   function showEvent() {
