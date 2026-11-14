@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1114d-2 ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1114e ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -50,18 +50,18 @@ window.FY_JUMPS = [
     run: function (idx) { fyJmpStep(idx, "bass", "ヘ音記号"); } },
   { label: "➕ 全カードを 1レベル すすめる", note: "ト音・ヘ音は 全部合格にして、全カードを 1つ すすめる",
     run: function (idx) { fyJmpStep(idx, "all", "全カード"); } },
-  { label: "1️⃣ レジェンドへのみち（はじめて入る）", note: "ようこそ(声1つ)→レベル画面で声→大きい🎹だけ光る→押すか「つかわない」→スタートが光る＋声",
+  { label: "1️⃣ レジェンドへのみち（はじめて入る）", note: "ようこそ(声)→レベル画面(声)→🎹が光る(声)→スタートが光る(声)。🎹を押さずにスタート＝ピアノなし",
     run: function (idx) {
       Storage.set("fy_test_master_" + idx, true);
-      fyJmpClear(idx, ["fy_legend_intro_", "fy_legend_pianohint_", "fy_legend_pianoset_", "fy_legend_lv5voice_", "fy_lv5_openall_", "fy_chunk_max_"]);
+      fyJmpClear(idx, ["fy_legend_intro_", "fy_legend_pianohint_", "fy_legend_pianoset_", "fy_legend_lv5voice_", "fy_lv5_openall_", "fy_chunk_max_", "fy_legend_countvoice_"]);
       Storage.set("fy_legend_opened_" + idx, true);
       location.href = "chunk_proto.html";
     } },
-  { label: "2️⃣ レジェンド レベル5（曲のロック・✅⭐の声）", note: "Lv5を開く。曲は2つだけ開く／🔒を押すとメッセージ／✅の曲を押すと声",
+  { label: "2️⃣ レジェンド レベル5（曲のロック・曲の案内）", note: "🔒の曲→ふきだし／開いている曲→ボタンが1つずつ光る案内（声4本が入っているとき）／✅の曲→声",
     run: function (idx) {
       Storage.set("fy_test_master_" + idx, true);
       localStorage.setItem("fy_chunk_max_" + idx, "5");
-      fyJmpClear(idx, ["fy_lv5_openall_", "fy_legend_lv5voice_", "fy_legend_playvoice_"]);
+      fyJmpClear(idx, ["fy_lv5_openall_", "fy_legend_lv5voice_", "fy_legend_playvoice_", "fy_legend_songguide_"]);
       Storage.set("fy_legend_opened_" + idx, true);
       location.href = "chunk_proto.html";
     } },
@@ -113,7 +113,7 @@ window.FY_JUMPS = [
   { label: "♻ この生徒を はじめの状態に もどす", note: "記録・光り・テスト用の印を消す（名前は残る）", confirm: true,
     run: function (idx) {
       var re = new RegExp("(^|_)" + idx + "(_|$)");
-      var kill = /best|lvfail|color|ach|test_master|legend|glow|noprac|chunk_rec|chunk_max|do_test|debug_unlocked|allkeys|gatelock|practice_guide|lv5_openall|pass_|play_/;
+      var kill = /songguide|countvoice|best|lvfail|color|ach|test_master|legend|glow|noprac|chunk_rec|chunk_max|do_test|debug_unlocked|allkeys|gatelock|practice_guide|lv5_openall|pass_|play_/;
       var del = [];
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
