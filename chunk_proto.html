@@ -68,7 +68,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 <body>
 <div id="app">
   <h1>🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1113v</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1114b</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
   <div style="font-size:13px;"><a href="index.html" style="display:inline-block;padding:10px 14px 10px 4px;color:#806c5a;text-decoration:none;font-weight:800;">← トップへ もどる</a></div>
   <div class="sub" id="who"></div>
@@ -482,7 +482,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zenc: "zunda-encourage.mp3" };
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlstart: "zunda-legend-start.mp3", zlpiano: "zunda-legend-piano.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zlv5b: "zunda-legend-lv5.mp3", zenc: "zunda-encourage.mp3" };
   var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
@@ -584,7 +584,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   /* ---- レベルを えらんだときの ずんだもんの こえ（4かい いじょう つづけて クリアできないと、はげましの こえ） ---- */
   function lvFailKey(l) { return "fy_chunkfail_" + PID + "_" + l; }
   function lvFails(l) { try { return parseInt(localStorage.getItem(lvFailKey(l)), 10) || 0; } catch (e) { return 0; } }
-  function lvVoice(l) { try { playSeq([lvFails(l) >= 4 ? "zenc" : "zlv" + l]); } catch (e) {} }
+  function lvVoice(l) { try { var q = [lvFails(l) >= 4 ? "zenc" : "zlv" + l]; if (l === 5 && bufs.zlv5b && !getPlay5Seen()) { q.push("zlv5b"); } playSeq(q); } catch (e) {} }
+  /* レベル5の せつめいの こえは、はじめの 1かいだけ（きいたら しるし） */
+  function getPlay5Seen() { try { if (localStorage.getItem("fy_legend_lv5voice_" + PID)) return true; localStorage.setItem("fy_legend_lv5voice_" + PID, "1"); } catch (e) {} return false; }
   var phase = "ready", t0 = 0, tEnd = 0, token = 0;
   var queue = [], idx = 0, missed = false, firstOk = 0, busy = false, done = false, run = 0, bestRun = 0, missCount = 0;
 
@@ -663,7 +665,27 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     document.getElementById("pm").textContent = "";
   }
 
+  /* 🏅👑🎹 3つの ちょうせん（どこまで すすんだか） */
+  function renderChal() {
+    try {
+      var el0 = document.getElementById("fyChal");
+      if (!el0) { el0 = document.createElement("div"); el0.id = "fyChal"; var sb = document.getElementById("subTx"); sb.parentNode.insertBefore(el0, sb.nextSibling); }
+      var ach = getJSON("fy_ach_" + PID, []); if (!Array.isArray(ach)) ach = [];
+      function has(t) { for (var i = 0; i < ach.length; i++) if (ach[i] && (ach[i].type === t || (t === "legend" && ach[i].type === "legend1000"))) return true; return false; }
+      var run = 0; try { run = parseInt(localStorage.getItem("fy_meijin_run_" + PID), 10) || 0; } catch (e) {}
+      var N = SONGS.length, pn = passCount(), pl = playCount();
+      function row(icon, name, hv, prog) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin:2px 0;border-radius:10px;font-size:13px;font-weight:800;' + (hv ? 'background:#fff3b0;color:#5a3a00;' : 'background:#f3ece0;color:#8a7a66;') + '"><span>' + icon + ' ' + name + '</span><span>' + (hv ? '✓ できた！' : prog) + '</span></div>';
+      }
+      el0.style.cssText = "margin:8px 0;padding:6px;background:#fff;border-radius:14px;";
+      el0.innerHTML = '<div style="font-size:12px;font-weight:900;color:#806c5a;margin:0 0 2px 4px;">🏁 3つの ちょうせん</div>' +
+        row("🏅", "ふよみ名人", has("legend"), "れんぞく " + run + " / 100") +
+        row("👑", "ふよみレジェンド", has("legend5"), "✅ " + pn + " / " + N) +
+        row("🎹", "ふよみマエストロ", has("maestro"), "⭐ " + pl + " / " + N);
+    } catch (e) {}
+  }
   function renderLv() {
+    renderChal();
     var box = document.getElementById("lv"); box.innerHTML = "";
     var mx = getMax();
     for (var i = 1; i <= 5; i++) {
@@ -1000,12 +1022,17 @@ function renderScore(bars, beatsPerBar, opt) {
     var ps = getPass(), pl = getPlay();
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
             '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう<br><span style="font-size:14px;color:#2e7d32;">✅ ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ せんせいの ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
-            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">きょくを えらんで、がくふを みて れんしゅう。<br>ひく か うたう（ドレミ）で、せんせいに ごうかくを もらおう。</div>';
+            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">おうちで がくふを みて れんしゅうして、レッスンで せんせいに きいてもらおう。<br>ごうかくの コードを もらったら、したに いれてね。つぎの きょくが ひらくよ。</div>';
     /* きょくを レベルごとの グループに わける（ふえた ときは、GROUPS の ids に c を たす） */
     var inG = {};
     GROUPS.forEach(function (g) { g.list = []; g.ids.forEach(function (c) { SONGS.forEach(function (sg, i) { if (sg.c === c) { g.list.push(i); inG[c] = 1; } }); }); });
     var rest = []; SONGS.forEach(function (sg, i) { if (!inG[sg.c]) rest.push(i); });
     var gs = GROUPS.slice(); if (rest.length) gs.push({ name: "そのほか", icon: "🎵", color: "#78909c", list: rest });
+    /* ひらく きょく：ならびの じゅんに、ふよみごうかく（✅）の かず ＋ 2きょく。せんせいが「ぜんぶ ひらく」を おすと すべて */
+    var openAll = false; try { openAll = !!localStorage.getItem("fy_lv5_openall_" + PID); } catch (e) {}
+    var ordPos = {}, pc = 0; gs.forEach(function (g) { g.list.forEach(function (i) { ordPos[SONGS[i].c] = pc++; }); });
+    var openN = passCount() + 2;
+    function songOpen(sg) { return openAll || (ordPos[sg.c] !== undefined && ordPos[sg.c] < openN); }
     if (groupOpen === null) {
       groupOpen = -1;
       gs.forEach(function (g, gi) { if (groupOpen === -1 && g.list.some(function (i) { return !ps[SONGS[i].c]; })) groupOpen = gi; });
@@ -1015,8 +1042,8 @@ function renderScore(bars, beatsPerBar, opt) {
       var open = (gi === groupOpen);
       h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:8px;padding:14px;font-size:18px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　⭐ ' + okp + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
       if (open) g.list.forEach(function (i) {
-        var sg = SONGS[i];
-        h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;">' + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + dispNo(sg) + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
+        var sg = SONGS[i], so = songOpen(sg);
+        h += '<button class="btn" data-i="' + i + '"' + (so ? '' : ' data-lock="1"') + ' style="background:' + (so ? '#7e57c2' : '#b0a6c4') + ';margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;' + (so ? '' : 'opacity:.75;') + '">' + (so ? '' : '🔒 ') + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + dispNo(sg) + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
       });
     });
     h += '<div style="margin-top:14px;padding:10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;">せんせいから もらった コードを いれる<br>' +
@@ -1031,7 +1058,7 @@ function renderScore(bars, beatsPerBar, opt) {
       if (r.ok) { passBanner = r.msg; showLevel5(); } else { var pmz = document.getElementById("passMsg"); pmz.style.color = "#d84a3a"; pmz.textContent = r.msg; }
     });
     Array.prototype.forEach.call(sc.querySelectorAll("button[data-i]"), function (b) {
-      b.addEventListener("click", function () { showScore(SONGS[+b.getAttribute("data-i")]); });
+      b.addEventListener("click", function () { if (b.getAttribute("data-lock")) { var pm0 = document.getElementById("passMsg"); alert("まえの きょくに ごうかくすると ひらくよ！"); return; } showScore(SONGS[+b.getAttribute("data-i")]); });
     });
     Array.prototype.forEach.call(sc.querySelectorAll("button[data-g]"), function (b) {
       b.addEventListener("click", function () { var g = +b.getAttribute("data-g"); groupOpen = (groupOpen === g) ? -1 : g; showLevel5(); });
@@ -1538,7 +1565,24 @@ function renderScore(bars, beatsPerBar, opt) {
       (sn ? '<button class="btn" id="seenBtn" style="background:#7e57c2;width:78%;margin-top:10px;padding:12px;font-size:15px;">📖 いままでの きょく（' + sn + '）</button>' : '') +
       '<button class="btn back" id="backBtn2">もどる</button>';
     if (sn) document.getElementById("seenBtn").addEventListener("click", showSeenList);
-    document.getElementById("go").addEventListener("click", function () { try { if (level !== 5 && !pianoOn && localStorage.getItem("fy_piano_pref") === "1" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) pianoStart(); } catch (e) {} beginCount(); });
+    /* はじめて ピアノで こたえる レベルを はじめる ときは、🎹を おすか「ピアノを つかわない」を えらぶまで スタートを おせない */
+    try {
+      var gateNeed = level !== 5 && !localStorage.getItem("fy_legend_pianoset_" + PID) && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !document.getElementById("liGo");
+      if (gateNeed) {
+        var goB = document.getElementById("go"); goB.disabled = true; goB.style.opacity = ".45";
+        var gt = document.createElement("div");
+        gt.style.cssText = "margin-top:10px;font-size:14px;font-weight:900;color:#e65100;line-height:1.6;";
+        gt.innerHTML = "👇 まず 「🎹 ピアノで こたえる」を おしてね";
+        var skip = document.createElement("button"); skip.className = "btn"; skip.id = "pianoSkip";
+        skip.style.cssText = "background:#90a4ae;width:78%;margin-top:8px;padding:10px;font-size:14px;";
+        skip.textContent = "ピアノを つかわない";
+        ov.insertBefore(gt, ov.querySelector(".tx").nextSibling); gt.parentNode.insertBefore(skip, gt.nextSibling);
+        window.__fyPianoGateOpen = function () { try { localStorage.setItem("fy_legend_pianoset_" + PID, "1"); } catch (e) {} goB.disabled = false; goB.style.opacity = ""; gt.remove(); skip.remove(); var pb = document.getElementById("pianoBtn"); if (pb) pb.classList.remove("fyPianoGlow"); };
+        skip.addEventListener("click", window.__fyPianoGateOpen);
+        setTimeout(pianoHint, 600);
+      }
+    } catch (e) {}
+    document.getElementById("go").addEventListener("click", function () { setTimeout(pianoHint, 400); try { if (level !== 5 && !pianoOn && localStorage.getItem("fy_piano_pref") === "1" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) pianoStart(); } catch (e) {} beginCount(); });
     document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
   }
   window.__beeps = [];
@@ -1790,10 +1834,33 @@ function renderScore(bars, beatsPerBar, opt) {
   var NM12 = ["ド", "ド♯", "レ", "レ♯", "ミ", "ファ", "ファ♯", "ソ", "ソ♯", "ラ", "ラ♯", "シ"];
   function pShow(pc, m, tag) { var nmx = pcName(pc), lab = NM12[pc]; if (micKs && nmx) { var kk = NAMES.indexOf(nmx); lab = nmx + (ksAdj(kk, micKs) > 0 ? "♯" : (ksAdj(kk, micKs) < 0 ? "♭" : "")); } pSt("きこえた：" + lab + (tag ? "（" + tag + "）" : "")); }
   function expectName() { return queue[idx] === undefined ? null : nameOf(queue[idx]); }
+  /* はじめて 「ピアノで こたえる」を つかえる レベルを はじめたとき：こえで しらせて、ボタンを ひからせる（いちどだけ） */
+  function pianoHint() {
+    try {
+      var box = document.getElementById("pianoBox");
+      var PK = "fy_legend_pianohint_" + PID;
+      if (level === 5 || !box || box.style.display !== "block" || localStorage.getItem(PK) || document.getElementById("liGo")) return;
+      localStorage.setItem(PK, "1");
+      var pb = document.getElementById("pianoBtn");
+      if (!document.getElementById("fyPianoGlowCss")) {
+        var gs = document.createElement("style"); gs.id = "fyPianoGlowCss";
+        gs.textContent = "@keyframes fyPg{0%{box-shadow:0 0 0 0 rgba(255,179,0,.9)}100%{box-shadow:0 0 0 18px rgba(255,179,0,0)}}.fyPianoGlow{animation:fyPg 1.1s ease-out infinite;outline:3px solid #ffb300}";
+        document.head.appendChild(gs);
+      }
+      if (pb) {
+        pb.classList.add("fyPianoGlow");
+        var stopG = function () { pb.classList.remove("fyPianoGlow"); pb.removeEventListener("click", stopG); };
+        pb.addEventListener("click", stopG);
+        setTimeout(stopG, 12000);
+      }
+      playSeq(["zlpiano"]);
+    } catch (e) {}
+  }
   function pianoUi() {
     var box = document.getElementById("pianoBox");
     if (!box) return;
     box.style.display = (level !== 5 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? "block" : "none";
+
     if (level === 5 && pianoOn) pianoStop();
   }
   function yin(data, sr) {
@@ -1870,6 +1937,7 @@ function renderScore(bars, beatsPerBar, opt) {
       pAn = c.createAnalyser(); pAn.fftSize = 8192; pBuf = new Float32Array(pAn.fftSize);
       pSrc.connect(pAn);
       pianoOn = true; pRun = true; pHist = []; pPend = null;
+      try { if (window.__fyPianoGateOpen) window.__fyPianoGateOpen(); } catch (e0) {}
       var b = document.getElementById("pianoBtn"); b.textContent = "🎹 ピアノで こたえる：オン（おすと オフ）"; b.style.background = "#2e7d32";
       document.getElementById("pianoOpt").style.display = "block";
       pSt("きいています。ピアノで こたえてね");
@@ -1920,7 +1988,7 @@ function renderScore(bars, beatsPerBar, opt) {
   });
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
-  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(5); renderLv(); });
+  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(5); try { localStorage.setItem("fy_lv5_openall_" + PID, "1"); } catch (e2) {} renderLv(); });
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } level = 1; start(); });
 
@@ -2039,11 +2107,17 @@ function renderScore(bars, beatsPerBar, opt) {
       '<button id="liGo" style="border:none;border-radius:16px;padding:14px 36px;font-size:20px;font-weight:900;background:#f4d36b;color:#16213f;">はじめる ▶</button>';
     document.body.appendChild(d);
     var closed = false;
-    function close() { if (closed) return; closed = true; try { localStorage.setItem(IK, "1"); } catch (e) {} d.remove(); }
-    document.getElementById("liGo").addEventListener("click", function () {
-      var b = this; b.disabled = true; b.textContent = "…";
-      d.addEventListener("click", close);
-      playSeq(["zintro"], close);
+    /* 声が さいごまで ながれてから「みた」しるしを つける（音が ならなかった ときは、つぎも はじめから） */
+    function close() { if (closed) return; closed = true; try { if (bufs.zintro && bufs.zlstart) localStorage.setItem(IK, "1"); } catch (e) {} d.remove(); setTimeout(function () { try { start(); setTimeout(pianoHint, 300); } catch (e) {} }, 100); }
+    if (!document.getElementById("fyPianoGlowCss")) {
+      var gs0 = document.createElement("style"); gs0.id = "fyPianoGlowCss";
+      gs0.textContent = "@keyframes fyPg{0%{box-shadow:0 0 0 0 rgba(255,179,0,.9)}100%{box-shadow:0 0 0 18px rgba(255,179,0,0)}}.fyPianoGlow{animation:fyPg 1.1s ease-out infinite;outline:3px solid #ffb300}";
+      document.head.appendChild(gs0);
+    }
+    var go0 = document.getElementById("liGo"); go0.classList.add("fyPianoGlow");
+    go0.addEventListener("click", function () {
+      var b = this; if (b.__used) return; b.__used = true; b.disabled = true; b.classList.remove("fyPianoGlow"); b.textContent = "…";
+      playSeq(["zintro", "zlstart"], close);   /* 紹介の あとに、「まとめて よむ」の せつめいを たす */
     });
   })();
   start();
