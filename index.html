@@ -277,6 +277,8 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 <audio id="tfanAudio" preload="auto" src="tfan.mp3"></audio>
 <audio id="hyoshoFanfare1Audio" preload="auto" src="表彰ファンファーレ1.mp3"></audio>
 <audio id="hyoshoFanfareAudio" preload="auto" src="表彰ファンファーレ.mp3"></audio>
+<audio id="zundaMasterAudio" preload="auto" src="zunda-master.mp3"></audio>
+<audio id="zundaOmedetoAudio" preload="auto" src="zunda-omedeto.mp3"></audio>
 <audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
 <audio id="ganbatteAudio" preload="auto" src="ganbatte.mp3"></audio>
 <audio id="audio6do" preload="auto" src="6do.mp3"></audio>
@@ -811,7 +813,7 @@ const soundIds = [
   "seikaiAudio", "tfanAudio", "hyoshoFanfare1Audio", "hyoshoFanfareAudio",
   "osiAudio", "ganbatteAudio", "audio6do", "audioToon1", "audioToon2",
   "audioHeon1", "audioHeon2", "audioKanpeki", "tasseiFanfareAudio", "sugoiAudio",
-  "levelUp1Audio", "levelEncourageAudio", "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio"
+  "zundaMasterAudio", "zundaOmedetoAudio", "levelUp1Audio", "levelEncourageAudio", "levelUp2Audio", "levelUp3Audio", "levelUp4Audio", "levelUp5Audio"
 ];
 const soundBuffers = {};
 const activeSources = {};
@@ -1281,7 +1283,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1114b";
+var FY_INDEX_VER = "1114c";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1353,14 +1355,26 @@ function fyColorSwitch(toColor) {
   if (!toColor) { Storage.set("fy_practice_guide_" + activeProfileIndex, true); Storage.set("fy_noprac_" + activeProfileIndex, true); }
   showLevelScreen();
 }
+function fyGateLockLeft() {
+  try { var t = Storage.get("fy_gatelock_" + activeProfileIndex, 0); var left = (t || 0) + 10 * 60 * 1000 - Date.now(); return left > 0 ? left : 0; } catch (e) { return 0; }
+}
+function fyGateNote(html) {
+  var d = document.createElement("div");
+  d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10004;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+  d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:18px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);"><div style="font-size:34px;">🔒</div><div style="font-size:16px;font-weight:900;color:#5d4037;margin:8px 0;line-height:1.7;">' + html + '</div><button style="width:100%;padding:12px;font-size:16px;font-weight:900;color:#fff;background:#ff9800;border:none;border-radius:14px;">とじる</button></div>';
+  d.querySelector("button").addEventListener("click", function () { d.remove(); });
+  document.body.appendChild(d);
+}
 function fyColorSwitchAsk(toColor) {
+  if (fyGateLockLeft() > 0) { fyGateNote("いまは ひらけません。<br>おうちの かたに おねがいしてね<br><span style='font-size:12px;color:#806c5a;'>（あと " + Math.ceil(fyGateLockLeft() / 60000) + " ふんくらい）</span>"); return; }
+  var wrong = 0;
   var d = document.createElement("div");
   d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10003;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
   var msg = toColor
     ? "いろおんぷに もどします。<br>いろおんぷは レベル1だけ です。<br>くろおんぷの きろくは のこります。"
     : "くろい おんぷに かえます。<br><b>レベル1から</b> はじまります。<br>いろおんぷの きろくは のこります。";
   var a, b, ans, typed = "";
-  function newQ() { a = 6 + Math.floor(Math.random() * 4); b = 6 + Math.floor(Math.random() * 4); ans = a + b; typed = ""; }
+  function newQ() { a = 12 + Math.floor(Math.random() * 8); b = 6 + Math.floor(Math.random() * 4); ans = a + b; typed = ""; }
   function pad() {
     var h = "";
     [1,2,3,4,5,6,7,8,9].forEach(function (n) { h += '<button class="fyPadBtn" data-n="' + n + '">' + n + '</button>'; });
@@ -1389,7 +1403,11 @@ function fyColorSwitchAsk(toColor) {
       if (n === "c") { typed = ""; eEl.textContent = ""; }
       else if (n === "ok") {
         if (parseInt(typed, 10) === ans) { d.remove(); fyColorSwitch(toColor); }
-        else { eEl.textContent = "ちがいます。もういちど どうぞ"; newQ(); }
+        else {
+          wrong++;
+          if (wrong >= 3) { d.remove(); try { Storage.set("fy_gatelock_" + activeProfileIndex, Date.now()); } catch (e) {} fyGateNote("3かい まちがえたので、<br>とじました。<br>おうちの かたに おねがいしてね"); return; }
+          eEl.textContent = "ちがいます。もういちど どうぞ（あと " + (3 - wrong) + "かい）"; newQ();
+        }
       } else if (typed.length < 2) { typed += n; eEl.textContent = ""; }
       draw();
     });
@@ -1461,18 +1479,36 @@ function fyCorrectKeyEl() {
   } catch (e) {}
   return null;
 }
+function fyAllKeysDone() { try { return !!(window.__fyAllKeys || Storage.get("fy_allkeys_" + activeProfileIndex, false)); } catch (e) { return false; } }
 function fyKeyNudge() {
   if (trainingMode || !fyWakabaOn() || (!fyColorActive() && (fyPracQuiet() || selectedLevel > 1))) return;
   var cs = document.getElementById("cardScreen");
   if (!cs || cs.classList.contains("hidden")) return;
   if (document.getElementById("fyPractice")) return;
-  if ((window.__fyPracCount || 0) >= 3) { fyNudge(document.getElementById("trainingButton")); return; }
+  if (fyColorActive() && !fyAllKeysDone()) { /* まだ ぜんぶ おしていない → つぎの けんばんを ひからせる */ }
+  else if (fyColorActive()) { if (true) { fyNudge(document.getElementById("trainingButton")); return; } }
+  else if ((window.__fyPracCount || 0) >= 3) { fyNudge(document.getElementById("trainingButton")); return; }
   var k = fyCorrectKeyEl();
   if (k) { fyNudge(k); k.classList.add("fyUp"); }
 }
 function fyAfterPracticePress() {
   if (!fyWakabaOn() || trainingMode || (!fyColorActive() && (fyPracQuiet() || selectedLevel > 1))) return;
   window.__fyPracCount = (window.__fyPracCount || 0) + 1;
+  /* いろおんぷ：ぜんぶの けんばん（ド〜たかい ド）を おすまで れんしゅう → そのあと トレーニングへ */
+  if (fyColorActive() && !fyAllKeysDone()) {
+    try {
+      window.__fyKeysSeen = window.__fyKeysSeen || {};
+      window.__fyKeysSeen[currentCards[currentIndex].key] = true;
+      var need = {}; currentCards.forEach(function (c) { need[c.key] = true; });
+      var all = Object.keys(need).every(function (k) { return window.__fyKeysSeen[k]; });
+      if (all) {
+        window.__fyAllKeys = true; try { Storage.set("fy_allkeys_" + activeProfileIndex, true); } catch (e2) {}
+        fyNudge(document.getElementById("trainingButton"));
+        fyWakabaVoice("zunda-practice-all.mp3", 700, function () { var cs = document.getElementById("cardScreen"); return cs && !cs.classList.contains("hidden") && !trainingMode; });
+      } else if (!all) { fyNudge(document.getElementById("arrowRight")); }
+    } catch (e) {}
+    return;
+  }
   if (window.__fyPracCount === 3) {
     fyNudge(document.getElementById("trainingButton"));
     fyWakabaVoice("zunda-practice4.mp3", 700, function () { var cs = document.getElementById("cardScreen"); return cs && !cs.classList.contains("hidden") && !trainingMode; });
@@ -1769,6 +1805,16 @@ function createLevelButtons() {
     list.appendChild(bn);
   }
   const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex, selectedClef);
+  /* 📍 いまここ：ひらいている レベルのうち、まだ ごうかくしていない いちばん したの レベルを ひからせる */
+  let fyHereLv = 0;
+  try {
+    for (let lv = 1; lv <= 5; lv++) {
+      const lk = (lv > 1 && !isDebugUnlocked && !hasLevelCleared(activeProfileIndex, selectedClef, lv - 1)) || (lv > 1 && colorMode);
+      if (lk) break;
+      if (!hasLevelCleared(activeProfileIndex, selectedClef, lv)) { fyHereLv = lv; break; }
+    }
+    if (!document.getElementById("fyHereCss")) { const hs = document.createElement("style"); hs.id = "fyHereCss"; hs.textContent = "@keyframes fyHr{0%{box-shadow:0 0 0 0 rgba(255,152,0,.85)}100%{box-shadow:0 0 0 14px rgba(255,152,0,0)}}.fyHere{animation:fyHr 1.2s ease-out infinite;outline:3px solid #ffb300}"; document.head.appendChild(hs); }
+  } catch (e) {}
   for (let level = 1; level <= 5; level++) {
     const button = document.createElement("button");
     button.className = "level-button";
@@ -1784,6 +1830,7 @@ function createLevelButtons() {
       fyGoldCss2(); button.classList.add("fyGoldRing2");
       button.innerHTML += `<span style="display:block;font-size:12px;font-weight:800;color:#8a5a00;margin-top:2px;">🏅 名人に ちょうせん！</span>`;
     }
+    if (level === fyHereLv && !isLocked && fyWakabaOn() && !button.classList.contains("fyGoldRing2")) { button.classList.add("fyHere"); button.innerHTML += `<span style="display:block;font-size:12px;font-weight:800;color:#e65100;margin-top:2px;">👈 いまここ</span>`; }
     button.onclick = () => colorLock ? alert("いろおんぷは レベル1だけだよ。\nくろおんぷに すると、つぎの レベルに すすめるよ！\n（ほごしゃの かたが、したの ボタンを おしてね）") : (isLocked ? alert("前のレベルの20問トレーニングで90%以上をとると解放されるよ！") : showLevelCover(level));
     list.appendChild(button);
   }
@@ -1905,6 +1952,7 @@ function pressKey(key) {
   if (trainingMode) {
     if (trainingLocked) return;
     if (key !== card.key) {
+      var nowW = Date.now(); if (nowW - (window.__fyWrongT || 0) < 300) return; window.__fyWrongT = nowW;   /* 2かい タップ ぼうし */
       trainingMistakes++;
       playPokon();
       restartAnimation(document.getElementById("incorrectX"));
@@ -1969,6 +2017,9 @@ function showResultScreen() {
   const accuracy = totalAttempts > 0 ? Math.round((trainingCorrectCount / totalAttempts) * 100) : 0;
 
   Storage.set(`onpu_last_acc_${activeProfileIndex}`, accuracy);
+  /* まえの ベスト（はげましの ひょうじに つかう。saveCountBest より まえに よむ） */
+  let fyPrevBest = null;
+  try { fyPrevBest = Storage.get(`onpu_best_${targetValue === 20 ? 20 : 10}${fyColorSuffix()}_${activeProfileIndex}_${selectedClef}_${selectedLevel}`); } catch (e) {}
 
   /* 🟢 つまずき回数：同じレベルの20問を、全部正解できないまま 終えた回数（全部正解で 0に もどる） */
   if (targetValue >= 20 && selectedClef !== "do") {
@@ -2021,6 +2072,18 @@ function showResultScreen() {
 
   const btnWrap = document.getElementById("resultButtonsWrap");
   btnWrap.innerHTML = "";
+
+  /* 💬 はげまし：いろおんぷ レベル1 の 20問で、点が ひくい／まえより あがった／くろおんぷ レベル1で 90%に とどかない */
+  try {
+    const isCol1 = (selectedClef === "treble" || selectedClef === "bass") && selectedLevel === 1 && targetValue >= 20;
+    const note = (t, f) => { btnWrap.innerHTML += `<div style="font-size:15px;color:#6a4fa0;font-weight:900;line-height:1.7;margin:4px 0 10px;">${t}</div>`; if (f) { try { fyWakabaVoice(f, 2600, function () { var rs = document.getElementById("resultScreen"); return rs && !rs.classList.contains("hidden"); }); } catch (e) {} } };
+    if (isCol1 && fyColorActive()) {
+      if (accuracy < 50) note("だいじょうぶ！<br>もういちど れんしゅうして、<br>ちょうせんしよう 💪", "zunda-cheer-low.mp3");
+      else if (fyPrevBest && accuracy >= fyPrevBest.accuracy + 10 && accuracy < 100) note("すごい！ まえより<br>よく できたね ⭐", "zunda-cheer-up.mp3");
+    } else if (isCol1 && !fyColorOn(activeProfileIndex, selectedClef) && accuracy < 90) {
+      note("くろおんぷは むずかしいね。<br>だいじょうぶ、いろおんぷで<br>もういちど れんしゅうしよう 🎨", null);
+    }
+  } catch (e) {}
 
   const isPerfect = (accuracy === 100);
 
@@ -2113,7 +2176,7 @@ function showResultScreen() {
 
   /* 黒おんぷのレベル1で うまく いかなかったとき：いろおんぷに もどれる */
   if ((selectedClef === "treble" || selectedClef === "bass") && selectedLevel === 1 && !fyColorActive() && !fyColorOn(activeProfileIndex, selectedClef) && accuracy < 90) {
-    btnWrap.innerHTML += `<button class="select-button" style="margin-top:10px;background:#8a6bbf;color:#fff;" onclick="fyColorBackNow()">🎨 もういちど いろおんぷで れんしゅう</button>`;
+    btnWrap.innerHTML += `<button class="select-button accent" style="margin-top:10px;background:#8a6bbf;color:#fff;font-size:20px;padding:18px;" onclick="fyColorBackNow()">🎨 いろおんぷに もどる</button>`;
   }
   btnWrap.innerHTML += `<button class="select-button" style="margin-top:12px;" onclick="handleCardBack()">もどる</button>`;
 
@@ -2462,6 +2525,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261114b"></script>
+<script src="app-extras.js?v=20261114c"></script>
 </body>
 </html>
