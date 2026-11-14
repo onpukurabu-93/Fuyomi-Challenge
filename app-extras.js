@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1114d";
+window.FY_EXTRAS_VER = "1114e";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -912,7 +912,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     suppressMasterVoice = !!(acc === 100 && is20 && selectedLevel === 5 &&
       ((selectedClef === "treble" && !findAch(idx, "treble")) || (selectedClef === "bass" && !findAch(idx, "bass"))));
     /* はじめての マスターの けっか画面：すごい → ファンファーレ → 「おめでとう」 */
-    omedetoPending = !!(suppressMasterVoice || (acc === 100 && is20 && selectedLevel === 5 && selectedClef === "all" && !findAch(idx, "master")));
+    omedetoPending = !!suppressMasterVoice;   /* ふよみマスターは、おいわい画面の こえに「おめでとう」が はいっているので ここでは ならさない */
 
     /* もとの結果画面の「れんぞく」「100回目」の判定は つかわない */
     Storage.set(kS, 0);
@@ -1157,8 +1157,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   window.selectClef = function (clef) {
     var L = lockState();
-    if (clef === "bass" && !L.bass) { alert("まずは ト音記号の レベル1を クリアしよう！"); return; }
-    if (clef === "all" && !L.all) { alert("ト音記号と ヘ音記号を すべてクリアすると あそべるよ！"); return; }
+    if (clef === "bass" && !L.bass) { fySay("まずは ト音記号の\nレベル1に ごうかくしよう！", "zunda-lock.mp3"); return; }
+    if (clef === "all" && !L.all) { fySay("ト音記号と ヘ音記号に\nごうかくすると ひらくよ！", "zunda-lock.mp3"); return; }
     selectedClef = clef;
     showLevelScreen();
   };
@@ -1629,6 +1629,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var badge = document.getElementById("qCountBadge");
     badge.textContent = "あと " + (targetValue - trainingCorrectCount) + " 問";
     badge.style.background = (targetValue >= 20) ? "#f5a300" : "#42a5f5";
+    /* すすみぐあいの バー（もじを よめなくても わかる）。はんぶん と あと5もん で ⭐が ぴかっ */
+    try { var rem = targetValue - trainingCorrectCount, fp = document.getElementById("fyProg"); fp.classList.remove("hidden"); document.getElementById("fyProgIn").style.width = Math.round(trainingCorrectCount / targetValue * 100) + "%"; var fs = document.getElementById("fyProgStar"); if (trainingCorrectCount > 0 && (rem === Math.floor(targetValue / 2) || rem === 5)) { fs.style.transition = "transform .25s"; fs.style.transform = "scale(1.8)"; setTimeout(function () { fs.style.transform = ""; }, 400); } } catch (e) {}
 
     var n = trainingCorrectCount;
     if (!thinkPlayed && n >= THINK_AFTER && (firstTry / n) < THINK_RATE) {
@@ -2191,7 +2193,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<button id="fyTestWeek" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 先週 4日ぶんの ハンコを つくる（つぎに トップを ひらくと おしらせ）</button>' +
         '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 ポイントを 10 ふやす</button>' +
         '<button id="fyTestReset" class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:6px;">🧪 いまのプレイヤーの ハンコと ポイントを リセット</button>';
-      t3.insertBefore(tb, t3.firstChild);
+      tb.id = "fyPtTest"; t3.insertBefore(tb, t3.firstChild);
       document.getElementById("fyTestWeek").addEventListener("click", function () {
         var idx = activeProfileIndex;
         var lastWs = addDays(weekStartOf(new Date()), -7);
@@ -2254,7 +2256,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var anc = (all.parentNode.classList && all.parentNode.classList.contains("clef-row")) ? all.parentNode : all;
       anc.parentNode.insertBefore(b, anc.nextSibling);
       b.addEventListener("click", function () {
-        if (!isMaster(activeProfileIndex)) { alert("ふよみマスターに なると ひらくよ！"); return; }
+        if (!isMaster(activeProfileIndex)) { fySay("ふよみマスターに なると\nひらくよ！", "zunda-lock.mp3"); return; }
         try { Storage.set("fy_legend_opened_" + activeProfileIndex, true); } catch (e) {}
         location.href = PAGE;
       });
@@ -2951,6 +2953,16 @@ window.resetLegendForTest = function () {
     if (any && slot && any.parentNode !== slot) { any.style.margin = "0"; slot.appendChild(any); }
     ["fyEventCheck", "fyStampTest", "fyPassMk"].forEach(function (id) { var e = $(id); if (e) e.style.display = "none"; });
     if (t3.firstChild !== ui) t3.insertBefore(ui, t3.firstChild);
+    /* せいり：テスト用の どうぐは「🧪 テスト用」の ひきだしへ。イベントの 集計は おりたたむ */
+    try {
+      var dr = $("fyTestDrawer"), pt = $("fyPtTest"); if (dr && pt && pt.parentNode !== dr) dr.appendChild(pt);
+      var bk = $("fyBulk");
+      if (bk && bk.parentNode && bk.parentNode.tagName !== "DETAILS") {
+        var dd = document.createElement("details"); dd.style.cssText = "margin:0 0 6px;border-top:2px solid #c8e6c9;text-align:left;";
+        dd.innerHTML = '<summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">📊 イベントの きろくを まとめて 集計</summary>';
+        bk.parentNode.insertBefore(dd, bk); dd.appendChild(bk);
+      }
+    } catch (e) {}
   }
   try { build(); } catch (e) {}
   var pr = window.renderTeacherView;
