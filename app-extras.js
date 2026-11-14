@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1114f";
+window.FY_EXTRAS_VER = "1115a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -384,6 +384,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   document.addEventListener("click", function (e) {
     try { var w = e.target.closest ? e.target.closest("[data-fysend]") : null; if (w && e.target.closest("a")) markSent(activeProfileIndex, w.getAttribute("data-fysend")); } catch (e3) {}
   }, true);
+  window.fyUnsentCount = unsentCount;
   window.fyUnsentDot = function () {
     try {
       var b = document.getElementById("fyCodeBtn"); if (!b) return;
@@ -3162,4 +3163,247 @@ window.resetLegendForTest = function () {
     Storage.set("fy_tp_" + idx, Storage.getNumber("fy_tp_" + idx, 0) + pts);
     return { ok: true, msg: profiles[idx] + " さんに\n+" + pts + " ポイント！\n\nいまの ポイント：" + Storage.getNumber("fy_tp_" + idx, 0) + " p" };
   };
+})();
+
+/* ===================================================================================
+   🎨 あたらしい みため（1115a）：トップ画面 と「おんぷカード」（ト音・ヘ音・全カードを 1つに）
+   ・もとの ボタンは 画面から かくすだけで、うごきは ぜんぶ もとの ボタンに まかせる（きろく・ポイントは かわらない）
+   ・先生ページ →「⚙ そのほか」の スイッチで、もとの みために もどせる（localStorage "fy_newlook" = "off"）
+   =================================================================================== */
+(function () {
+  function on() { try { return localStorage.getItem("fy_newlook") !== "off"; } catch (e) { return true; } }
+  window.fyNewLookOn = on;
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  var css = document.createElement("style");
+  css.textContent =
+    "#selectScreen.fyNL{padding:0 !important;background:#eaf6ff;background-image:radial-gradient(#cfe8fb 2.2px,transparent 2.6px);background-size:26px 26px;border-radius:0;min-height:100vh;min-height:100dvh;position:relative;overflow:hidden}" +
+    "#selectScreen.fyNL > *:not(#fyTop):not(#fyVerBar){display:none !important}" +
+    "#fyTop{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;color:#5a4636;position:relative}" +
+    "#fyTop .sky{flex:none;height:112px;background:linear-gradient(180deg,#bfe9ff,#e4f6ff);position:relative;border-radius:0 0 50% 50%/0 0 26px 26px;overflow:hidden}" +
+    "#fyTop .cl{position:absolute;background:#fff;border-radius:40px;height:22px}#fyTop .cl::before{content:'';position:absolute;background:#fff;border-radius:50%;width:26px;height:26px;left:12px;top:-13px}" +
+    "#fyTop .pal{position:absolute;left:18px;top:24px;width:58px;height:58px;border-radius:50%;background:#ffd45c;box-shadow:inset -5px -6px 0 #ffc02e,0 4px 0 rgba(0,0,0,.08)}" +
+    "#fyTop .pal::before{content:'';position:absolute;right:3px;top:-22px;width:8px;height:50px;background:#ffc02e;border-radius:6px}" +
+    "#fyTop .pal::after{content:'';position:absolute;right:-15px;top:-24px;width:24px;height:16px;background:#ffc02e;border-radius:4px 14px 14px 14px;transform:rotate(18deg)}" +
+    "#fyTop .pal i{position:absolute;top:21px;width:7px;height:10px;background:#5a4636;border-radius:50%}#fyTop .pal i.a{left:15px}#fyTop .pal i.b{left:33px}" +
+    "#fyTop .pal u{position:absolute;left:21px;top:34px;width:15px;height:8px;border:3px solid #5a4636;border-top:none;border-radius:0 0 12px 12px}" +
+    "#fyTop .hello{position:absolute;left:92px;top:26px;max-width:190px;background:#fff;border:none;border-radius:20px;padding:7px 14px 8px;font-weight:900;font-size:20px;color:#5a4636;box-shadow:0 4px 0 rgba(90,70,54,.10);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}" +
+    "#fyTop .hello small{font-size:12px}" +
+    "#fyTop .wk{position:absolute;left:94px;top:74px;font-size:11px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:1px 8px;color:#2e7d32}" +
+    "#fyTop .pt{position:absolute;right:14px;top:40px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:62px;height:62px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.10);transform:rotate(8deg)}" +
+    "#fyTop .pt b{font-size:21px;display:block;line-height:1;margin-top:11px}#fyTop .pt span{font-size:9px}" +
+    "#fyTop .hk{flex:none;margin:6px 14px 0;background:#fff;border-radius:22px;padding:6px 12px 7px;border:3px dashed #a9d8f5;display:flex;justify-content:space-between;cursor:pointer}" +
+    "#fyTop .hk div{width:38px;text-align:center;font-size:11px;font-weight:900;color:#9bb4c7}" +
+    "#fyTop .hk i{display:block;width:38px;height:38px;border-radius:50%;background:#eef6fc;margin-top:2px;font-style:normal;font-size:24px;line-height:38px}" +
+    "#fyTop .hk .t{color:#ff7043}#fyTop .hk .t i{background:#fff;box-shadow:inset 0 0 0 3px #ffab91;font-size:10px;font-weight:900;animation:fyNudge 1.6s ease-in-out infinite}" +
+    "#fyTop .road{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;margin:9px 14px 0;min-height:0}" +
+    "#fyTop .st{flex:1 1 0;min-height:58px;max-height:96px;display:flex;align-items:center;gap:14px;border-radius:26px;padding:0 16px;color:#fff;font-weight:900;font-size:20px;position:relative;border:4px solid #fff;box-shadow:0 6px 0 rgba(90,70,54,.14);text-align:left;font-family:inherit;touch-action:manipulation}" +
+    "#fyTop .st .ic{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}" +
+    "#fyTop .st small{display:block;font-size:12px;margin-top:2px;font-weight:800}" +
+    "#fyTop .s1{background:#8ed99a}#fyTop .s2{background:#7cc4ff}#fyTop .s3{background:#b79be8}#fyTop .s4{background:#ffb300}" +
+    "#fyTop .lk{background:#e6dff0;color:#b0a3c8}#fyTop .lk .ic{opacity:.6}#fyTop .st .r{margin-left:auto;font-size:24px}" +
+    "@keyframes fyNLh{0%{box-shadow:0 0 0 4px #ffc93c,0 0 0 4px rgba(255,201,60,.9)}100%{box-shadow:0 0 0 4px #ffc93c,0 0 0 16px rgba(255,201,60,0)}}" +
+    "#fyTop .here{animation:fyNLh 1.2s ease-out infinite}" +
+    "#fyTop .bar{flex:none;display:flex;justify-content:space-around;padding:12px 10px 10px}" +
+    "#fyTop .bar button{width:76px;text-align:center;font-size:11px;font-weight:900;color:#3b7fb8;position:relative;background:none;border:none;font-family:inherit;touch-action:manipulation}" +
+    "#fyTop .bar b{display:flex;align-items:center;justify-content:center;width:54px;height:54px;margin:0 auto 3px;border-radius:50%;font-size:26px;border:4px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.12)}" +
+    "#fyTop .dot{position:absolute;top:-3px;right:6px;background:#f44336;color:#fff;border:2px solid #fff;border-radius:12px;font-size:11px;padding:0 5px}" +
+    "#fyTop .gr{flex:none;height:34px;position:relative;overflow:hidden}#fyTop .gr::before{content:'';position:absolute;left:-30px;right:-30px;top:6px;height:110px;background:#c9ecb8;border-radius:50%}" +
+    "#fyTop .cr{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:9px;color:#7da06f}" +
+    /* おんぷカード（レベルの がめん） */
+    "#levelScreen.fyNL #levelList .level-button{display:none !important}" +
+    "#fyGrid{display:flex;gap:10px;margin:4px 0 10px}" +
+    "#fyGrid .c{flex:1;display:flex;flex-direction:column;gap:10px}" +
+    "#fyGrid .h{text-align:center;font-weight:900;font-size:14px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;color:#5b4636}" +
+    "#fyGrid .h span{font-size:24px;line-height:1.1}" +
+    "#fyGrid button{height:66px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:900;font-size:30px;color:#3b7fb8;box-shadow:0 4px 0 rgba(90,70,54,.10);position:relative;border:4px solid #fff;font-family:inherit;touch-action:manipulation;padding:0}" +
+    "#fyGrid button em{font-style:normal;font-size:20px}" +
+    "#fyGrid .dn{background:#e9f8e8;color:#2e7d32}" +
+    "#fyGrid .lk{background:#efe9df;color:#c5b8a4;box-shadow:none;border-color:#efe9df}" +
+    "#fyGrid .he{box-shadow:0 0 0 4px #ffb300,0 5px 0 rgba(90,70,54,.12)}" +
+    "#fyGrid .gd{box-shadow:0 0 0 4px #ffc400,0 0 14px 4px rgba(255,196,0,.7)}" +
+    "#fyGrid .he small,#fyGrid .gd small{position:absolute;right:-4px;top:-13px;background:#ffb300;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;border:2px solid #fff;white-space:nowrap}" +
+    /* シート */
+    "#fySheet{position:fixed;left:0;top:0;right:0;bottom:0;z-index:9990;background:rgba(60,40,20,.45);display:flex;align-items:flex-end;justify-content:center}" +
+    "#fySheet .in{background:#fffaf0;border-radius:22px 22px 0 0;padding:16px 16px 22px;width:100%;max-width:480px;max-height:86vh;overflow:auto;text-align:center}" +
+    "#fySheet .bt{display:block;width:100%;margin:8px 0 0;padding:14px;font-size:17px;font-weight:900;border:none;border-radius:16px;background:#fff;color:#5a4636;box-shadow:0 3px 0 rgba(90,70,54,.12);font-family:inherit}" +
+    "#fySheet .cls{background:#ff9800;color:#fff;margin-top:14px}";
+  document.head.appendChild(css);
+
+  function sheet(build) {
+    var o = $("fySheet"); if (o) closeSheet();
+    var d = document.createElement("div"); d.id = "fySheet";
+    d.innerHTML = '<div class="in"></div>';
+    var inn = d.firstChild; build(inn);
+    var c = document.createElement("button"); c.className = "bt cls"; c.textContent = "とじる"; c.addEventListener("click", closeSheet); inn.appendChild(c);
+    d.addEventListener("click", function (e) { if (e.target === d) closeSheet(); });
+    document.body.appendChild(d);
+  }
+  function closeSheet() {
+    var d = $("fySheet"); if (!d) return;
+    /* ハンコの はこを もとの ばしょへ もどす */
+    try { var hb = $("fyHankoTop"), home = $("stampMiniBox"); if (hb && d.contains(hb) && home && home.parentNode) home.parentNode.insertBefore(hb, home); } catch (e) {}
+    d.remove(); schedule();
+  }
+  function clickOld(sel) { try { var e = typeof sel === "string" ? document.querySelector(sel) : sel; if (e) e.click(); } catch (e2) {} }
+
+  function hankoCells() {
+    var out = [], lab = ["月", "火", "水", "木", "金", "土", "日"];
+    try {
+      var box = $("fyHankoTop"), row = box ? box.children[1] : null;
+      for (var i = 0; i < 7; i++) {
+        var c = row ? row.children[i] : null, k = "off";
+        if (c) { if (c.querySelector("#fyTmpStamp")) k = "tmp"; else if (c.textContent.indexOf("💮") !== -1) k = "on"; }
+        out.push([lab[i], k]);
+      }
+    } catch (e) { lab.forEach(function (l) { out.push([l, "off"]); }); }
+    return out;
+  }
+
+  var timer = null, busy = false;
+  function schedule() { if (timer) clearTimeout(timer); timer = setTimeout(render, 90); }
+  function render() {
+    var s = $("selectScreen"); if (!s) return;
+    if (!on()) { s.classList.remove("fyNL"); var o = $("fyTop"); if (o) o.remove(); return; }
+    busy = true;
+    try {
+      s.classList.add("fyNL");
+      var t = $("fyTop"); if (!t) { t = document.createElement("div"); t.id = "fyTop"; s.insertBefore(t, s.firstChild); }
+      var idx = activeProfileIndex, name = (profiles && profiles[idx]) || "", many = 0;
+      try { profiles.forEach(function (p) { if (p) many++; }); } catch (e) {}
+      var pts = Storage.getNumber("fy_tp_" + idx, 0);
+      var wk = false; try { wk = fyWakabaOn(); } catch (e) {}
+      var doBest = null; try { doBest = getDoTestBest(idx); } catch (e) {}
+      var dbg = Storage.get("onpu_debug_unlocked_" + idx);
+      var doOk = !!(dbg || (doBest && doBest.accuracy >= 90));
+      function top(c) { var n = 0; for (var l = 1; l <= 5; l++) { if (hasLevelCleared(idx, c, l)) n = l; else break; } return n; }
+      var tr = top("treble"), ba = top("bass");
+      var ch = $("fyChunkBtn"), chLock = !ch || ch.classList.contains("locked"), chGlow = ch && /fyPulse|fyGold/.test(ch.className);
+      var ev = $("fyEvBtn"), evOn = !!(ev && ev.style.display !== "none");
+      var uns = 0; try { uns = window.fyUnsentCount ? window.fyUnsentCount(idx) : 0; } catch (e) {}
+      var here = !doOk ? 1 : (chGlow ? 3 : 2);
+      var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : "") + '">' + c[0] + '<i>' + (c[1] === "on" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
+      t.innerHTML =
+        '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
+          '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
+          '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
+          (wk ? '<div class="wk">🌱 わかば</div>' : '') + '</div>' +
+        '<div class="pt"><b>' + pts + '</b><span>ポイント</span></div>' +
+        '<div class="hk" id="fyNLHk">' + hk + '</div>' +
+        '<div class="road">' +
+          '<button class="st s1' + (here === 1 ? " here" : "") + '" id="fyNLDo"><div class="ic">🎵</div><div>6つの「ド」</div>' + (doOk ? '<span class="r">💮</span>' : '') + '</button>' +
+          '<button class="st ' + (doOk ? "s2" : "lk") + (here === 2 ? " here" : "") + '" id="fyNLCard"><div class="ic">🎼</div><div>おんぷカード' + (doOk ? '<small>ト音 ' + (tr >= 5 ? "💮" : tr + 1) + ' ・ ヘ音 ' + (ba >= 5 ? "💮" : ba + 1) + '</small>' : '') + '</div>' + (doOk ? '' : '<span class="r">🔒</span>') + '</button>' +
+          '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
+          (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
+        '</div>' +
+        '<div class="bar">' +
+          '<button id="fyNLRec"><b style="background:#ffe08a">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
+          '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
+          '<button id="fyNLEx"><b style="background:#b8ecc0">🎁</b>こうかん</button>' +
+          '<button id="fyNLAd"><b style="background:#e3e3e3">⚙️</b>おとな</button>' +
+        '</div><div class="gr"><div class="cr">音声：VOICEVOX:ずんだもん</div></div>';
+      $("fyNLDo").addEventListener("click", function () { clickOld("#selectScreen > .select-button.special"); });
+      $("fyNLCard").addEventListener("click", function () {
+        var last = "treble"; try { last = localStorage.getItem("fy_nl_lastclef_" + idx) || "treble"; if (last === "all" || last === "bass") { if (!hasLevelCleared(idx, "treble", 1) && !dbg) last = "treble"; } } catch (e) {}
+        selectClef(doOk ? last : "treble"); if (selectedClef !== last && doOk) selectClef("treble");
+      });
+      $("fyNLLeg").addEventListener("click", function () { clickOld("#fyChunkBtn"); });
+      if ($("fyNLEv")) $("fyNLEv").addEventListener("click", function () { clickOld("#fyEvBtn"); });
+      $("fyNLRec").addEventListener("click", function () { try { window.showCardCodes(); } catch (e) {} });
+      $("fyNLBook").addEventListener("click", function () { try { window.showCardBook(); } catch (e) {} });
+      $("fyNLEx").addEventListener("click", function () { clickOld("#fyExBtn"); });
+      $("fyNLAd").addEventListener("click", function () {
+        sheet(function (inn) {
+          inn.innerHTML = '<div style="font-size:17px;font-weight:900;margin-bottom:4px;">⚙️ おとなの かたへ</div>';
+          [["📊 保護者・先生ページ", function () { closeSheet(); clickOld([].filter.call(document.querySelectorAll("#selectScreen > .select-button.challenge"), function (b) { return b.textContent.indexOf("保護者") !== -1; })[0]); }],
+           ["➕ プレイヤーを ふやす", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }],
+           [wk ? "🌱 わかばマーク：つけている（おすと はずす）" : "🌱 わかばマークを つける", function () { closeSheet(); clickOld("#fyWakabaChip"); }]
+          ].forEach(function (x) { var b = document.createElement("button"); b.className = "bt"; b.textContent = x[0]; b.addEventListener("click", x[1]); inn.appendChild(b); });
+        });
+      });
+      $("fyNLName").addEventListener("click", function () {
+        sheet(function (inn) {
+          inn.innerHTML = '<div style="font-size:17px;font-weight:900;margin-bottom:4px;">👤 だれが つかう？</div>';
+          profiles.forEach(function (p, i) {
+            if (!p) return;
+            var b = document.createElement("button"); b.className = "bt"; b.textContent = (i === idx ? "✅ " : "") + p + " さん";
+            if (i === idx) b.style.background = "#fff3cd";
+            b.addEventListener("click", function () { closeSheet(); if (i === idx) return; try { var sel = $("profileSelect"); if (sel) { sel.value = String(i); confirmProfileSelect(); } } catch (e) {} schedule(); });
+            inn.appendChild(b);
+          });
+        });
+      });
+      $("fyNLHk").addEventListener("click", function () {
+        var hb = $("fyHankoTop"); if (!hb) return;
+        sheet(function (inn) { inn.appendChild(hb); });   /* もとの ハンコの はこを、そのまま ここで みせる（「きょう」も ここで おせる） */
+      });
+    } catch (e) { try { s.classList.remove("fyNL"); var o2 = $("fyTop"); if (o2) o2.remove(); } catch (e2) {} }
+    busy = false;
+  }
+
+  /* ---- おんぷカード：レベルの がめんを 3れつに ---- */
+  function cellState(idx, clef, lv) {
+    var dbg = Storage.get("onpu_debug_unlocked_" + idx), doBest = null; try { doBest = getDoTestBest(idx); } catch (e) {}
+    var clefOk = !!(dbg || (doBest && doBest.accuracy >= 90));
+    if (clef === "all") clefOk = !!(dbg || (clefOk && hasLevelCleared(idx, "treble", 5) && hasLevelCleared(idx, "bass", 5)));
+    var color = false; try { color = clef !== "all" && fyColorOn(idx, clef); } catch (e) {}
+    var locked = !clefOk || (lv > 1 && !dbg && !hasLevelCleared(idx, clef, lv - 1)) || (lv > 1 && color);
+    return { locked: locked, done: hasLevelCleared(idx, clef, lv), color: color && lv === 1, clefOk: clefOk };
+  }
+  function grid() {
+    var ls = $("levelScreen"), list = $("levelList"); if (!ls || !list) return;
+    var old = $("fyGrid"); if (old) old.remove();
+    if (!on()) { ls.classList.remove("fyNL"); return; }
+    ls.classList.add("fyNL");
+    var ti = $("levelTitle"); if (ti) ti.textContent = "おんぷカード";
+    var idx = activeProfileIndex;
+    try { localStorage.setItem("fy_nl_lastclef_" + idx, selectedClef); } catch (e) {}
+    var g = document.createElement("div"); g.id = "fyGrid";
+    var cols = [["treble", "🎼", "ト音記号"], ["bass", "🎼", "ヘ音記号"], ["all", "🃏", "全カード"]], html = "";
+    cols.forEach(function (c) {
+      var hereLv = 0;
+      for (var l = 1; l <= 5; l++) { var st0 = cellState(idx, c[0], l); if (st0.locked) break; if (!st0.done) { hereLv = l; break; } }
+      var gold = false; try { gold = c[0] === "all" && fyMeijinGlowNow(idx) && !cellState(idx, "all", 5).locked; } catch (e) {}
+      html += '<div class="c"><div class="h"><span>' + c[1] + '</span>' + c[2] + '</div>';
+      for (var lv = 1; lv <= 5; lv++) {
+        var st = cellState(idx, c[0], lv), cls = st.locked ? "lk" : (st.done ? "dn" : "");
+        var mark = st.locked ? "🔒" : (st.done ? "💮" : (st.color ? "🎨" : ""));
+        var tag = "";
+        if (gold && lv === 5) { cls += " gd"; tag = "<small>🏅 名人</small>"; }
+        else if (lv === hereLv) { cls += " he"; tag = "<small>いまここ</small>"; }
+        html += '<button class="' + cls + '" data-c="' + c[0] + '" data-l="' + lv + '">' + tag + lv + (mark ? '<em>' + mark + '</em>' : '') + '</button>';
+      }
+      html += '</div>';
+    });
+    g.innerHTML = html;
+    list.parentNode.insertBefore(g, list);
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button[data-c]") : null; if (!b) return;
+      var c = b.getAttribute("data-c"), lv = +b.getAttribute("data-l");
+      if (c !== selectedClef) { selectClef(c); if (selectedClef !== c) return; }   /* ひらいて いない ときは、もとの おしらせが でる */
+      var bs = $("levelList").querySelectorAll(".level-button"); if (bs[lv - 1]) bs[lv - 1].click();
+    });
+  }
+
+  function hook() {
+    try {
+      if (typeof createLevelButtons === "function" && !createLevelButtons.__nl) {
+        var oc = createLevelButtons;
+        window.createLevelButtons = function () { var r = oc.apply(this, arguments); try { grid(); } catch (e) {} return r; };
+        window.createLevelButtons.__nl = true;
+      }
+    } catch (e) {}
+    var s = $("selectScreen");
+    if (s && !s.__nlObs) {
+      s.__nlObs = true;
+      try { new MutationObserver(function (ms) { if (busy) return; for (var i = 0; i < ms.length; i++) { var tg = ms[i].target; if (tg && tg.closest && tg.closest("#fyTop")) continue; schedule(); return; } }).observe(s, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"], characterData: true }); } catch (e) {}
+      try { new MutationObserver(function () { schedule(); }).observe(document.body, { childList: true }); } catch (e) {}
+    }
+    render();
+  }
+  window.fyNewLookRender = render;
+  window.fyNewLookSet = function (v) { try { localStorage.setItem("fy_newlook", v ? "on" : "off"); } catch (e) {} location.reload(); };
+  if (document.readyState === "complete") setTimeout(hook, 300); else window.addEventListener("load", function () { setTimeout(hook, 300); });
+  setTimeout(hook, 1500);
 })();
