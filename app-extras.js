@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115a";
+window.FY_EXTRAS_VER = "1115b";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3261,14 +3261,16 @@ window.resetLegendForTest = function () {
     return out;
   }
 
-  var timer = null, busy = false;
-  function schedule() { if (timer) clearTimeout(timer); timer = setTimeout(render, 90); }
+  var timer = null, busy = false, lastHtml = "", quietUntil = 0;
+  function schedule() { if (timer) clearTimeout(timer); timer = setTimeout(render, 120); }
+  /* はじめから あたらしい みためで だす（ふるい がめんが ちらっと みえない ように） */
+  try { if (on() && $("selectScreen")) $("selectScreen").classList.add("fyNL"); } catch (e) {}
   function render() {
     var s = $("selectScreen"); if (!s) return;
-    if (!on()) { s.classList.remove("fyNL"); var o = $("fyTop"); if (o) o.remove(); return; }
+    if (!on()) { if (s.classList.contains("fyNL")) s.classList.remove("fyNL"); var o = $("fyTop"); if (o) o.remove(); return; }
     busy = true;
     try {
-      s.classList.add("fyNL");
+      if (!s.classList.contains("fyNL")) s.classList.add("fyNL");
       var t = $("fyTop"); if (!t) { t = document.createElement("div"); t.id = "fyTop"; s.insertBefore(t, s.firstChild); }
       var idx = activeProfileIndex, name = (profiles && profiles[idx]) || "", many = 0;
       try { profiles.forEach(function (p) { if (p) many++; }); } catch (e) {}
@@ -3284,7 +3286,7 @@ window.resetLegendForTest = function () {
       var uns = 0; try { uns = window.fyUnsentCount ? window.fyUnsentCount(idx) : 0; } catch (e) {}
       var here = !doOk ? 1 : (chGlow ? 3 : 2);
       var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : "") + '">' + c[0] + '<i>' + (c[1] === "on" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
-      t.innerHTML =
+      var html =
         '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
           '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
           '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
@@ -3303,6 +3305,10 @@ window.resetLegendForTest = function () {
           '<button id="fyNLEx"><b style="background:#b8ecc0">🎁</b>こうかん</button>' +
           '<button id="fyNLAd"><b style="background:#e3e3e3">⚙️</b>おとな</button>' +
         '</div><div class="gr"><div class="cr">音声：VOICEVOX:ずんだもん</div></div>';
+      /* なかみが おなじなら、つくりなおさない（つくりなおしを くりかえすと、ボタンが おせなく なる） */
+      if (html === lastHtml && t.firstChild) { busy = false; return; }
+      lastHtml = html; quietUntil = Date.now() + 200;
+      t.innerHTML = html;
       $("fyNLDo").addEventListener("click", function () { clickOld("#selectScreen > .select-button.special"); });
       $("fyNLCard").addEventListener("click", function () {
         var last = "treble"; try { last = localStorage.getItem("fy_nl_lastclef_" + idx) || "treble"; if (last === "all" || last === "bass") { if (!hasLevelCleared(idx, "treble", 1) && !dbg) last = "treble"; } } catch (e) {}
@@ -3338,7 +3344,10 @@ window.resetLegendForTest = function () {
         var hb = $("fyHankoTop"); if (!hb) return;
         sheet(function (inn) { inn.appendChild(hb); });   /* もとの ハンコの はこを、そのまま ここで みせる（「きょう」も ここで おせる） */
       });
-    } catch (e) { try { s.classList.remove("fyNL"); var o2 = $("fyTop"); if (o2) o2.remove(); } catch (e2) {} }
+    } catch (e) {
+      /* はじめの 1かいめで しっぱい したときだけ、もとの みために もどす（とちゅうで もどすと がめんが ちらつく） */
+      try { var o2 = $("fyTop"); if (!o2 || !o2.firstChild) { s.classList.remove("fyNL"); if (o2) o2.remove(); } } catch (e2) {}
+    }
     busy = false;
   }
 
@@ -3397,8 +3406,8 @@ window.resetLegendForTest = function () {
     var s = $("selectScreen");
     if (s && !s.__nlObs) {
       s.__nlObs = true;
-      try { new MutationObserver(function (ms) { if (busy) return; for (var i = 0; i < ms.length; i++) { var tg = ms[i].target; if (tg && tg.closest && tg.closest("#fyTop")) continue; schedule(); return; } }).observe(s, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"], characterData: true }); } catch (e) {}
-      try { new MutationObserver(function () { schedule(); }).observe(document.body, { childList: true }); } catch (e) {}
+      try { new MutationObserver(function (ms) { if (busy || Date.now() < quietUntil) return; for (var i = 0; i < ms.length; i++) { var tg = ms[i].target; if (tg && tg.closest && tg.closest("#fyTop")) continue; schedule(); return; } }).observe(s, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"], characterData: true }); } catch (e) {}
+      try { new MutationObserver(function () { if (Date.now() < quietUntil) return; schedule(); }).observe(document.body, { childList: true }); } catch (e) {}
     }
     render();
   }
