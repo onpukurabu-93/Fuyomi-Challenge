@@ -1,14 +1,14 @@
 /* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 window.FY_JUMPS = [
-  { label: "🎼 レジェンドへのみち（はじめての状態で）", note: "intro → start の声、🎹 piano の声を確認",
+  { label: "🎼 レジェンドへのみち（はじめての状態で）", note: "intro → start の声、🎹 piano の声、スタートのロックを確認",
     run: function (idx) {
       Storage.set("fy_test_master_" + idx, true);
-      ["fy_legend_intro_", "fy_legend_pianohint_"].forEach(function (k) { localStorage.removeItem(k + idx); });
+      ["fy_legend_intro_", "fy_legend_pianohint_", "fy_legend_pianoset_", "fy_legend_lv5voice_", "fy_lv5_openall_"].forEach(function (k) { localStorage.removeItem(k + idx); });
       Storage.set("fy_legend_opened_" + idx, true);
       location.href = "chunk_proto.html";
     } },
-  { label: "✨ 光るボタンを見る（レジェンド・名人）", note: "ふよみマスター直後のトップ画面",
+  { label: "🏅 ふよみマスターに なった直後（トップ画面）", note: "光るボタンが ここから光り始める",
     run: function (idx) {
       Storage.set("fy_test_master_" + idx, true);
       Storage.set("fy_legend_opened_" + idx, false);
