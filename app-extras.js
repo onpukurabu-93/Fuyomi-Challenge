@@ -1,12 +1,13 @@
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
+(function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1114b";
+window.FY_EXTRAS_VER = "1114c";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
 window.fyLineBtn = function (text, label, bg, toOA) {
-  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>' + (toOA ? '<div style="font-size:12px;font-weight:700;line-height:1.5;color:#806c5a;text-align:center;margin-top:5px;">おくったら、LINEの したの メニューを もういちど おしてね<br>（アプリに もどれるよ）</div>' : '');
+  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span class="' + (toOA ? "fyLineBlink" : "") + '" style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>' + (toOA ? '<div style="font-size:12px;font-weight:700;line-height:1.5;color:#806c5a;text-align:center;margin-top:5px;">おくったら、LINEの したの メニューを もういちど おしてね<br>（アプリに もどれるよ）</div>' : '');
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -43,7 +44,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var celebrating = false;
   var queueScheduled = false;
   var heldVoice = null;            /* マスターの声：おいわい画面が出たときに鳴らす */
-  var suppressMasterVoice = false;
+  var suppressMasterVoice = false, omedetoPending = false;
 
   function norm(s) {
     return String(s || "").normalize("NFKC").trim().toLowerCase().replace(/\s+/g, "");
@@ -424,7 +425,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var text = "【ふよみ】" + recs[0].name + " さん\n" + recs.map(function (r) { return titleOf(r) + "　" + dmd(r) + "\nコード：" + r.code; }).join("\n");
     var href = "https://line.me/R/oaMessage/" + oa + "/?" + encodeURIComponent(text);
     return '<a href="' + href + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;margin:6px 0 8px;">' +
-      '<span style="display:block;width:100%;box-sizing:border-box;padding:13px;font-size:16px;font-weight:900;color:#fff;background:#06c755;border-radius:12px;text-align:center;">📨 LINEで せんせいに おくる</span></a>';
+      '<span class="fyLineBlink" style="display:block;width:100%;box-sizing:border-box;padding:13px;font-size:16px;font-weight:900;color:#fff;background:#06c755;border-radius:12px;text-align:center;">📨 LINEで せんせいに おくる</span></a>';
   }
 
   function sendText() {
@@ -463,7 +464,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     /* ふよみマスター（全カード）：声は「zunda-master.mp3」（ファイルが ないときは、ならさない） */
     var isFuyomiMaster = recs.some(function (r) { return r.type === "master"; });
     if (!voice && isFuyomiMaster) {
-      setTimeout(function () { try { var am = new Audio("zunda-master.mp3"); var pm = am.play(); if (pm && pm.catch) pm.catch(function () {}); } catch (e) {} }, voiceDelay);
+      setTimeout(function () { try { playAudioCloned("zundaMasterAudio"); } catch (e) {} }, voiceDelay);
+    } else if (!voice && !hasLegend && !hasMaster) {
+      /* 変音記号マスター／譜読みマスターなど：ファンファーレの あとに「おめでとう」 */
+      setTimeout(function () { try { playAudioCloned("zundaOmedetoAudio"); } catch (e) {} }, voiceDelay + 100);
     }
     if (voice) {
       if (voiceDelay > 0) setTimeout(function () { try { playAudioCloned(voice); } catch (e) {} }, voiceDelay);
@@ -907,6 +911,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     heldVoice = null;
     suppressMasterVoice = !!(acc === 100 && is20 && selectedLevel === 5 &&
       ((selectedClef === "treble" && !findAch(idx, "treble")) || (selectedClef === "bass" && !findAch(idx, "bass"))));
+    /* はじめての マスターの けっか画面：すごい → ファンファーレ → 「おめでとう」 */
+    omedetoPending = !!(suppressMasterVoice || (acc === 100 && is20 && selectedLevel === 5 && selectedClef === "all" && !findAch(idx, "master")));
 
     /* もとの結果画面の「れんぞく」「100回目」の判定は つかわない */
     Storage.set(kS, 0);
@@ -1252,7 +1258,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var DELAYED = { audioToon1: 1, audioToon2: 1, audioHeon1: 1, audioHeon2: 1, audio6do: 1 };
 
   window.playAudioCloned = function (id) {
-    if (id === "sugoiAudio") { lastSugoiAt = Date.now(); seqEndAt = 0; }
+    if (id === "sugoiAudio") {
+      lastSugoiAt = Date.now(); seqEndAt = 0;
+      if (omedetoPending) {
+        omedetoPending = false;
+        var sM = getSoundDurationMs("sugoiAudio") || 1500, fM = getSoundDurationMs("tasseiFanfareAudio") || 3000, oM = getSoundDurationMs("zundaOmedetoAudio") || 1500;
+        delayedTimers.push(setTimeout(function () { origPlay("zundaOmedetoAudio"); }, sM + 200 + fM + 100));
+        seqEndAt = Date.now() + sM + 200 + fM + 100 + oM + 400;
+      }
+    }
     if (DELAYED[id] && Date.now() - lastSugoiAt < 800) {
       var sMs = getSoundDurationMs("sugoiAudio") || 1500;
       var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
@@ -2837,12 +2851,40 @@ window.resetLegendForTest = function () {
         '<div id="fuOldOut" style="font-size:22px;font-weight:900;letter-spacing:4px;margin:6px 0;color:#3949ab;word-break:break-all;"></div></details>';
       t3.insertBefore(ui, t3.firstChild);
       var sd = $("fuSongs");
-      songs().forEach(function (s) {
-        var l = document.createElement("label");
-        l.style.cssText = "display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:3px 0;padding:6px;background:#fff;border-radius:8px;";
-        l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;"> ' + Number(s[0]) + '．' + esc(s[1]);
-        sd.appendChild(l);
-      });
+      /* 生徒の ならび（やさしい→ふつう→むずかしい）で、グループごとに。この たんまつの 生徒なら「いま ひらいている」曲に 🔓 */
+      function drawSongs() {
+        sd.innerHTML = "";
+        var groups = []; try { groups = JSON.parse(localStorage.getItem("fy_song_groups") || "[]") || []; } catch (e) {}
+        var all = songs(), byC = {}; all.forEach(function (s) { byC[s[0]] = s; });
+        var order = [], seen = {};
+        groups.forEach(function (g) { (g.ids || []).forEach(function (c) { if (byC[c]) { order.push(c); seen[c] = 1; } }); });
+        all.forEach(function (s) { if (!seen[s[0]]) order.push(s[0]); });
+        var openN = -1;
+        try {
+          var nm = ($("fuName") ? $("fuName").value.trim().normalize("NFKC") : "");
+          var pi = -1; if (nm && typeof profiles !== "undefined") profiles.forEach(function (p, i) { if (String(p || "").normalize("NFKC") === nm) pi = i; });
+          if (pi >= 0) {
+            var pa = JSON.parse(localStorage.getItem("fy_pass_" + pi) || "{}") || {};
+            openN = Object.keys(pa).length + 2;
+            if (localStorage.getItem("fy_lv5_openall_" + pi)) openN = 9999;
+          }
+        } catch (e) {}
+        var pos = 0;
+        groups.concat([{ name: "そのほか", icon: "🎵", ids: all.filter(function (s) { return !seen[s[0]]; }).map(function (s) { return s[0]; }) }]).forEach(function (g) {
+          if (!g.ids || !g.ids.length) return;
+          var h = document.createElement("div"); h.style.cssText = "font-size:13px;font-weight:900;color:#5b4636;margin:10px 0 2px;"; h.textContent = (g.icon || "") + " " + g.name; sd.appendChild(h);
+          g.ids.forEach(function (c, k) {
+            if (!byC[c]) return;
+            var s = byC[c], op = openN >= 0 && pos < openN; pos++;
+            var l = document.createElement("label");
+            l.style.cssText = "display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:3px 0;padding:6px;background:" + (op ? "#fff8e1" : "#fff") + ";border-radius:8px;";
+            l.innerHTML = '<input type="checkbox" value="' + esc(s[0]) + '" style="width:20px;height:20px;"> ' + (k + 1) + '．' + esc(s[1]) + (op ? ' <span style="font-size:11px;color:#e65100;margin-left:auto;">🔓 いま ひらいている</span>' : '');
+            sd.appendChild(l);
+          });
+        });
+      }
+      drawSongs();
+      try { $("fuName").addEventListener("input", function () { var ck = {}; Array.prototype.forEach.call(sd.querySelectorAll("input:checked"), function (x) { ck[x.value] = 1; }); drawSongs(); Array.prototype.forEach.call(sd.querySelectorAll("input"), function (x) { if (ck[x.value]) x.checked = true; }); }); } catch (e) {}
       var dt = $("fuDate"); if (dt) { var d0 = new Date(); dt.value = d0.getFullYear() + "-" + ("0" + (d0.getMonth() + 1)).slice(-2) + "-" + ("0" + d0.getDate()).slice(-2); }
       function nameVal() { return $("fuName").value.trim().normalize("NFKC"); }
       function needName(out) { var n = nameVal(); if (!n) { out.innerHTML = '<div style="padding:8px;">① の なまえを いれてね</div>'; return null; } return n; }
@@ -2892,7 +2934,7 @@ window.resetLegendForTest = function () {
       savedNames().forEach(function (x) {
         var b = document.createElement("button");
         b.style.cssText = "display:inline-block;border:none;border-radius:8px;background:#7e8aa0;color:#fff;font-size:13px;padding:6px 10px;margin:2px;";
-        b.textContent = x; b.addEventListener("click", function () { $("fuName").value = x; });
+        b.textContent = x; b.addEventListener("click", function () { $("fuName").value = x; try { $("fuName").dispatchEvent(new Event("input")); } catch (e) {} });
         nb.appendChild(b);
       });
     }
