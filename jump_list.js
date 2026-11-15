@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115t ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115u ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -39,6 +39,8 @@ window.FY_JUMPS = [
     run: function (idx) { var a = []; for (var i = 0; i < 3; i++) { var d = new Date(Date.now() - i * 86400000); a.push(d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)); } Storage.set("fy_hanko_" + idx, a.reverse()); localStorage.removeItem("fy_rep_last_" + idx); localStorage.setItem("fy_soundok", "1"); location.reload(); } },
   { label: "🆕 1115t ②：さいきんの れんらく（先生ページ）", note: "見本の 3人を 入れる（きょう・5日まえ・12日まえ）→ 先生ページの ④の 下『📋 さいきんの れんらく』を ひらく → れんらくが 古い 人が 上。10日 いじょうは オレンジ。①で 届いた LINEの 文を ④に 貼ると、その子も 入る",
     run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} function dd(n) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10); } sn["みほんA"] = { d: dd(0), r: "れんしゅう 5日（この 7日間）／ポイント 12p" }; sn["みほんB"] = { d: dd(5), r: "れんしゅう 3日（この 7日間）／ポイント 4p" }; sn["みほんC"] = { d: dd(12), r: "" }; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 入れました。先生ページを いちど とじて、ひらき直して ください。"); } },
+  { label: "🧹 見本の 3人（みほんA・B・C）を けす", note: "『さいきんの れんらく』から 見本だけ 消す。本物の 生徒は 残る",
+    run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} delete sn["みほんA"]; delete sn["みほんB"]; delete sn["みほんC"]; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 消しました。"); } },
   { label: "🆕 1115t ③：イベントの コード → 賞の 名前が 自動で 入る", note: "イベントの コード（FYE1…）を 先生ページの ④に 貼る →『🖨 カードを 印刷』→ 印刷ページの リボンに 賞の 名前が もう 入っている（イベントの コードが ない ときは、あとで 大丈夫です）",
     run: function (idx) { alert("イベントの コードを、先生ページの ④に 貼って ためして ください。"); } },
   /* ---------- 見たい 場面へ ---------- */
