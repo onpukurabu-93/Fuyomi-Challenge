@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115c";
+window.FY_EXTRAS_VER = "1115e";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -423,7 +423,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:34px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:10px;padding:6px 0;margin-top:4px;">' + esc(rec.code) + '</div>' +
       (rec.pt ? '<div style="font-size:16px;font-weight:900;margin-top:4px;">🎁 +' + rec.pt + ' ポイント</div>' : '') +
       '</div>' +
-      '<div data-fysend="' + esc(rec.code) + '">' + (function () { var h = window.fyLineCheck('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code); return (isUnsent(rec) || !rec.us && celebrating) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
+      ((rec.us && rec.sentAt) ? '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin:2px 0;">✓ せんせいに おくったよ</div>' : '') +
+      '<div data-fysend="' + esc(rec.code) + '"' + ((rec.us && rec.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code); return (isUnsent(rec) || !rec.us && celebrating) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
       '<div style="height:8px"></div>';
   }
 
@@ -447,6 +448,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   });
 
   function openOverlay(html) {
+    try { if (!/id="fyCbBack"/.test(html)) document.getElementById("fyOvClose").style.display = ""; } catch (e) {}
     document.getElementById("fyOvBody").innerHTML = html;
     ov.style.display = "flex";
   }
@@ -854,6 +856,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     return best;
   }
   window.showCardBook = function () {
+    try { document.getElementById("fyOvClose").style.display = ""; } catch (e) {}
     var idx = activeProfileIndex, have = 0, list = [];
     CARDBOOK.forEach(function (c) {
       if (c[0] !== "legend") { list.push({ c: c, rec: findAch(idx, c[0]) }); return; }
@@ -887,6 +890,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           '<div style="font-size:13px;color:#806c5a;margin-top:4px;">' + dmd(rec) + '　コード：' + esc(rec.code) + '</div>' +
           '<button id="fyCbBack" style="margin-top:12px;border:none;background:#ff9800;color:#fff;font-size:16px;font-weight:900;border-radius:16px;padding:9px 18px;">◀ もどる</button>');
         var bb = document.getElementById("fyCbBack"); if (bb) bb.addEventListener("click", window.showCardBook);
+        try { document.getElementById("fyOvClose").style.display = "none"; } catch (e) {}
       });
     });
   };
@@ -2134,14 +2138,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var BTN = "width:100%;border:none;border-radius:12px;padding:12px;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;";
 
   function receiptHtml(e) {
-    return '<div style="border:3px double #ffb300;background:#fffdf0;border-radius:14px;padding:10px;margin:8px 0;">' +
+    return '<div style="border:3px double #ffb300;background:' + ((e.us && e.sentAt) ? '#eee' : '#fffdf0') + ';border-radius:14px;padding:10px;margin:8px 0;' + ((e.us && e.sentAt) ? 'color:#888;' : '') + '">' +
       '<div style="font-size:28px;">🎁</div>' +
       '<div style="font-weight:900;">ポイント こうかん　' + e.amt + 'p</div>' +
       '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc2(e.name) + ' さん</div>' +
       '<div style="font-size:13px;">' + md(e.d) + '</div>' +
       '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
       '<div style="font-size:11px;color:#806c5a;line-height:1.6;">したの ボタンで せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
-      '<div data-fyexsend="' + e.code + '">' + (function () { var h = window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）'); return (e.us && !e.sentAt) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
+      ((e.us && e.sentAt) ? '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin:2px 0;">✓ せんせいに おくったよ</div>' : '') +
+      '<div data-fyexsend="' + e.code + '"' + ((e.us && e.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）'); return (e.us && !e.sentAt) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
       '</div>';
   }
   /* まだ せんせいに おくっていない こうかんの かず */
@@ -3299,7 +3304,10 @@ window.resetLegendForTest = function () {
       var exUns = 0; try { exUns = window.fyExUnsent ? window.fyExUnsent(idx) : 0; } catch (e) {}
       var here = (uns || exUns) ? 0 : (!doOk ? 1 : (chGlow ? 3 : 2));   /* 📨が あるときは、そちらを さきに しらせる */
       var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : "") + '">' + c[0] + '<i>' + (c[1] === "on" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
+      /* 版の ばんごう（テストの あいだ だけ。もとの「版」の ひょうじを そのまま うつす） */
+      var verTx = ""; try { var vb = $("fyVerBar"); if (vb && vb.style.display !== "none") verTx = vb.textContent || ""; } catch (e) {}
       var html =
+        (verTx ? '<div style="position:absolute;left:0;right:0;top:1px;z-index:4;text-align:center;font-size:10px;font-weight:800;color:' + (/そろって/.test(verTx) ? '#d32f2f;background:#fff' : '#5b88a8') + ';">' + esc(verTx) + '</div>' : '') +
         '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
           '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
           '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
@@ -3341,7 +3349,7 @@ window.resetLegendForTest = function () {
           function go(fn) { return function () { closeSheet(); try { toggleModal("managementModal", true); resetMgSection(); fn(); } catch (e) { clickOld([].filter.call(document.querySelectorAll("#selectScreen > .select-button.challenge"), function (b) { return b.textContent.indexOf("保護者") !== -1; })[0]); } }; }
           var items = [["👪 保護者ページ", go(function () { showParentAuth(); })],
            ["🎹 先生ページ", go(function () { showTeacherAuth(); })],
-           ["➕ プレイヤーを増やす", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }]];
+           ["➕ プレイヤーを増やす", function () { closeSheet(); window.__fyBackToAdult = Date.now(); try { openRegistration(false); } catch (e) {} }]];
           if (!wk) items.push(["🌱 わかばマークをつける（光と声の案内）", function () { closeSheet(); try { fyWakabaSet(true); } catch (e) {} schedule(); }]);
           items.forEach(function (x) { var b = document.createElement("button"); b.className = "bt"; b.textContent = x[0]; b.addEventListener("click", x[1]); inn.appendChild(b); });
           var cr = document.createElement("details"); cr.style.cssText = "margin-top:12px;font-size:12px;color:#806c5a;text-align:left;";
@@ -3434,10 +3442,28 @@ window.resetLegendForTest = function () {
     }
     render();
   }
+  document.addEventListener("click", function (e) {
+    try {
+      var b = e.target.closest ? e.target.closest("#gateCancel,#regCancelBtn") : null;
+      if (b && window.__fyBackToAdult && Date.now() - window.__fyBackToAdult < 600000) { window.__fyBackToAdult = 0; setTimeout(function () { var a = $("fyNLAd"); if (a) a.click(); }, 350); }
+    } catch (e2) {}
+  });
+  /* 先生ページ：タブは やめて「コード・管理」だけ／とじる ボタンは したに はりつける */
+  try {
+    var st2 = document.createElement("style");
+    st2.textContent = "#tTab1,#tTab2{display:none !important}#managementModal .modal-box{max-height:92vh;overflow-y:auto}#managementModal .modal-btn.cancel{position:sticky;bottom:-2px;z-index:3;box-shadow:0 -10px 10px -4px rgba(255,255,255,.95)}";
+    document.head.appendChild(st2);
+    if (typeof showTeacherAuth === "function" && !showTeacherAuth.__nl) {
+      var ota = showTeacherAuth;
+      window.showTeacherAuth = function () { var r = ota.apply(this, arguments); [60, 400, 1200].forEach(function (ms) { setTimeout(function () { try { if (!$("teacherTab3") || $("teacherTab3").classList.contains("hidden")) switchTeacherTab(3); } catch (e) {} }, ms); }); return r; };
+      window.showTeacherAuth.__nl = true;
+    }
+  } catch (e) {}
   window.fyNewLookRender = render;
   window.fyNewLookSet = function (v) { try { localStorage.setItem("fy_newlook", v ? "on" : "off"); } catch (e) {} location.reload(); };
   if (document.readyState === "complete") setTimeout(hook, 300); else window.addEventListener("load", function () { setTimeout(hook, 300); });
   setTimeout(hook, 1500);
+  try { hook(); } catch (e) {}   /* まてずに すぐ だす（はいけいだけ さきに みえない ように） */
 })();
 
 /* 📨 「LINEで おくる」を おして、アプリに もどって きたとき：へんじを まってね の おしらせ */
