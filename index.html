@@ -1294,7 +1294,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1115m";
+var FY_INDEX_VER = "1115n";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2218,7 +2218,7 @@ function showResultScreen() {
   if ((selectedClef === "treble" || selectedClef === "bass") && selectedLevel === 1 && !fyColorActive() && !fyColorOn(activeProfileIndex, selectedClef) && accuracy < 90) {
     btnWrap.innerHTML += `<button class="select-button accent" style="margin-top:10px;background:#8a6bbf;color:#fff;font-size:20px;padding:18px;" onclick="fyColorBackNow()">🎨 いろおんぷに もどる</button>`;
   }
-  btnWrap.innerHTML += `<button class="back-btn" style="margin-top:14px;" onclick="handleCardBack()">◀ もどる</button>`;
+  btnWrap.innerHTML += `<button class="back-btn" style="position:fixed;left:10px;top:10px;margin:0;z-index:6;" onclick="handleCardBack()">◀ もどる</button>`;
 
   /* 🎉 紙吹雪は100%のときだけ（通常30個、100回目は150個） */
   if (isPerfect) startConfetti(isLegendMoment ? 150 : 30);
@@ -2565,6 +2565,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261115m"></script>
+<script src="app-extras.js?v=20261115n"></script>
 </body>
 </html>
