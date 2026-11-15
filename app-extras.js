@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115s";
+window.FY_EXTRAS_VER = "1115t";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1632,6 +1632,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
     if (/FY[12]\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が つくった「復元コード」です。（保護者に おくる もの）</div>' };
     var nm = t.match(/【ふよみ】\s*([^\n]+?)\s*さん/), cd = t.match(/コード[：:]\s*([A-Z0-9]{4})/);
+    var repM = t.match(/📋[^\n]*しゅうの きろく[：:]\s*([^\n]+)/);
+    if (nm) { try { var sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; sn[cleanName(nm[1])] = { d: new Date().toISOString().slice(0, 10), r: repM ? repM[1] : ((sn[cleanName(nm[1])] || {}).r || "") }; localStorage.setItem("fy_seen", JSON.stringify(sn)); } catch (eS) {} }
+    if (nm && !cd && repM) return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">📋 週の きろくを うけとりました　なまえ：' + esc3(cleanName(nm[1])) + '</div><div style="font-size:13px;text-align:left;line-height:1.7;">' + esc3(repM[1]) + '<br><span style="color:#806c5a;font-size:12px;">「さいきんの れんらく」に 入れました</span></div>' };
     if (!nm || !cd) {
       if (/\b\d{2}-[A-Z0-9]{6}\b/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が だした「ごうかくコード」です（ふよみテスト か えんそう）。生徒の アプリで つかう もの</div>' };
       return ng("コードの かたちが わかりません。LINEの メッセージを、ぜんぶ 貼ってね。");
@@ -1656,7 +1659,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     });
     var done = {}; try { done = JSON.parse(localStorage.getItem("fy_chk_done") || "{}") || {}; } catch (e5) {}
     var okN = items.filter(function (x) { return x.f; }).length;
-    var html = '<div style="color:' + (okN === items.length ? "#2e7d32" : "#c62828") + ';font-weight:800;font-size:14px;">' + (okN === items.length ? "✅ 本物の コードです" : (okN ? "⚠ 本物 " + okN + "件 ／ ❌ あわない " + (items.length - okN) + "件" : "❌ あいません")) + '　なまえ：' + esc3(name) + '</div>';
+    var html = (repM ? '<div style="font-size:13px;text-align:left;background:#e8f5e9;border-radius:10px;padding:6px 10px;margin-bottom:6px;">📋 週の きろく：' + esc3(repM[1]) + '</div>' : '') + '<div style="color:' + (okN === items.length ? "#2e7d32" : "#c62828") + ';font-weight:800;font-size:14px;">' + (okN === items.length ? "✅ 本物の コードです" : (okN ? "⚠ 本物 " + okN + "件 ／ ❌ あわない " + (items.length - okN) + "件" : "❌ あいません")) + '　なまえ：' + esc3(name) + '</div>';
     items.forEach(function (x) {
       var key = name + "|" + x.code, dn = done[key], bs = "border:none;border-radius:10px;padding:9px 12px;font-size:14px;font-weight:800;font-family:inherit;color:#fff;margin:4px 4px 0 0;";
       html += '<div style="text-align:left;font-size:13px;line-height:1.6;margin-top:8px;padding:8px 10px;border-radius:12px;background:' + (x.f ? (dn ? "#f0efec" : "#eef8ee") : "#fdecea") + ';">';
@@ -1685,6 +1688,19 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   setInterval(function () {
     try { var fi = document.getElementById("faIn"), fo = document.getElementById("faOut"); if (fi && fi.offsetParent === null && (fi.value || (fo && fo.innerHTML))) { fi.value = ""; if (fo) fo.innerHTML = ""; var fe = document.getElementById("feOut"); if (fe) fe.innerHTML = ""; } } catch (e) {}
   }, 1000);
+  /* 📋 さいきんの れんらく：④に 貼った メッセージの 名前と 日づけを おぼえて、れんらくが 古い 順に ならべる */
+  window.fySeenHtml = function () {
+    var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {}
+    var today = new Date(new Date().toISOString().slice(0, 10)).getTime();
+    var rows = Object.keys(sn).map(function (k) { var v = sn[k] || {}; return { n: k, d: v.d || "", r: v.r || "", ago: v.d ? Math.round((today - new Date(v.d).getTime()) / 86400000) : 999 }; }).sort(function (a, b) { return b.ago - a.ago; });
+    var h = '<details style="margin:6px 0;text-align:left;"><summary style="font-size:14px;font-weight:800;color:#33691e;background:#f1f8e9;border-radius:12px;padding:10px;">📋 さいきんの れんらく（' + rows.length + '人）</summary>';
+    if (!rows.length) h += '<div style="font-size:12px;color:#806c5a;padding:6px;">まだ ありません。生徒の メッセージを ④に 貼ると、ここに 名前が 入ります。</div>';
+    rows.forEach(function (r) {
+      var e = function (x) { return String(x).replace(/[&<>"]/g, ""); };
+      h += '<div style="font-size:13px;line-height:1.6;padding:5px 8px;border-bottom:1px solid #eee;' + (r.ago >= 10 ? "background:#fff3e0;" : "") + '"><b>' + e(r.n) + '</b>　' + (r.ago === 0 ? "きょう" : r.ago + "日まえ") + (r.ago >= 10 ? "　⚠ しばらく れんらくが ありません" : "") + (r.r ? '<br><span style="font-size:12px;color:#806c5a;">' + e(r.r) + '</span>' : '') + '</div>';
+    });
+    return h + '</details>';
+  };
   window.fyChkDone = function (btn) {
     try {
       var key = btn.getAttribute("data-k"), lab = btn.getAttribute("data-l"), nm2 = key.split("|")[0], d = new Date().toISOString().slice(0, 10);
@@ -2566,6 +2582,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
     return { rb: evAvg(before), rd: evAvg(during), nd: during.length, perf: perf, lv0: lv0, lv1: lv1 };
   }
+  window.fyEvAwardName = function (g) { try { return String(evAwardOf(g).name || "").replace(/^[^\u3040-\u30ff\u4e00-\u9faf]+/, ""); } catch (e) { return ""; } };
   function evAwardOf(g) {
     var c = [];
     var up = (g.lv0 >= 0) ? g.lv1 - g.lv0 : 0;
@@ -2718,7 +2735,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "") +
-      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent(f[2])) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は、印刷の ページで えらびます</span></div>';
+      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent(f[2]) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
   };
 
   try {
@@ -2744,7 +2761,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<textarea id="faIn" class="modal-input" style="height:80px;font-size:12px;" placeholder="ここに 貼る"></textarea>' +
         '<button class="modal-btn" style="background:#ef6c00;font-size:13px;padding:9px;" onclick="fyCheckAny()">かくにん する</button>' +
         '<div id="faOut" style="margin:6px 0 4px;"></div>' +
-        '<a href="cards_print.html" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>';
+        '<a href="cards_print.html" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>' + window.fySeenHtml();
       t3.insertBefore(a, t3.firstChild);
     }
   } catch (e) {}
@@ -3501,6 +3518,15 @@ window.FYAK = FYAK;
       $("fyNLOw").addEventListener("click", function () {
         var o = okList(idx), pend = o.pend.slice(), today = ymd(new Date());
         var lines = []; try { lines = (window.fyUnsentLines(idx) || []).concat(window.fyExUnsentLines(idx) || []); } catch (e) {}
+        var repDue = false;
+        try {
+          var rl0 = parseInt(localStorage.getItem("fy_rep_last_" + idx), 10) || 0;
+          if (o.st.length && Date.now() - rl0 >= 7 * 86400000) {
+            var lim7 = ymd(new Date(Date.now() - 6 * 86400000)), n7 = o.st.filter(function (d) { return d >= lim7; }).length;
+            lines.push("📋 しゅうの きろく：れんしゅう " + n7 + "日（この 7日間）／ポイント " + (parseInt(Storage.get("fy_tp_" + idx, 0), 10) || 0) + "p");
+            repDue = true;
+          }
+        } catch (eR) {}
         if (pend.length) { Storage.set("fy_hanko_ok_" + idx, o.ok.concat(pend).slice(-90)); try { playAudioCloned("seikaiAudio"); } catch (e) {} }
         sheet(function (inn) {
           var h = "";
@@ -3523,7 +3549,7 @@ window.FYAK = FYAK;
           }
           inn.innerHTML = h;
           var sd = inn.querySelector("#fyOwSend");
-          if (sd) sd.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); } catch (e2) {} setTimeout(schedule, 500); } });
+          if (sd) sd.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); if (repDue) localStorage.setItem("fy_rep_last_" + idx, String(Date.now())); } catch (e2) {} setTimeout(schedule, 500); } });
         });
         schedule();
       });
