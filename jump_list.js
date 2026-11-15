@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115a ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115p ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -31,94 +31,35 @@ function fyJmpStep(idx, clef, name) {
   alert(name + "：レベル" + n + " まで ごうかくに しました" + (n < 5 ? "（レベル" + (n + 1) + " が ひらきます）" : ""));
   location.reload();
 }
+function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); } catch (e) {} location.reload(); }
+function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
 window.FY_JUMPS = [
-  { label: "🆕 1114f：送り忘れのお知らせ", note: "ト音マスター寸前にする→Lv5全問正解→お祝いでLINEを押さずに閉じる→トップの『きろくと コード』が光って📨",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; delete g.award_treble; Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} location.reload(); } },
-  { label: "🆕 1114f：曲の画面（速さ5段階・おてほんが光る）", note: "レジェンドLv5→曲を開く。左から おてほん・おとかくにん・れんしゅう／上に🐢−●●○○○+🐇",
-    run: function (idx) {
-      Storage.set("fy_test_master_" + idx, true); localStorage.setItem("fy_chunk_max_" + idx, "5"); Storage.set("fy_legend_opened_" + idx, true);
-      ["fy_legend_intro_", "fy_legend_pianoset_", "fy_legend_pianohint_"].forEach(function (k) { if (!localStorage.getItem(k + idx)) localStorage.setItem(k + idx, "1"); });
-      var del = []; for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("fy_legend_demoseen_" + idx + "_") === 0 || k.indexOf("fy_tempo_" + idx + "_") === 0) del.push(k); } del.forEach(function (k) { localStorage.removeItem(k); });
-      location.href = "chunk_proto.html";
-    } },
-  { label: "🎼 ト音記号マスターの 寸前", note: "ト音をLv4まで合格に。あとは ト音Lv5を 20問ぜんぶ正解するだけ",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); location.reload(); } },
-  { label: "🎼 ヘ音記号マスターの 寸前", note: "ヘ音をLv4まで合格に（ト音は全部合格）。あとは ヘ音Lv5を ぜんぶ正解するだけ",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 4); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["bass", "master"]); location.reload(); } },
-  { label: "🎓 ふよみマスターの 寸前", note: "ト音・ヘ音は全部合格、全カードはLv4まで。あとは 全カードLv5を ぜんぶ正解するだけ",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); location.reload(); } },
-  { label: "👑 レジェンド レベル5の 寸前", note: "レジェンドをLv4まで開く。あとは Lv4に合格するだけ（Lv5の説明の声も はじめから）",
-    run: function (idx) { localStorage.setItem("fy_chunk_max_" + idx, "3"); localStorage.removeItem("fy_legend_lv5voice_" + idx); fyJmpLegendLv(idx, 1); } },
-  { label: "➕ レジェンドの レベルを 1つ すすめる", note: "おすたびに 1だん。レジェンドの画面へ いきます",
-    run: function (idx) { fyJmpLegendLv(idx, 1); } },
-  { label: "➖ レジェンドの レベルを 1つ もどす", note: "おすたびに 1だん もどる",
-    run: function (idx) { fyJmpLegendLv(idx, -1); } },
-  { label: "➕ ト音記号を 1レベル すすめる", note: "おすたびに 1つ合格を ふやす",
-    run: function (idx) { fyJmpStep(idx, "treble", "ト音記号"); } },
-  { label: "➕ ヘ音記号を 1レベル すすめる", note: "おすたびに 1つ合格を ふやす",
-    run: function (idx) { fyJmpStep(idx, "bass", "ヘ音記号"); } },
-  { label: "➕ 全カードを 1レベル すすめる", note: "ト音・ヘ音は 全部合格にして、全カードを 1つ すすめる",
-    run: function (idx) { fyJmpStep(idx, "all", "全カード"); } },
-  { label: "1️⃣ レジェンドへのみち（はじめて入る）", note: "ようこそ(声)→レベル画面(声)→🎹が光る(声)→スタートが光る(声)。🎹を押さずにスタート＝ピアノなし",
-    run: function (idx) {
-      Storage.set("fy_test_master_" + idx, true);
-      fyJmpClear(idx, ["fy_legend_intro_", "fy_legend_pianohint_", "fy_legend_pianoset_", "fy_legend_lv5voice_", "fy_lv5_openall_", "fy_chunk_max_", "fy_legend_countvoice_"]);
-      Storage.set("fy_legend_opened_" + idx, true);
-      location.href = "chunk_proto.html";
-    } },
-  { label: "2️⃣ レジェンド レベル5（曲のロック・曲の案内）", note: "🔒の曲→ふきだし／開いている曲→ボタンが1つずつ光る案内（声4本が入っているとき）／✅の曲→声",
-    run: function (idx) {
-      Storage.set("fy_test_master_" + idx, true);
-      localStorage.setItem("fy_chunk_max_" + idx, "5");
-      fyJmpClear(idx, ["fy_lv5_openall_", "fy_legend_lv5voice_", "fy_legend_playvoice_", "fy_legend_songguide_"]);
-      Storage.set("fy_legend_opened_" + idx, true);
-      location.href = "chunk_proto.html";
-    } },
-  { label: "3️⃣ 色音符 はじめの練習（ト音）", note: "光る案内→全部の鍵を押す→トレーニングが光る＋声",
-    run: function (idx) {
-      Storage.set("fy_color_" + idx + "_treble", "on");
-      fyJmpClear(idx, ["fy_practice_guide_", "fy_allkeys_", "fy_noprac_"]);
-      toggleModal("managementModal", false);
-      selectClef("treble");
-    } },
-  { label: "4️⃣ 色音符 Lv1の結果（点が低い／上がった）", note: "20問で わざと半分以上まちがえる→はげまし。もう一度で10点以上上げる→ほめる",
-    run: function (idx) {
-      Storage.set("fy_color_" + idx + "_treble", "on");
-      Storage.set("fy_allkeys_" + idx, true);
-      toggleModal("managementModal", false);
-      selectClef("treble");
-    } },
-  { label: "5️⃣ 黒音符 Lv1（うまくいかない→色にもどる）", note: "黒に切替→20問で90%未満→はげまし＋大きい『いろおんぷに もどる』",
-    run: function (idx) {
-      Storage.set("fy_color_" + idx + "_treble", "off");
-      toggleModal("managementModal", false);
-      selectClef("treble");
-    } },
-  { label: "6️⃣ 保護者ロック（3回まちがい→10分）", note: "色画面の『くろおんぷにする』→わざと3回まちがえる→閉じて10分ロック",
-    run: function (idx) {
-      Storage.set("fy_color_" + idx + "_treble", "on");
-      Storage.set("fy_gatelock_" + idx, 0);
-      toggleModal("managementModal", false);
-      selectClef("treble");
-    } },
-  { label: "7️⃣ レベル画面の『いまここ』光", note: "ト音・ヘ音を開く→レベル5が光る（ふつうは、合格していない一番下のレベル）",
-    run: function () { unlockClefsToLevel5ForTest(); } },
-  { label: "8️⃣ マスター結果画面（すごい→ファンファーレ→おめでとう）", note: "全カードをLv5まで開く→Lv5を全問一発正解→おめでとう→お祝い画面（LINEボタン点滅）",
-    run: function (idx) {
-      ["fy_ach_"].forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} });
-      Storage.set("fy_test_master_" + idx, false);
-      unlockAllCardsToLevel5ForTest();
-    } },
-  { label: "🔓 ト音・ヘ音を レベル5まで開く", note: "黒音符・レベル2以上を すぐ確認",
-    run: function () { unlockClefsToLevel5ForTest(); } },
-  { label: "🔓 全カードを レベル5まで開く", note: "名人・レジェンドまわりを確認",
-    run: function () { unlockAllCardsToLevel5ForTest(); } },
-  { label: "🏅 ふよみマスターに なった直後（トップ画面）", note: "光るボタンが ここから光り始める",
-    run: function (idx) {
-      Storage.set("fy_test_master_" + idx, true);
-      Storage.set("fy_legend_opened_" + idx, false);
-      location.reload();
-    } },
+  /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
+  { label: "🆕 1115p ①：ふよみマスターの お祝い → トップに もどる", note: "全カード レベル5が すぐ始まる →右上の『⏩ あと1もんへ』→ さいごの1問を こたえる → お祝いを とじる → トップに もどって『レジェンドへの みち』だけ 光る",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); fyJmpUnPt(idx, ["award_master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); fySkipSet(true); fyJmpGo("train:all:5"); } },
+  { label: "🆕 1115p ②：ト音記号マスターの お祝い → おんぷカードに もどる", note: "ト音 レベル5が すぐ始まる →『⏩ あと1もんへ』→ さいごの1問 → お祝いを とじる → おんぷカードの 画面（ヘ音の 1が『いまここ』）",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpSet(idx, "bass", 0); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["treble", "bass", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
+  { label: "🆕 1115p ③：こうかんコードの『○かいめ』", note: "40ポイントに して こうかんの 画面を ひらく → 10pを 2かい こうかん →『きょうは おわり』→ LINEの 文に（1かいめ）（2かいめ）と 出て、コードが ちがう → 先生ページ④に 貼って 2つとも 本物と 出る",
+    run: function (idx) { Storage.set("fy_tp_" + idx, 40); fyJmpGo("click:fyNLEx"); } },
+  { label: "🆕 1115p ④：イベントカード（太い字・丸い角）", note: "印刷ページが『イベント』で ひらく。リボンの 字と イベント名が 太い／角が 丸い",
+    run: function (idx) { location.href = "cards_print.html?type=event&name=" + encodeURIComponent("おんぷ") + "&award=" + encodeURIComponent("レベルアップ賞") + "&ev=" + encodeURIComponent("ふよみイベント"); } },
+  /* ---------- 見たい 場面へ ---------- */
+  { label: "🎼 ト音記号マスターの 直前", note: "ト音 レベル5が すぐ始まる。『⏩ あと1もんへ』で さいごの1問だけ",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
+  { label: "🎼 ヘ音記号マスターの 直前", note: "ヘ音 レベル5が すぐ始まる（ト音は 全部 合格）",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 4); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["bass", "master"]); fyJmpUnPt(idx, ["award_bass"]); fySkipSet(true); fyJmpGo("train:bass:5"); } },
+  { label: "🎓 ふよみマスターの 直前", note: "全カード レベル5が すぐ始まる（ト音・ヘ音は 全部 合格）",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); fyJmpUnPt(idx, ["award_master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); fySkipSet(true); fyJmpGo("train:all:5"); } },
+  { label: "👑 レジェンドへの みちが 開いた 直後（トップ画面）", note: "ふよみマスターに なった すぐあとの トップ。『レジェンドへの みち』が 光る",
+    run: function (idx) { Storage.set("fy_test_master_" + idx, true); Storage.set("fy_legend_opened_" + idx, false); location.reload(); } },
+  { label: "🃏 おんぷカードを ぜんぶ 開く", note: "ト音・ヘ音・全カードを レベル5まで 合格に して、おんぷカードの 画面を ひらく",
+    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); } },
+  { label: "🎁 ポイントが たまった 状態（こうかんを ためす）", note: "60ポイントに して、こうかんの 画面を ひらく",
+    run: function (idx) { Storage.set("fy_tp_" + idx, 60); fyJmpGo("click:fyNLEx"); } },
+  { label: "⏩『あと1もんへ』ボタンを 出す", note: "トレーニング中の 右上に テスト用の ボタンが 出る（20問を 19問目まで じどうで すすめる。10びょう ほど）",
+    run: function (idx) { fySkipSet(true); alert("出るように しました。トレーニングを はじめると、右上に 出ます。"); } },
+  { label: "⏩『あと1もんへ』ボタンを けす", note: "生徒に 見せる ときは けして おく",
+    run: function (idx) { fySkipSet(false); alert("けしました。"); } },
   { label: "♻ この生徒を はじめの状態に もどす", note: "記録・光り・テスト用の印を消す（名前は残る）", confirm: true,
     run: function (idx) {
       var re = new RegExp("(^|_)" + idx + "(_|$)");
