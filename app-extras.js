@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115u";
+window.FY_EXTRAS_VER = "1115v";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1693,7 +1693,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {}
     var today = new Date(new Date().toISOString().slice(0, 10)).getTime();
     var rows = Object.keys(sn).map(function (k) { var v = sn[k] || {}; return { n: k, d: v.d || "", r: v.r || "", ago: v.d ? Math.round((today - new Date(v.d).getTime()) / 86400000) : 999 }; }).sort(function (a, b) { return b.ago - a.ago; });
-    var h = '<details style="margin:6px 0;text-align:left;"><summary style="font-size:14px;font-weight:800;color:#33691e;background:#f1f8e9;border-radius:12px;padding:10px;">📋 さいきんの れんらく（' + rows.length + '人）</summary>';
+    var late = rows.filter(function (r) { return r.ago >= 10; }).length, td = rows.filter(function (r) { return r.ago === 0; }).length;
+    var h = '<style>@keyframes fySeenGlow{0%{box-shadow:0 0 0 0 rgba(255,152,0,.8)}100%{box-shadow:0 0 0 12px rgba(255,152,0,0)}}</style>' +
+      '<details id="fySeenBox" style="margin:0 0 10px;text-align:left;"><summary style="font-size:15px;font-weight:900;color:#33691e;background:#f1f8e9;border:2px solid ' + (late ? "#ff9800" : "#c5e1a5") + ';border-radius:12px;padding:11px 10px;' + (late ? "animation:fySeenGlow 1.4s ease-out infinite;" : "") + '">📋 さいきんの れんらく（' + rows.length + '人）' +
+      (td ? '　<span style="background:#43a047;color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;">きょう ' + td + '人</span>' : '') +
+      (late ? '　<span style="background:#ff9800;color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;">⚠ ごぶさた ' + late + '人</span>' : '') + '</summary>';
     if (!rows.length) h += '<div style="font-size:12px;color:#806c5a;padding:6px;">まだ ありません。生徒の メッセージを ④に 貼ると、ここに 名前が 入ります。</div>';
     rows.forEach(function (r) {
       var e = function (x) { return String(x).replace(/[&<>"]/g, ""); };
@@ -2644,8 +2648,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
     var th = "border:1px solid #eadcc8;padding:3px 4px;text-align:center;background:#f6ecd8;";
     scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:10px 12px 14px;">' +
-      (lim ? '' : '<div style="position:sticky;top:6px;z-index:5;height:0;"><button id="fyEvClose" style="border:none;border-radius:16px;padding:8px 14px;font-size:15px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2);">◀ もどる</button></div>') +
-      '<div style="font-size:18px;font-weight:900;text-align:center;padding:' + (lim ? '0' : '44px 0 0') + ';">🏆 ' + EVENT.title + '</div>' +
+      (lim ? '' : '<div style="position:sticky;top:0;z-index:5;background:#fdf8ed;padding:6px 0 6px;"><button id="fyEvClose" style="border:none;border-radius:16px;padding:8px 14px;font-size:15px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2);">◀ もどる</button></div>') +
+      '<div style="font-size:18px;font-weight:900;text-align:center;padding:0;">🏆 ' + EVENT.title + '</div>' +
       '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
       (lim ? '<div style="background:#e8f5e9;border:2px solid #43a047;border-radius:12px;padding:8px;margin-bottom:6px;text-align:center;font-weight:900;font-size:14px;line-height:1.6;">🎉 イベント おつかれさま！<br>けっかを せんせいに おくってね<br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + md(opts.until) + 'まで おくれるよ</span></div>' :
         (remindOn() ? '<div style="background:#ffebee;border:2px solid #e53935;border-radius:12px;padding:8px;margin-bottom:6px;text-align:center;font-weight:900;font-size:14px;line-height:1.6;">⏰ ' + (daysLeft() === 0 ? "きょうが さいごの 日！" : md(EVENT.end) + "までに（あと " + daysLeft() + "日）") + '<br>せんせいに コードを おくってね！</div>' : '')) +
@@ -2655,9 +2659,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0;"><tr><th style="' + th + '"></th><th style="' + th + '">ノーミスの ベスト</th><th style="' + th + '">のびた</th></tr>' + rows + '</table>' +
       (!isMaster(idx) && !anyT ? '<div style="font-size:12px;color:#806c5a;">ふよみマスターに なると、レジェンドへの みちの タイムも のせられるよ！</div>' : '') +
       '<div style="font-size:12px;color:#806c5a;margin-top:2px;">きろくした日：' + when + '</div>' +
+      (window.fyNewLookOn && window.fyNewLookOn() ? '' : (
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
-      window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
+      window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code)
+      )) +
       '<div style="font-size:10px;color:#a39686;margin-top:8px;text-align:center;">保護者の方へ：解約については「⚙ おとな」のページをご覧ください</div>' +
       '</div>';
     scr.style.display = "block";
@@ -2666,6 +2672,14 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (clo) clo.addEventListener("click", function () { scr.style.display = "none"; });
   }
   window.fyShowEventScreen = showEventScreen;
+  window.fyEvDailyLine = function (idx) {
+    try {
+      var t = todayS(); if (t < EVENT.start || t > EVENT.end) return "";
+      if (localStorage.getItem("fy_ev_sent_" + idx) === t) return "";
+      return "🏆 イベントの きろく：" + makeEventCode(idx).code;
+    } catch (e) { return ""; }
+  };
+  window.fyEvDailySent = function (idx) { try { localStorage.setItem("fy_ev_sent_" + idx, todayS()); } catch (e) {} };
 
   function renderEvBtn() {
     var anchor = document.getElementById("fyChunkBtn");
@@ -2755,13 +2769,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var a = document.createElement("div");
       a.id = "fyAnyCheck";
       a.style.cssText = "background:#fff8e1;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-bottom:14px;";
-      a.innerHTML =
+      a.innerHTML = window.fySeenHtml() +
         '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin-bottom:4px;text-align:left;">🔍 コードを 貼って かくにん（ぜんぶ ここで）</div>' +
         '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">LINEで 届いた メッセージを、そのまま 貼ってください。<br>イベント・達成・ポイント こうかん・うつしコードを じどうで みわけます。</div>' +
         '<textarea id="faIn" class="modal-input" style="height:80px;font-size:12px;" placeholder="ここに 貼る"></textarea>' +
         '<button class="modal-btn" style="background:#ef6c00;font-size:13px;padding:9px;" onclick="fyCheckAny()">かくにん する</button>' +
         '<div id="faOut" style="margin:6px 0 4px;"></div>' +
-        '<a href="cards_print.html" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>' + window.fySeenHtml();
+        '<a href="cards_print.html" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>';
       t3.insertBefore(a, t3.firstChild);
     }
   } catch (e) {}
@@ -2840,24 +2854,24 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (anchor2 && anchor2.nextSibling) t4.insertBefore(bk, anchor2.nextSibling); else t4.insertBefore(bk, t4.firstChild);
     }
   } catch (e) {}
+  function evPlus(raw, r) {
+    var fi = document.getElementById("feIn"), fo = document.getElementById("feOut");
+    if (!fi || !fo) return "いま かくにん できません";
+    fi.value = r.token; window.fyCheckEventCode();
+    var h = fo.innerHTML, rest = String(raw || "").replace(r.token, "").normalize("NFKC");
+    if (/コード[：:]\s*[A-Z0-9]{4}|しゅうの きろく/.test(rest)) { var r2 = window.fyCheckAnyCore(rest); if (r2 && r2.html) h = r2.html + '<hr style="border:none;border-top:2px dashed #ffb300;margin:10px 0;">' + h; }
+    else { try { var nm = rest.match(/【ふよみ[^】]*】\s*([^\n]+?)\s*さん/); if (nm) { var sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}, k = nm[1].replace(/\s+/g, ""); sn[k] = { d: new Date().toISOString().slice(0, 10), r: (sn[k] || {}).r || "" }; localStorage.setItem("fy_seen", JSON.stringify(sn)); } } catch (e) {} }
+    return h;
+  }
   window.fyCheckAnyHtml = function (raw) {
     var r = window.fyCheckAnyCore(raw);
-    if (r.kind === "event") {
-      var fi = document.getElementById("feIn"), fo = document.getElementById("feOut");
-      if (!fi || !fo) return "いま かくにん できません";
-      fi.value = r.token; window.fyCheckEventCode();
-      return fo.innerHTML;
-    }
-    return r.html;
+    return r.kind === "event" ? evPlus(raw, r) : r.html;
   };
   window.fyCheckAny = function () {
     var out = document.getElementById("faOut"), raw = document.getElementById("faIn").value;
     var r = window.fyCheckAnyCore(raw);
-    if (r.kind === "event") {
-      document.getElementById("feIn").value = r.token;
-      window.fyCheckEventCode();
-      out.innerHTML = document.getElementById("feOut").innerHTML;
-    } else out.innerHTML = r.html;
+    out.innerHTML = r.kind === "event" ? evPlus(raw, r) : r.html;
+    try { var sb = document.getElementById("fySeenBox"); if (sb) sb.outerHTML = window.fySeenHtml(); } catch (e) {}
   };
 })();
 
@@ -3527,6 +3541,8 @@ window.FYAK = FYAK;
             repDue = true;
           }
         } catch (eR) {}
+        var evDue = false;
+        try { if (o.st.indexOf(today) !== -1) { var evl = window.fyEvDailyLine ? window.fyEvDailyLine(idx) : ""; if (evl) { lines.push(evl); evDue = true; } } } catch (eE) {}
         if (pend.length) { Storage.set("fy_hanko_ok_" + idx, o.ok.concat(pend).slice(-90)); try { playAudioCloned("seikaiAudio"); } catch (e) {} }
         sheet(function (inn) {
           var h = "";
@@ -3549,7 +3565,7 @@ window.FYAK = FYAK;
           }
           inn.innerHTML = h;
           var sd = inn.querySelector("#fyOwSend");
-          if (sd) sd.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); if (repDue) localStorage.setItem("fy_rep_last_" + idx, String(Date.now())); } catch (e2) {} setTimeout(schedule, 500); } });
+          if (sd) sd.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); if (repDue) localStorage.setItem("fy_rep_last_" + idx, String(Date.now())); if (evDue) window.fyEvDailySent(idx); } catch (e2) {} setTimeout(schedule, 500); } });
         });
         schedule();
       });
