@@ -66,6 +66,7 @@
   <div id="rowAward" style="display:none;">
     <input id="inAward" placeholder="賞の なまえ（例：レベルアップ賞）" maxlength="12">
     <div id="awardPick" style="margin:4px 0;"></div>
+    <input id="inYear" placeholder="年度（例：2026年度）" maxlength="8" style="width:120px">
     <input id="inEvent" placeholder="イベントの なまえ（例：ふゆの ふよみイベント）" maxlength="16">
   </div>
   <div id="rowCount">
@@ -117,7 +118,7 @@ var TYPES = [
   { id: "legend",  label: "ふよみレジェンド", img: "legend",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
   { id: "meijin",  label: "ふよみ名人", img: "meijin",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" },
   { id: "maestro", label: "ふよみマエストロ", img: "maestro", cw: 56, ch: 83.6, name: 0.7265, date: 0.818, nx: 0.558, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
-  { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.80, max: 0.050 } }
+  { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } }
 ];
 
 /* 横長の配置（148×100mm）のなかの、おもて・うらの中心 */
@@ -137,6 +138,10 @@ var awardEl = document.getElementById("inAward"), eventEl = document.getElementB
   document.getElementById("awardPick").appendChild(b);
 });
 awardEl.addEventListener("input", function () { render(); }); eventEl.addEventListener("input", function () { render(); });
+var yearEl = document.getElementById("inYear");
+(function () { var d = new Date(); yearEl.value = (d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1) + "年度"; })();
+yearEl.addEventListener("input", function () { render(); });
+function evText() { return [yearEl.value.trim(), eventEl.value.trim()].filter(Boolean).join(" "); }
 function fitFs(o, txt) { return Math.min(o.max, o.w / Math.max(String(txt).length, 1)); }
 
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -208,7 +213,7 @@ function render() {
     cardF.appendChild(overlay("date", t.nx, t.date - t.dof, fs2, "#2b3a6a", esc(date), t.cw));
   }
   if (t.award && awardEl.value) { var oa = overlay("award", t.award.x, t.award.y + fitFs(t.award, awardEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.award, awardEl.value), "#ffffff", esc(awardEl.value), t.cw); oa.style.fontWeight = "900"; cardF.appendChild(oa); }
-  if (t.ev && eventEl.value) { var oe = overlay("ev", t.ev.x, t.ev.y + fitFs(t.ev, eventEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.ev, eventEl.value), "#1f7a72", esc(eventEl.value), t.cw); oe.style.fontWeight = "900"; cardF.appendChild(oe); }
+  if (t.ev && evText()) { var oe = overlay("ev", t.ev.x, t.ev.y + fitFs(t.ev, evText()) * (t.cw / t.ch) * 0.55, fitFs(t.ev, evText()), "#1f7a72", esc(evText()), t.cw); oe.style.fontWeight = "900"; cardF.appendChild(oe); }
   if (t.cloud) {
     var digits = String(cnt()).length;
     var cw = t.cloud.w;
@@ -306,7 +311,7 @@ function buildHagaki() {
       ctx.fillText(date, x0 + t.nx * cw, y0 + (t.date - t.dof) * ch);
     }
     if (c.front && t.award && awardEl.value) { ctx.save(); ctx.fillStyle = "#ffffff"; ctx.font = "900 " + (fitFs(t.award, awardEl.value) * cw) + "px " + FONT; ctx.fillText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
-    if (c.front && t.ev && eventEl.value) { ctx.save(); ctx.fillStyle = "#1f7a72"; ctx.font = "900 " + (fitFs(t.ev, eventEl.value) * cw) + "px " + FONT; ctx.fillText(eventEl.value, x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, eventEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
+    if (c.front && t.ev && evText()) { ctx.save(); ctx.fillStyle = "#1f7a72"; ctx.font = "900 " + (fitFs(t.ev, evText()) * cw) + "px " + FONT; ctx.fillText(evText(), x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, evText()) * (cw / ch) * 0.55) * ch); ctx.restore(); }
     if (t.cloud) {
       var digits = String(cnt()).length;
       var fsn = Math.min(t.cloud.max || 0.30, t.cloud.w * 0.88 / (digits * 0.62));
@@ -344,6 +349,7 @@ try {
   if (qc) countEl.value = qc;
   if (q.get("award")) awardEl.value = q.get("award");
   if (q.get("ev")) eventEl.value = q.get("ev");
+  if (q.get("year")) yearEl.value = q.get("year");
 } catch (e) {}
 render();
 </script>
