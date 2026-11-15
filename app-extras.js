@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115p";
+window.FY_EXTRAS_VER = "1115q";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3325,6 +3325,7 @@ window.FYAK = FYAK;
 (function () {
   function on() { try { return localStorage.getItem("fy_newlook") !== "off"; } catch (e) { return true; } }
   window.fyNewLookOn = on;
+  window.fySheet = function (b) { sheet(b); }; window.fySheetClose = function () { closeSheet(); };
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
@@ -3604,7 +3605,7 @@ window.FYAK = FYAK;
   }
   function grid() {
     var ls = $("levelScreen"), list = $("levelList"); if (!ls || !list) return;
-    var old = $("fyGrid"); if (old) old.remove();
+    var old = $("fyGrid"); if (old) old.remove(); try { var oh0 = $("fyGridHint"); if (oh0) oh0.remove(); } catch (e0) {}
     if (!on()) { ls.classList.remove("fyNL"); return; }
     ls.classList.add("fyNL");
     var ti = $("levelTitle"); if (ti) ti.textContent = "おんぷカード";
@@ -3629,7 +3630,25 @@ window.FYAK = FYAK;
     });
     g.innerHTML = html;
     list.parentNode.insertBefore(g, list);
+    var lpT = 0, lpDone = false;
+    function lpShow(b) {
+      var c = b.getAttribute("data-c"), lv = +b.getAttribute("data-l");
+      var set = (c === "treble" ? trebleCards : c === "bass" ? bassCards : allCards)[lv] || [], seen = {}, th = "";
+      set.forEach(function (k) { if (seen[k.id]) return; seen[k.id] = 1; th += '<img src="' + k.img + '" alt="" style="width:23%;margin:1%;border-radius:8px;border:2px solid #eadcc8;background:#fff;box-sizing:border-box;">'; });
+      sheet(function (inn) {
+        inn.innerHTML = '<div style="font-size:18px;font-weight:900;margin-bottom:2px;">' + (c === "treble" ? "ト音記号" : c === "bass" ? "ヘ音記号" : "全カード") + '　レベル ' + lv + '</div>' +
+          '<div style="font-size:13px;color:#806c5a;margin-bottom:8px;">この レベルに 出る 音（' + Object.keys(seen).length + ' まい）</div>' +
+          '<div style="max-height:46vh;overflow:auto;-webkit-overflow-scrolling:touch;text-align:left;">' + th + '</div>';
+      });
+    }
+    g.addEventListener("touchstart", function (e) { var b = e.target.closest ? e.target.closest("button[data-c]") : null; if (!b) return; lpDone = false; clearTimeout(lpT); lpT = setTimeout(function () { lpDone = true; lpShow(b); }, 600); }, { passive: true });
+    ["touchend", "touchmove", "touchcancel"].forEach(function (ev) { g.addEventListener(ev, function () { clearTimeout(lpT); }, { passive: true }); });
+    g.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    g.style.webkitTouchCallout = "none"; g.style.webkitUserSelect = "none"; g.style.userSelect = "none";
+    var hint = document.createElement("div"); hint.id = "fyGridHint"; hint.textContent = "💡 数字を 長押しすると、音の範囲が 見られます"; hint.style.cssText = "font-size:11px;color:#a39686;text-align:center;margin:-4px 0 6px;";
+    setTimeout(function () { try { var oh = $("fyGridHint"); if (oh && oh !== hint) oh.remove(); if (g.parentNode && !hint.parentNode) g.parentNode.insertBefore(hint, g.nextSibling); } catch (e) {} }, 0);
     g.addEventListener("click", function (e) {
+      if (lpDone) { lpDone = false; e.preventDefault(); e.stopPropagation(); return; }
       var b = e.target.closest ? e.target.closest("button[data-c]") : null; if (!b) return;
       var c = b.getAttribute("data-c"), lv = +b.getAttribute("data-l");
       if (c !== selectedClef) { selectClef(c); if (selectedClef !== c) return; }   /* ひらいて いない ときは、もとの おしらせが でる */
@@ -3733,7 +3752,39 @@ window.FYAK = FYAK;
       if (p[0] === "train") { selectedClef = p[1]; selectedLevel = parseInt(p[2], 10); try { Storage.set("fy_color_" + activeProfileIndex + "_" + p[1], "off"); } catch (e1) {} proceedToCards(); startTrainingDirect(true); }
       else if (p[0] === "grid") { var c = document.getElementById("fyNLCard"); if (c) c.click(); }
       else if (p[0] === "click") { var el = document.getElementById(p[1]); if (el) el.click(); }
+      else if (p[0] === "guide") { showGuide(); }
       else if (p[0] === "teacher") { var ad = document.getElementById("fyNLAd"); if (ad) ad.click(); }
     } catch (e) {}
   }, 1600);
+})();
+
+/* ===== 🔊 おとが きこえる？（この 機械で はじめて あそぶ とき 1かい だけ） ===== */
+(function () {
+  function ok() { try { return localStorage.getItem("fy_soundok") === "1"; } catch (e) { return true; } }
+  function show(after) {
+    if (!window.fySheet) { if (after) after(); return; }
+    window.fySheet(function (inn) {
+      inn.innerHTML = '<div style="font-size:54px;line-height:1.1;">🔊</div>' +
+        '<div style="font-size:22px;font-weight:900;margin:4px 0 10px;">おとが きこえる？</div>' +
+        '<button id="fySndPlay" class="bt" style="background:#42a5f5;font-size:19px;color:#fff;">▶ おとを ならす</button>' +
+        '<div id="fySndAsk" style="display:none;margin-top:10px;">' +
+          '<button id="fySndYes" class="bt" style="background:#43a047;font-size:19px;color:#fff;">⭕ きこえた！</button>' +
+          '<button id="fySndNo" class="bt" style="background:#fff;color:#c62828;border:2px solid #ef9a9a;font-size:16px;margin-top:8px;">❌ きこえない</button>' +
+        '</div>' +
+        '<div id="fySndTip" style="display:none;text-align:left;font-size:14px;line-height:1.9;font-weight:800;background:#fff8e1;border-radius:12px;padding:10px 12px;margin-top:10px;">① スマホの よこの スイッチ（マナーモード）を たしかめてね<br>② おとの ボタンで、おとを おおきく してね<br>③ もういちど「▶ おとを ならす」を おしてね<br><span style="font-size:12px;color:#806c5a;font-weight:700;">わからない ときは、おうちの ひとに きいてね</span></div>';
+      function q(id) { return inn.querySelector("#" + id); }
+      q("fySndPlay").addEventListener("click", function () { try { playAudioCloned("seikaiAudio"); } catch (e) {} q("fySndAsk").style.display = "block"; });
+      q("fySndYes").addEventListener("click", function () { try { localStorage.setItem("fy_soundok", "1"); } catch (e) {} window.fySheetClose(); if (after) setTimeout(after, 150); });
+      q("fySndNo").addEventListener("click", function () { q("fySndTip").style.display = "block"; });
+    });
+  }
+  window.fySoundCheck = function () { show(null); };
+  document.addEventListener("click", function (e) {
+    try {
+      if (ok() || !(window.fyNewLookOn && window.fyNewLookOn())) return;
+      var b = e.target.closest ? e.target.closest("#fyNLDo, #fyNLCard, #fyNLLeg") : null; if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      show(function () { try { b.click(); } catch (e2) {} });
+    } catch (e3) {}
+  }, true);
 })();
