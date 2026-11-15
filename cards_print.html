@@ -66,7 +66,7 @@
   <div id="rowAward" style="display:none;">
     <input id="inAward" placeholder="賞の なまえ（例：レベルアップ賞）" maxlength="12">
     <div id="awardPick" style="margin:4px 0;"></div>
-    <input id="inYear" placeholder="年度（例：2026年度）" maxlength="8" style="width:120px">
+    <input id="inYear" placeholder="年（例：2027年）" maxlength="8" style="width:120px">
     <input id="inEvent" placeholder="イベントの なまえ（例：ふゆの ふよみイベント）" maxlength="16">
   </div>
   <div id="rowCount">
@@ -139,7 +139,7 @@ var awardEl = document.getElementById("inAward"), eventEl = document.getElementB
 });
 awardEl.addEventListener("input", function () { render(); }); eventEl.addEventListener("input", function () { render(); });
 var yearEl = document.getElementById("inYear");
-(function () { var d = new Date(); yearEl.value = (d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1) + "年度"; })();
+(function () { var d = new Date(); yearEl.value = (d.getMonth() + 1 >= 10 ? d.getFullYear() + 1 : d.getFullYear()) + "年";  /* イベントは 1月。10〜12月に 印刷する ときは、つぎの 年 */ })();
 yearEl.addEventListener("input", function () { render(); });
 function evText() { return [yearEl.value.trim(), eventEl.value.trim()].filter(Boolean).join(" "); }
 function fitFs(o, txt) { return Math.min(o.max, o.w / Math.max(String(txt).length, 1)); }
