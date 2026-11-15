@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115m</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115n</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -100,7 +100,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
       <button class="btn" id="nextBtn" style="display:none;">つぎの レベルへ</button>
       <button class="btn" id="listenBtn" style="display:none;background:#7e57c2;">▶ きょくを もういちど きく</button>
       <button class="btn" id="again" style="background:#78a9c8;">もういちど</button>
-      <button class="btn back" id="backBtn">◀ もどる</button>
+      <button class="btn back" id="backBtn" style="display:none;">◀ もどる</button>
     </div>
   </div>
   <div class="keyboard" id="kb">
@@ -1781,8 +1781,7 @@ function renderScore(bars, beatsPerBar, opt) {
       : '';
     var sn = level === 5 ? seenList().length : 0;
     ov.innerHTML = '<button class="btn go" id="go">スタート</button><div class="tx">' + tx + '</div>' +
-      (sn ? '<button class="btn" id="seenBtn" style="background:#7e57c2;width:78%;margin-top:10px;padding:12px;font-size:15px;">📖 いままでの きょく（' + sn + '）</button>' : '') +
-      '<button class="btn back" id="backBtn2">◀ もどる</button>';
+      (sn ? '<button class="btn" id="seenBtn" style="background:#7e57c2;width:78%;margin-top:10px;padding:12px;font-size:15px;">📖 いままでの きょく（' + sn + '）</button>' : '');
     if (sn) document.getElementById("seenBtn").addEventListener("click", showSeenList);
     /* はじめて ピアノで こたえる レベルを はじめる ときは、🎹を おすか「ピアノを つかわない」を えらぶまで スタートを おせない */
     try {
@@ -1816,7 +1815,7 @@ function renderScore(bars, beatsPerBar, opt) {
     } catch (e) {}
     try { if (!document.getElementById("pianoBig") && !document.getElementById("liGo") && !window.__fyIntroBusy) setTimeout(countVoice, 500); } catch (e) {}
     document.getElementById("go").addEventListener("click", function () { setTimeout(pianoHint, 400); try { if (level !== 5 && !pianoOn && localStorage.getItem("fy_piano_pref") === "1" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) pianoStart(); } catch (e) {} beginCount(); });
-    document.getElementById("backBtn2").addEventListener("click", function () { location.href = "index.html"; });
+    var bb2 = document.getElementById("backBtn2"); if (bb2) bb2.addEventListener("click", function () { location.href = "index.html"; });
   }
   window.__beeps = [];
   var beepBufs = {};
@@ -1904,7 +1903,7 @@ function renderScore(bars, beatsPerBar, opt) {
     if (hk) {
       hb.style.display = "block";
       hb.innerHTML = (hk.st === "new"
-        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">💮</span></div><div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
+        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">⭐</span></div><div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
         : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>') +
         '<div style="font-size:13px;margin-top:4px;line-height:1.6;">今週は <b>' + hk.days + '日め</b><br>' + hintText(hk.days) + '</div>';
       /* 💮が 画面の 下に かくれて 動きを 見のがさないよう、見える ところまで うごかしてから、もういちど 動かす */
@@ -2286,7 +2285,9 @@ function renderScore(bars, beatsPerBar, opt) {
     scr.scrollTop = 0;
     /* 「LINEで おくる」を おしたら、おくった しるしを つける（トップの「きろくと コード」の ひかりが きえる） */
     scr.onclick = function (ev) { try { if (!test && ev.target.closest && ev.target.closest("a")) { var al = getJSON("fy_ach_" + PID, []); if (Array.isArray(al)) { al.forEach(function (r) { if (r && r.code === rec.code && !r.sentAt) r.sentAt = Date.now(); }); localStorage.setItem("fy_ach_" + PID, JSON.stringify(al)); } } } catch (e) {} };
+    try { document.getElementById("fyBack").style.visibility = "hidden"; } catch (eB) {}   /* おいわいの あいだは、下の「もどる」だけ */
     document.getElementById("awClose").addEventListener("click", function () {
+      try { document.getElementById("fyBack").style.visibility = ""; } catch (eB2) {}
       scr.style.display = "none"; celHold = 0; try { playSeq([], null, true); } catch (e0) {}   /* とじたら ファンファーレを とめる */
       /* おいわいの あと：つぎの ちょうせんを おしえる（3つ ぜんぶ とれたら とくべつな こえ） */
       try {
