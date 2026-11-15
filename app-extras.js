@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115t";
+window.FY_EXTRAS_VER = "1115u";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2735,7 +2735,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "") +
-      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent(f[2]) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
+      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent((function () { try { if (typeof EVENT !== "undefined" && EVENT && EVENT.id === f[2] && EVENT.title) return EVENT.title; } catch (eT) {} var mm = String(f[2]).match(/^\d{4}-(\d{1,2})$/); return mm ? (+mm[1]) + "月の ふよみイベント" : f[2]; })()) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
   };
 
   try {
