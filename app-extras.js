@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115j";
+window.FY_EXTRAS_VER = "1115k";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -858,6 +858,14 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     getAch(idx).forEach(function (a) { if (a.type === "legend" && (!best || (a.n || 0) > (best.n || 0))) best = a; });
     return best;
   }
+  /* カードの 絵の「なまえ」「ひづけ」の ところに 文字を のせる（印刷と おなじ 場所） */
+  function cardOv(rec, idx) {
+    if (!rec) return "";
+    var nm = String(rec.name || profiles[idx] || ""), dt = "";
+    try { var d0 = String(rec.date || rec.d || "").match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if (d0) dt = (+d0[1]) + "年" + (+d0[2]) + "月" + (+d0[3]) + "日"; else if (rec.t || rec.at) { var dd = new Date(rec.t || rec.at); dt = dd.getFullYear() + "年" + (dd.getMonth() + 1) + "月" + dd.getDate() + "日"; } else dt = dmd(rec); } catch (e) { dt = dmd(rec); }
+    var fs = Math.min(6, 46 / Math.max(nm.length, 1)), fs2 = Math.min(4, 46 / Math.max(dt.length, 1)), b = "position:absolute;left:57.1%;transform:translate(-50%,-100%);white-space:nowrap;font-weight:800;line-height:1;color:#2b3a6a;";
+    return '<div style="' + b + 'top:72%;font-size:' + fs + 'cqw;">' + esc(nm) + '</div><div style="' + b + 'top:81.3%;font-size:' + fs2 + 'cqw;">' + esc(dt) + '</div>';
+  }
   window.showCardBook = function () {
     try { document.getElementById("fyOvClose").style.display = ""; } catch (e) {}
     var idx = activeProfileIndex, have = 0, list = [];
@@ -874,7 +882,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       it.img = img;
       var st = rec ? "" : "filter:grayscale(1) brightness(.55);opacity:.55;";
       return '<div data-cb="' + i + '" style="text-align:center;' + (rec ? "cursor:pointer;" : "") + '">' +
-        '<div style="position:relative;"><img src="' + img + '" alt="" style="width:100%;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
+        '<div style="position:relative;container-type:inline-size;font-size:0;">' + cardOv(rec, idx) + '<img src="' + img + '" alt="" style="width:100%;display:block;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
         (num ? '<div style="position:absolute;right:3px;bottom:5px;background:#ffb300;color:#5a3a00;font-size:11px;font-weight:900;border-radius:10px;padding:1px 7px;border:2px solid #fff;">' + num + '</div>' : '') +
         (rec ? "" : '<div style="position:absolute;left:0;right:0;top:42%;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;">🔒 まだ</div>') + '</div>' +
         '<div style="font-size:10px;font-weight:800;margin-top:3px;color:#5b4636;">' + label + '</div>' +
@@ -888,7 +896,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         var it = list[+el.getAttribute("data-cb")], rec = it.rec;
         if (!rec) return;
         /* カードを おおきく みるだけ（LINEの ボタンは ださない。おくるのは「きろくと コード」から） */
-        openOverlay('<img src="' + it.img + '" alt="" style="width:86%;max-width:300px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);">' +
+        openOverlay('<div style="position:relative;container-type:inline-size;width:72%;max-width:250px;margin:0 auto;">' + cardOv(rec, activeProfileIndex) + '<img src="' + it.img + '" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);"></div>' +
           '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc(it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
           '<div style="font-size:19px;font-weight:900;margin-top:6px;">' + esc(rec.name || profiles[activeProfileIndex] || "") + ' さん　' + dmd(rec) + '</div>' +
           '<div style="font-size:12px;color:#806c5a;margin-top:2px;">コード：' + esc(rec.code) + '</div>' +
@@ -1646,7 +1654,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   window.fyPrintCard = function (btn) {
     var nick = btn.getAttribute("data-n"), inp = btn.parentNode.querySelector("input"), real = String(inp && inp.value || "").trim();
     try { var cn = JSON.parse(localStorage.getItem("fy_cardnames") || "{}") || {}; if (real) cn[nick] = real; else delete cn[nick]; localStorage.setItem("fy_cardnames", JSON.stringify(cn)); } catch (e) {}
-    window.open("cards_print.html?" + btn.getAttribute("data-q") + "&name=" + encodeURIComponent(real || nick), "_blank");
+    location.href = "cards_print.html?" + btn.getAttribute("data-q") + "&name=" + encodeURIComponent(real || nick);
   };
   /* 先生ページを とじたら、貼った 文と 結果を 消す */
   setInterval(function () {
@@ -2709,7 +2717,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<textarea id="faIn" class="modal-input" style="height:80px;font-size:12px;" placeholder="ここに 貼る"></textarea>' +
         '<button class="modal-btn" style="background:#ef6c00;font-size:13px;padding:9px;" onclick="fyCheckAny()">かくにん する</button>' +
         '<div id="faOut" style="margin:6px 0 4px;"></div>' +
-        '<a href="cards_print.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>';
+        '<a href="cards_print.html" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>';
       t3.insertBefore(a, t3.firstChild);
     }
   } catch (e) {}
@@ -2957,7 +2965,7 @@ window.resetLegendForTest = function () {
         '</div>' +
         '<button class="modal-btn" style="background:#5c6bc0;font-size:13px;padding:9px;" id="fuRestBtn">復元コードを つくる</button>' +
         '<div id="fuRestOut"></div></details>' +
-        '<details id="fuCheckBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">④ コードを しらべる（LINEの リンクが ひらかない とき）</summary><div id="fuCheckSlot"></div></details>' +
+        '<details id="fuCheckBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">④ コードを しらべる ・ カードの 印刷</summary><div id="fuCheckSlot"></div></details>' +
         '<details id="fuGiftBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">⑤ 🎁 ポイントを プレゼント</summary>' +
         '<div style="font-size:12px;color:#806c5a;text-align:left;">いちばん上の「生徒の なまえ」の 子に おくります。おなじ コードは 1かいしか つかえません。</div>' +
         '<div id="fuGiftPick" style="margin:6px 0;"></div>' +
@@ -3421,7 +3429,7 @@ window.FYAK = FYAK;
       var exUns = 0; try { exUns = window.fyExUnsent ? window.fyExUnsent(idx) : 0; } catch (e) {}
       var here = (uns || exUns) ? 0 : (!doOk ? 1 : (chGlow ? 3 : 2));
    /* 📨が あるときは、そちらを さきに しらせる */
-      var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : c[1] === "pend" ? "p" : "") + '">' + c[0] + '<i>' + (c[1] === "on" || c[1] === "pend" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
+      var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : c[1] === "pend" ? "p" : "") + '">' + c[0] + '<i>' + (c[1] === "on" || c[1] === "pend" ? "⭐" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
       var pendN = 0; try { pendN = okList(idx).pend.length; } catch (e) {}
       /* 版の ばんごう（テストの あいだ だけ。もとの「版」の ひょうじを そのまま うつす） */
       var verTx = ""; try { var vb = $("fyVerBar"); if (vb && vb.style.display !== "none") verTx = vb.textContent || ""; } catch (e) {}
@@ -3439,7 +3447,7 @@ window.FYAK = FYAK;
           '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
           (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
         '</div>' +
-        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : (pendN ? '<span class="dot owd" style="top:-12px;right:6px;">🌸</span>' : '')) + '</button>' +
+        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : (pendN ? '<span class="dot owd" style="top:-12px;right:6px;font-size:12px;font-weight:900;">ハンコ</span>' : '')) + '</button>' +
         '<div class="bar">' +
           '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
@@ -3469,11 +3477,11 @@ window.FYAK = FYAK;
         sheet(function (inn) {
           var h = "";
           if (pend.length) {
-            h += '<div style="font-size:64px;line-height:1.1;display:inline-block;animation:fyPon .6s cubic-bezier(.2,.8,.3,1) both;">🌸</div>' +
+            h += '<div style="font-size:64px;line-height:1.1;display:inline-block;animation:fyPon .6s cubic-bezier(.2,.8,.3,1) both;">⭐</div>' +
                  '<div style="font-size:22px;font-weight:900;color:#e65100;margin:4px 0;">ハンコ ポン！' + (pend.length > 1 ? "　×" + pend.length : "") + '</div>' +
                  (pend.indexOf(today) === -1 || pend.length > 1 ? '<div style="font-size:13px;color:#806c5a;">このまえの ぶんも おしたよ</div>' : '');
           } else if (o.st.indexOf(today) !== -1) {
-            h += '<div style="font-size:44px;">🌸</div><div style="font-size:17px;font-weight:900;margin:4px 0;">きょうの ハンコは、もう おしたよ</div>';
+            h += '<div style="font-size:44px;">⭐</div><div style="font-size:17px;font-weight:900;margin:4px 0;">きょうの ハンコは、もう おしたよ</div>';
           } else {
             h += '<div style="font-size:44px;">🎵</div><div style="font-size:17px;font-weight:900;margin:4px 0;line-height:1.6;">きょうは まだ<br>トレーニングを していないよ</div><div style="font-size:13px;color:#806c5a;">トレーニングを すると、ハンコが もらえるよ</div>';
           }
