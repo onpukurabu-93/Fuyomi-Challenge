@@ -73,8 +73,10 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 <body>
 <div id="app">
   <a id="fyBack" href="index.html" style="position:fixed;left:10px;top:10px;z-index:10002;display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:900;font-size:16px;box-shadow:0 4px 0 #c97800;">◀ もどる</a>
+  <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
+  <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115c</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115e</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -592,9 +594,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     d.innerHTML = "音声ファイルの じょうたい<br>" + Object.keys(FILES).map(function (k) { return FILES[k] + "：" + status[k]; }).join("<br>");
   }
   window.__playLog = [];
-  var seqId = 0, seqSrc = null;
+  var seqId = 0, seqSrc = null, seqGain = null;
+  /* いま なっている こえ・おんがくを、だんだん ちいさく して とめる */
+  function fadeOutSeq(ms) { try { var c = ensureCtx(), g = seqGain, sr = seqSrc; if (!c || !g || !sr) return; g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0.0001, c.currentTime + ms / 1000); setTimeout(function () { try { if (seqSrc === sr) { sr.onended = null; sr.stop(0); } } catch (e) {} }, ms + 60); } catch (e) {} }
   /* あたらしい こえを ならすと、まえの こえは とまる（いちばん あたらしいものが かち） */
-  var celHold = 0;   /* おいわいの こえが おわる じこく（それまで ほかの こえは ならさない） */
+  var celHold = 0, celNo = 0;   /* おいわいの こえが おわる じこく（それまで ほかの こえは ならさない） */
   function playSeq(keys, cb, force) {
     if (!force && Date.now() < celHold) { if (cb) { try { cb(); } catch (e) {} } return; }
     var c = ensureCtx(), i = 0, my = ++seqId;
@@ -610,9 +614,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       function start() {
         if (my !== seqId) return;
         try {
-          var src = c.createBufferSource();
-          src.buffer = b; src.connect(c.destination);
-          src.onended = go; seqSrc = src;
+          var src = c.createBufferSource(), gn = c.createGain();
+          src.buffer = b; src.connect(gn); gn.connect(c.destination);
+          src.onended = go; seqSrc = src; seqGain = gn;
           src.start(0);
           setTimeout(go, (b.duration + 1) * 1000);
         } catch (e) { go(); }
@@ -781,6 +785,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     } catch (e) {}
   }
   function renderLv() {
+    try { document.getElementById("app").classList.remove("inSong"); } catch (e) {}
     renderChal();
     var box = document.getElementById("lv"); box.innerHTML = "";
     var mx = getMax();
@@ -1505,7 +1510,7 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:12px;color:#806c5a;margin:8px 0;"><br>' + (IS_IPAD ? '<span style="color:#b26a00;font-weight:800;">' + PAD_MSG + '</span><br>' : '') + 'マイクの びんかん：<select id="scSens" style="font-size:16px;padding:4px;"><option value="6">ふつう</option><option value="3">びんかん</option><option value="1.5">とても びんかん</option></select></div>' +
       '<button class="btn" id="scAgain" style="margin-top:14px;background:#fb8c00;">🔁 もういちど ひく</button>' +
       '<button class="btn" id="scNext" style="margin-top:8px;background:#43a047;">' + nextLabel(sg) + '</button>' +
-      '<button class="btn back" id="scBack" style="margin-top:8px;margin-bottom:140px;">◀ もどる</button>' +
+      '<button id="scBack" style="display:none;"></button><div style="height:150px;"></div>' +
       '<div id="scBar" style="position:fixed;left:0;right:0;bottom:0;background:rgba(253,248,236,.97);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:5;">' +
       '<div style="display:flex;gap:8px;max-width:520px;margin:0 auto;">' +
       '<button class="btn" id="scDemo" style="background:#7e57c2;margin:0;padding:11px 2px;font-size:14px;flex:1;">▶ おてほん</button>' +
@@ -1635,6 +1640,7 @@ function renderScore(bars, beatsPerBar, opt) {
     function toScoreTop() { try { var y = sc.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0, y)); } catch (e) { window.scrollTo(0, 0); } }
     toScoreTop();
     setTimeout(toScoreTop, 60);
+    try { document.getElementById("app").classList.add("inSong"); } catch (e) {}   /* がくふの がめんは、がくふ だけ */
     setTimeout(songGuide, 300);
   }
 
@@ -2200,7 +2206,8 @@ function renderScore(bars, beatsPerBar, opt) {
       try {
         if (test) return;
         var allDone = passCount() >= SONGS.length && playCount() >= SONGS.length && meijinBest() >= 100;
-        var q = []; if (allDone && bufs.zcomp) q.push("zcomp"); if (bufs.znext) q.push("znext");
+        /* 3つ ぜんぶ → とくべつな こえ。マエストロを とって、まだ 名人で ない → 「つぎは 名人」。レジェンドの あとは なにも いわない */
+        var q = []; if (allDone) { if (bufs.zcomp) q.push("zcomp"); } else if (kind === "maestro" && meijinBest() < 100 && bufs.znext) q.push("znext");
         renderChal(); var ch = document.getElementById("fyChal"); if (ch) { try { ch.scrollIntoView({ block: "center" }); } catch (e2) {} }
         if (q.length) playSeq(q);
       } catch (e3) {}
@@ -2215,6 +2222,7 @@ function renderScore(bars, beatsPerBar, opt) {
       playOver("kansei", 300 + 2000);
       playOver("kodomo", 300 + 4000);
       playOver(vKey, 300 + 7000);
+      var myCel = ++celNo; setTimeout(function () { if (myCel === celNo && scr.style.display !== "none") fadeOutSeq(1800); }, 300 + 18200);
     } else {
       celHold = Date.now() + (fanSec + vSec + 1.5) * 1000;
       setTimeout(function () { playSeq([f.snd, vKey], null, true); }, 300);
@@ -2280,7 +2288,7 @@ function renderScore(bars, beatsPerBar, opt) {
     }
     var go0 = document.getElementById("liGo"); go0.classList.add("fyPianoGlow");
     /* こえの よみこみが おわるまで おせない（まにあわないと、はじめの こえが きれる） */
-    go0.disabled = true; go0.style.opacity = ".6"; go0.textContent = "…";
+    go0.disabled = true; go0.style.opacity = ".6"; go0.textContent = "⏳ じゅんびちゅう…";
     var waitN = 0, waitT = setInterval(function () {
       waitN++;
       if ((bufs.zintro && bufs.zlstart) || waitN > 30) { clearInterval(waitT); go0.disabled = false; go0.style.opacity = ""; go0.textContent = "はじめる ▶"; }
