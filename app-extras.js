@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115l";
+window.FY_EXTRAS_VER = "1115m";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -416,6 +416,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   function cardHtml(rec) {
     var f = infoOf(rec);
+    /* おいわいの とき：コードも 送る ボタンも 出さない。「なれた こと」だけを 大きく */
+    if (celebrating && window.fyNewLookOn && window.fyNewLookOn()) {
+      return '<div style="border:4px double ' + f.bd + ';border-radius:20px;background:' + f.bg + ';padding:18px 10px;margin-bottom:10px;text-align:center;color:' + f.tx + ';">' +
+        '<div style="font-size:64px;line-height:1.15;">' + f.icon + '</div>' +
+        '<div style="font-size:' + (String(titleOf(rec)).length > 9 ? 24 : 28) + 'px;font-weight:900;margin:6px 0 2px;line-height:1.3;">' + esc(titleOf(rec)) + '</div>' +
+        '<div style="font-size:20px;font-weight:900;color:' + f.ac + ';">' + esc(subOf(rec)) + '</div>' +
+        '<div style="font-size:24px;font-weight:900;margin:10px 0 2px;">' + esc(rec.name) + ' さん</div>' +
+        '<div style="font-size:14px;">' + dmd(rec) + '</div>' +
+        (rec.pt ? '<div style="font-size:22px;font-weight:900;margin-top:8px;">🎁 +' + rec.pt + ' ポイント</div>' : '') +
+        '</div>';
+    }
     var sentG = !!(rec.us && rec.sentAt);
     return '<div style="border:3px double ' + (sentG ? '#bbb' : f.bd) + ';border-radius:16px;background:' + (sentG ? '#eee' : f.bg) + ';padding:12px;margin-bottom:10px;text-align:center;color:' + (sentG ? '#888' : f.tx) + ';' + (sentG ? 'filter:grayscale(1);' : '') + '">' +
       '<div style="font-size:30px;line-height:1.2;">' + f.icon + '</div>' +
@@ -480,7 +491,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:40px;">🎉</div>' +
       '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>';
     recs.forEach(function (r) { body += cardHtml(r); });
-    body += sendText();
+    if (!(celebrating && window.fyNewLookOn && window.fyNewLookOn())) body += sendText();
     openOverlay(body);
     if (!viewOnly) { try { window.__fyCelUntil = Date.now() + 12000; } catch (e) {} playCelSounds(recs); }
   }
