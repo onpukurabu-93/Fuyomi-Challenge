@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115n";
+window.FY_EXTRAS_VER = "1115o";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -438,7 +438,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       (rec.pt ? '<div style="font-size:16px;font-weight:900;margin-top:4px;">🎁 +' + rec.pt + ' ポイント</div>' : '') +
       '</div>' +
       ((rec.us && rec.sentAt) ? '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin:2px 0;">✓ せんせいに おくったよ</div>' : '') +
-      '<div data-fysend="' + esc(rec.code) + '"' + ((rec.us && rec.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code); if (celebrating && isUnsent(rec) && window.fyNewLookOn && window.fyNewLookOn()) return '<div style="font-size:14px;font-weight:900;line-height:1.6;color:#2e7d32;background:#eef8ee;border-radius:12px;padding:10px;margin-top:6px;">📨 さいごに「🌙 きょうは おわり」で<br>せんせいに おくれるよ</div>'; return (isUnsent(rec) || !rec.us && celebrating) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
+      '<div data-fysend="' + esc(rec.code) + '"' + ((rec.us && rec.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + rec.name + ' さん　' + titleOf(rec) + '　' + subOf(rec) + '\nコード：' + rec.code); if (window.fyNewLookOn && window.fyNewLookOn()) return ""; return (isUnsent(rec) || !rec.us && celebrating) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
       '<div style="height:8px"></div>';
   }
 
@@ -841,6 +841,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
     if (visible.length) {
       visible.forEach(function (r) { html += cardHtml(r); });
+      if (window.fyNewLookOn && window.fyNewLookOn()) {
+        /* おくるのは「きょうは おわり」から。おくれなかった とき だけ、ここから もういちど */
+        var rl = visible.map(function (r) { return "🏅 " + titleOf(r) + "　" + subOf(r) + "　コード：" + r.code; });
+        try { rl = rl.concat(window.fyExAllLines(idx) || []); } catch (eR) {}
+        html += '<a href="https://line.me/R/oaMessage/' + (window.FY_OA || "@892rfjzh") + '/?' + encodeURIComponent("【ふよみ】" + (profiles[idx] || "") + " さん\n" + rl.join("\n")) + '" target="_blank" rel="noopener" style="display:block;font-size:12px;color:#8a7a68;text-decoration:underline;margin:2px 0 8px;">おくれなかった ときは ここ</a>';
+      }
       html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">コードは、せんせいに おくってから ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     } else {
       html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは、せんせいに おくってから ' + CODE_DAYS + '日で みえなくなるよ。</div>';
@@ -2211,12 +2217,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc2(e.name) + ' さん</div>' +
       '<div style="font-size:13px;">' + md(e.d) + '</div>' +
       '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
-      '<div style="font-size:11px;color:#806c5a;line-height:1.6;">したの ボタンで せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
+      '<div style="font-size:11px;color:#806c5a;line-height:1.6;">' + (window.fyNewLookOn && window.fyNewLookOn() ? '' : 'したの ボタンで せんせいに おくってね。<br>') + 'のこり <b>' + e.rest + ' p</b></div>' +
       ((e.us && e.sentAt) ? '<div style="font-size:13px;font-weight:900;color:#2e7d32;margin:2px 0;">✓ せんせいに おくったよ</div>' : '') +
-      '<div data-fyexsend="' + e.code + '"' + ((e.us && e.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）'); return (e.us && !e.sentAt) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
+      '<div data-fyexsend="' + e.code + '"' + ((e.us && e.sentAt) ? ' style="opacity:.45;filter:grayscale(1);"' : '') + '>' + (function () { var h = window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）'); if (window.fyNewLookOn && window.fyNewLookOn()) return ""; return (e.us && !e.sentAt) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
       '</div>';
   }
   /* まだ せんせいに おくっていない こうかんの かず */
+  window.fyExAllLines = function (idx) { try { return exLog(idx).filter(function (e) { return e && e.us; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
   window.fyExUnsentLines = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
   window.fyMarkExSent = function (idx) { try { var log = exLog(idx), ch = false; log.forEach(function (e) { if (e.us && !e.sentAt) { e.sentAt = Date.now(); ch = true; } }); if (ch) Storage.set("fy_tp_log_" + idx, log); } catch (e) {} };
   window.fyExUnsent = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).length; } catch (e) { return 0; } };
@@ -3458,7 +3465,7 @@ window.FYAK = FYAK;
           '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
           (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
         '</div>' +
-        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : (pendN ? '<span class="dot owd" style="top:-12px;right:6px;font-size:12px;font-weight:900;">ハンコ</span>' : '')) + '</button>' +
+        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : '') + '</button>' +
         '<div class="bar">' +
           '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
