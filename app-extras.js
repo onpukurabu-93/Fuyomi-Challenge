@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115q";
+window.FY_EXTRAS_VER = "1115r";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3752,7 +3752,13 @@ window.FYAK = FYAK;
       if (p[0] === "train") { selectedClef = p[1]; selectedLevel = parseInt(p[2], 10); try { Storage.set("fy_color_" + activeProfileIndex + "_" + p[1], "off"); } catch (e1) {} proceedToCards(); startTrainingDirect(true); }
       else if (p[0] === "grid") { var c = document.getElementById("fyNLCard"); if (c) c.click(); }
       else if (p[0] === "click") { var el = document.getElementById(p[1]); if (el) el.click(); }
-      else if (p[0] === "guide") { showGuide(); }
+      else if (p[0] === "guide") {
+        /* iPhoneは、画面を おして からで ないと 声が 出ない。だから、ボタンを おして から はじめる */
+        var gb = document.createElement("button"); gb.textContent = "▶ あんないを はじめる（テスト）";
+        gb.style.cssText = "position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);z-index:10005;border:4px solid #fff;border-radius:20px;padding:16px 20px;font-size:18px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 6px 18px rgba(0,0,0,.35);";
+        gb.addEventListener("click", function () { gb.remove(); showGuide(); });
+        document.body.appendChild(gb);
+      }
       else if (p[0] === "teacher") { var ad = document.getElementById("fyNLAd"); if (ad) ad.click(); }
     } catch (e) {}
   }, 1600);
