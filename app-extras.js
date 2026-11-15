@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115h";
+window.FY_EXTRAS_VER = "1115i";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1631,11 +1631,27 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       html += '<b>' + esc3(x.f.label) + '</b>　<span style="color:#806c5a;">' + x.f.d + '　コード ' + esc3(x.code) + '</span><br>';
       if (dn) html += '<b style="color:#c62828;">⚠ この コードは ' + esc3(dn.d) + ' に 確認ずみです' + (x.f.ex ? "（もう わたして います）" : "") + '</b><br>';
       else html += '<button data-k="' + esc3(key) + '" data-l="' + esc3(x.f.label) + '" onclick="window.fyChkDone(this)" style="' + bs + 'background:#2e7d32;">' + (x.f.ex ? "🎁 わたした" : "✓ 確認ずみに する") + '</button>';
-      if (x.f.card) html += '<a href="cards_print.html?type=' + x.f.card + '&name=' + encodeURIComponent(name) + '&date=' + x.f.d + (x.f.count ? '&count=' + x.f.count : '') + '" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;' + bs + 'background:#1565c0;">🖨 カードを 印刷</a>';
+      if (x.f.card) html += window.fyPrintRow(name, 'type=' + x.f.card + '&date=' + x.f.d + (x.f.count ? '&count=' + x.f.count : ''));
       html += '</div>';
     });
     return { kind: "text", html: html };
   };
+  window.fyPrintRow = function (nick, q) {
+    var cn = {}; try { cn = JSON.parse(localStorage.getItem("fy_cardnames") || "{}") || {}; } catch (e) {}
+    var real = String(cn[nick] || "").replace(/[&<>"]/g, ""), nk = String(nick).replace(/[&<>"]/g, "");
+    return '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #cfd8dc;"><span style="font-size:12px;color:#806c5a;">カードに のせる 名前（本名。先生の 機械の 中だけに 残ります）</span><br>' +
+      '<input value="' + real + '" placeholder="空なら「' + nk + '」の まま" maxlength="10" style="width:150px;font-size:15px;padding:7px;border:2px solid #cfd8dc;border-radius:8px;font-family:inherit;box-sizing:border-box;vertical-align:middle;"> ' +
+      '<button data-n="' + nk + '" data-q="' + q + '" onclick="window.fyPrintCard(this)" style="border:none;border-radius:10px;padding:9px 12px;font-size:14px;font-weight:800;font-family:inherit;color:#fff;background:#1565c0;vertical-align:middle;">🖨 カードを 印刷</button></div>';
+  };
+  window.fyPrintCard = function (btn) {
+    var nick = btn.getAttribute("data-n"), inp = btn.parentNode.querySelector("input"), real = String(inp && inp.value || "").trim();
+    try { var cn = JSON.parse(localStorage.getItem("fy_cardnames") || "{}") || {}; if (real) cn[nick] = real; else delete cn[nick]; localStorage.setItem("fy_cardnames", JSON.stringify(cn)); } catch (e) {}
+    window.open("cards_print.html?" + btn.getAttribute("data-q") + "&name=" + encodeURIComponent(real || nick), "_blank");
+  };
+  /* 先生ページを とじたら、貼った 文と 結果を 消す */
+  setInterval(function () {
+    try { var fi = document.getElementById("faIn"), fo = document.getElementById("faOut"); if (fi && fi.offsetParent === null && (fi.value || (fo && fo.innerHTML))) { fi.value = ""; if (fo) fo.innerHTML = ""; var fe = document.getElementById("feOut"); if (fe) fe.innerHTML = ""; } } catch (e) {}
+  }, 1000);
   window.fyChkDone = function (btn) {
     try {
       var key = btn.getAttribute("data-k"), lab = btn.getAttribute("data-l"), nm2 = key.split("|")[0], d = new Date().toISOString().slice(0, 10);
@@ -2666,7 +2682,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "");
+      (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "") +
+      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent(f[2])) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は、印刷の ページで えらびます</span></div>';
   };
 
   try {
