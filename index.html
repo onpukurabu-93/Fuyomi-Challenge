@@ -269,6 +269,9 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 .compare-table th { background: #fdf8ed; font-weight: 700; }
 
 #confettiCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+
+/* ① おおきい がめん：ひだりうえの「◀ もどる」は、スクロールしても みえている */
+.screen .header{position:sticky;top:0;z-index:50;background:rgba(251,246,236,.95);padding:6px 0;margin-top:-6px}
 </style>
 </head>
 <body>
@@ -1291,7 +1294,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1115b";
+var FY_INDEX_VER = "1115c";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1393,9 +1396,16 @@ function fyGateNote(html) {
   d.querySelector("button").addEventListener("click", function () { d.remove(); });
   document.body.appendChild(d);
 }
+/* 🔒 おとなの かくにん（たしざん）。とけたら onOk を よぶ。いろおんぷの きりかえと おなじ もん・おなじ ロック */
+function fyParentGate(onOk, title) {
+  window.__fyGateOk = onOk; window.__fyGateTitle = title || "";
+  fyColorSwitchAsk(null);
+}
 function fyColorSwitchAsk(toColor) {
   if (fyGateLockLeft() > 0) { fyGateNote("いまは ひらけません。<br>おうちの かたに おねがいしてね<br><span style='font-size:12px;color:#806c5a;'>（あと " + Math.ceil(fyGateLockLeft() / 60000) + " ふんくらい）</span>"); return; }
   var wrong = 0;
+  var gateOk = (toColor === null) ? window.__fyGateOk : null, gateTitle = window.__fyGateTitle || "";
+  window.__fyGateOk = null;
   var d = document.createElement("div");
   d.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10003;background:rgba(60,40,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
   var msg = toColor
@@ -1412,8 +1422,8 @@ function fyColorSwitchAsk(toColor) {
   newQ();
   d.innerHTML = '<div style="background:#fffaf0;border-radius:18px;padding:16px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35);">' +
     '<div style="font-size:18px;font-weight:900;color:#b3541e;">ほごしゃの かたへ</div>' +
-    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">' + (toColor ? "🎨 いろおんぷに もどしますか？" : "🎼 くろおんぷに しますか？") + '</div>' +
-    '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-bottom:8px;">' + msg + '</div>' +
+    '<div style="font-size:16px;font-weight:900;color:#5d4037;margin:6px 0;">' + (gateOk ? gateTitle : (toColor ? "🎨 いろおんぷに もどしますか？" : "🎼 くろおんぷに しますか？")) + '</div>' +
+    '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-bottom:8px;">' + (gateOk ? "" : msg) + '</div>' +
     '<div style="font-size:12px;color:#806c5a;">まちがいを ふせぐため、けいさんしてください</div>' +
     '<div id="fyQ" style="font-size:28px;font-weight:900;color:#5d4037;margin:6px 0 2px;"></div>' +
     '<div id="fyA" style="font-size:26px;font-weight:900;color:#3f51b5;min-height:36px;border-bottom:2px solid #d8c8b0;margin:0 40px 8px;"></div>' +
@@ -1430,7 +1440,7 @@ function fyColorSwitchAsk(toColor) {
       var n = btn.getAttribute("data-n");
       if (n === "c") { typed = ""; eEl.textContent = ""; }
       else if (n === "ok") {
-        if (parseInt(typed, 10) === ans) { d.remove(); fyColorSwitch(toColor); }
+        if (parseInt(typed, 10) === ans) { d.remove(); if (gateOk) { try { gateOk(); } catch (e) {} } else fyColorSwitch(toColor); }
         else {
           wrong++;
           if (wrong >= 3) { d.remove(); try { Storage.set("fy_gatelock_" + activeProfileIndex, Date.now()); } catch (e) {} fyGateNote("3かい まちがえたので、<br>とじました。<br>おうちの かたに おねがいしてね"); return; }
@@ -2555,6 +2565,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261115b"></script>
+<script src="app-extras.js?v=20261115c"></script>
 </body>
 </html>
