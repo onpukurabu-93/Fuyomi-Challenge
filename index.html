@@ -1294,7 +1294,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1115n";
+var FY_INDEX_VER = "1115o";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2203,7 +2203,7 @@ function showResultScreen() {
       if (isAllCase) {
         /* 全カード：「もういちど20問」を一番目立たせ、表彰式ボタンは白で2番目 */
         btnWrap.innerHTML += `<button class="select-button accent" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
-        btnWrap.innerHTML += `<button class="select-button" onclick="openAwardModal()">🏆 ひょうしょうしきへ！</button>`;
+        /* 「ひょうしょうしきへ」は やめた（おいわいは とった ときに 出る。あとからは「きろく」で 見る） */
       } else if (!fyColorActive()) {
         btnWrap.innerHTML += `<button class="select-button" style="margin-top:6px;" onclick="start20QuestionTraining()">もういちど 20問にチャレンジ</button>`;
       }
@@ -2565,6 +2565,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261115n"></script>
+<script src="app-extras.js?v=20261115o"></script>
 </body>
 </html>
