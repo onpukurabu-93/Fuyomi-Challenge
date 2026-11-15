@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115k</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115l</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -2279,7 +2279,7 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:22px;font-weight:900;margin:12px 0 2px;">' + (rec.name || "") + ' さん</div>' +
       '<div style="font-size:13px;">' + dt + '</div>' +
       '<div style="font-size:36px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:12px;padding:8px 0;margin:10px 0;">' + rec.code + '</div>' +
-      window.fyLineCheck('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code) +
+      ((function () { try { return localStorage.getItem("fy_newlook") !== "off"; } catch (e) { return true; } })() ? '<div style="font-size:14px;font-weight:900;line-height:1.6;color:#2e7d32;background:#eef8ee;border-radius:12px;padding:10px;margin-top:6px;">📨 さいごに「🌙 きょうは おわり」で<br>せんせいに おくれるよ</div>' : window.fyLineCheck('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code)) +
       (gp ? '<div style="font-size:20px;font-weight:900;color:' + f.ac + ';margin-top:10px;">🎁 +' + gp + ' ポイント</div>' : '') +
       '<button class="btn back" id="awClose" style="margin-top:16px;position:sticky;bottom:8px;">◀ もどる</button></div>';
     scr.scrollTop = 0;
