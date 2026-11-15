@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115b";
+window.FY_EXTRAS_VER = "1115c";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -432,7 +432,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   ov.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:10001;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
   ov.innerHTML = '<div style="width:100%;max-width:360px;max-height:88vh;overflow-y:auto;background:#fff;border-radius:20px;padding:16px;box-sizing:border-box;text-align:center;color:#5b4636;">' +
     '<div id="fyOvBody"></div>' +
-    '<button id="fyOvClose" style="width:100%;margin-top:6px;padding:12px;font-size:16px;font-weight:800;border:none;border-radius:12px;background:#78a9c8;color:#fff;">とじる</button>' +
+    '<button id="fyOvClose" style="width:100%;margin-top:6px;padding:13px;font-size:17px;font-weight:900;border:none;border-radius:16px;background:#ff9800;color:#fff;position:sticky;bottom:-16px;z-index:5;box-shadow:0 -14px 14px -6px rgba(255,255,255,.95);">◀ もどる</button>' +
     '</div>';
   document.body.appendChild(ov);
   document.getElementById("fyOvClose").addEventListener("click", function () {
@@ -464,7 +464,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   function sendText() {
-    return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + 'コードは ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
+    return '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">' + 'コードは、せんせいに おくってから ' + CODE_DAYS + '日で みえなくなるよ。<br>カードは せんせいから わたすよ！</div>';
   }
 
   /* おいわい画面：いくつ あっても、1つの がめんに ならべる（スクショが 1回で すむ） */
@@ -825,9 +825,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
     if (visible.length) {
       visible.forEach(function (r) { html += cardHtml(r); });
-      html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
+      html += '<div style="font-size:12px;color:#806c5a;margin-bottom:8px;">コードは、せんせいに おくってから ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     } else {
-      html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは ' + CODE_DAYS + '日で みえなくなるよ。</div>';
+      html += '<div style="font-size:13px;line-height:1.6;margin-bottom:10px;color:#806c5a;">いま みえる コードは ないよ。<br>コードは、せんせいに おくってから ' + CODE_DAYS + '日で みえなくなるよ。</div>';
     }
     html += '<button id="fyRestoreBtn" style="width:100%;margin:2px 0 4px;padding:8px;font-size:12px;font-weight:700;border:1px dashed #b0a090;border-radius:10px;background:#fff;color:#806c5a;">🔁 記録の復元（先生から コードが 届いたとき）</button>';
     html += '<button id="fyBackupBtn" style="width:100%;margin:2px 0 4px;padding:8px;font-size:12px;font-weight:700;border:1px dashed #b0a090;border-radius:10px;background:#fff;color:#806c5a;">📤 きろくを うつす コードを つくる（きかい へんこう）</button>';
@@ -2140,10 +2140,20 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '<div style="font-size:19px;font-weight:900;margin:4px 0;">' + esc2(e.name) + ' さん</div>' +
       '<div style="font-size:13px;">' + md(e.d) + '</div>' +
       '<div style="font-size:30px;font-weight:900;letter-spacing:6px;background:#fff;border-radius:10px;padding:6px 0;margin:4px 0;">' + e.code + '</div>' +
-      '<div style="font-size:11px;color:#806c5a;line-height:1.6;">この がめんを スクショして<br>せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
-      window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）') +
+      '<div style="font-size:11px;color:#806c5a;line-height:1.6;">したの ボタンで せんせいに おくってね。<br>のこり <b>' + e.rest + ' p</b></div>' +
+      '<div data-fyexsend="' + e.code + '">' + (function () { var h = window.fyLineCheck('【ふよみ】' + e.name + ' さん　ポイント こうかん ' + e.amt + 'p\nコード：' + e.code + '（のこり ' + e.rest + 'p）'); return (e.us && !e.sentAt) ? h : h.replace(/fyLineBlink/g, ""); })() + '</div>' +
       '</div>';
   }
+  /* まだ せんせいに おくっていない こうかんの かず */
+  window.fyExUnsent = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).length; } catch (e) { return 0; } };
+  document.addEventListener("click", function (ev) {
+    try {
+      var w = ev.target.closest ? ev.target.closest("[data-fyexsend]") : null; if (!w || !ev.target.closest("a")) return;
+      var idx = activeProfileIndex, log = exLog(idx), code = w.getAttribute("data-fyexsend"), ch = false;
+      log.forEach(function (e) { if (e.code === code && !e.sentAt) { e.sentAt = Date.now(); ch = true; } });
+      if (ch) Storage.set("fy_tp_log_" + idx, log);
+    } catch (e2) {}
+  }, true);
   function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
   function exMain(amt) {
@@ -2164,12 +2174,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<div style="font-size:12px;color:#806c5a;line-height:1.7;margin-top:8px;">こうかんすると、ポイントが へります。<br>もどせません。</div>';
     }
     /* さいきんの こうかん（スクショを とりわすれたとき） */
-    var now = Date.now(), recent = exLog(idx).filter(function (e) { return now - e.t < EX_DAYS * 86400000; });
+    var now = Date.now(), recent = exLog(idx).filter(function (e) { return (e.us && !e.sentAt) || now - (e.sentAt || e.t) < EX_DAYS * 86400000; });
     if (recent.length) {
-      html += '<div style="font-size:12px;font-weight:800;margin-top:14px;text-align:left;">さいきんの こうかん（' + EX_DAYS + '日で きえるよ）</div>';
+      html += '<div style="font-size:12px;font-weight:800;margin-top:14px;text-align:left;">さいきんの こうかん（せんせいに おくってから ' + EX_DAYS + '日で きえるよ）</div>';
       recent.slice().reverse().forEach(function (e) { html += receiptHtml(e); });
     }
-    html += '<button id="fyExClose" style="' + BTN + 'background:#ccc;color:#5b4636;">とじる</button>';
+    html += '<button id="fyExClose" style="' + BTN + 'background:#ff9800;color:#fff;font-weight:900;position:sticky;bottom:-16px;z-index:5;box-shadow:0 -14px 14px -6px rgba(253,248,237,.95);">◀ もどる</button>';
     exShell(html);
 
     var q = function (id) { return document.getElementById(id); };
@@ -2201,6 +2211,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var code = (typeof window.fyExchangeCode === "function") ? window.fyExchangeCode(name, amt, rest, d) : "----";
       var e = { t: Date.now(), d: d, amt: amt, rest: rest, code: code, name: name };
       Storage.set(K.tp(idx), rest);
+      e.us = 1;
       var log = exLog(idx); log.push(e);
       if (log.length > 20) log = log.slice(log.length - 20);
       Storage.set("fy_tp_log_" + idx, log);
@@ -3190,8 +3201,9 @@ window.resetLegendForTest = function () {
     "#fyTop .pal u{position:absolute;left:21px;top:34px;width:15px;height:8px;border:3px solid #5a4636;border-top:none;border-radius:0 0 12px 12px}" +
     "#fyTop .hello{position:absolute;left:92px;top:26px;max-width:190px;background:#fff;border:none;border-radius:20px;padding:7px 14px 8px;font-weight:900;font-size:20px;color:#5a4636;box-shadow:0 4px 0 rgba(90,70,54,.10);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}" +
     "#fyTop .hello small{font-size:12px}" +
-    "#fyTop .wk{position:absolute;left:94px;top:74px;font-size:11px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:1px 8px;color:#2e7d32}" +
-    "#fyTop .pt{position:absolute;right:14px;top:40px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:62px;height:62px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.10);transform:rotate(8deg)}" +
+    "#fyTop .wk{position:absolute;left:94px;top:72px;font-size:12px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:3px 10px;color:#2e7d32;font-family:inherit;touch-action:manipulation}" +
+    "#fyTop .pt{position:absolute;right:14px;top:40px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:64px;height:64px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 5px 0 rgba(160,60,90,.35);transform:rotate(8deg);font-family:inherit;padding:0;touch-action:manipulation}" +
+    "@keyframes fyNLp{0%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 0 rgba(255,143,171,.9)}100%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 14px rgba(255,143,171,0)}}#fyTop .pt.can{animation:fyNLp 1.3s ease-out infinite}" +
     "#fyTop .pt b{font-size:21px;display:block;line-height:1;margin-top:11px}#fyTop .pt span{font-size:9px}" +
     "#fyTop .hk{flex:none;margin:6px 14px 0;background:#fff;border-radius:22px;padding:6px 12px 7px;border:3px dashed #a9d8f5;display:flex;justify-content:space-between;cursor:pointer}" +
     "#fyTop .hk div{width:38px;text-align:center;font-size:11px;font-weight:900;color:#9bb4c7}" +
@@ -3236,7 +3248,7 @@ window.resetLegendForTest = function () {
     var d = document.createElement("div"); d.id = "fySheet";
     d.innerHTML = '<div class="in"></div>';
     var inn = d.firstChild; build(inn);
-    var c = document.createElement("button"); c.className = "bt cls"; c.textContent = "とじる"; c.addEventListener("click", closeSheet); inn.appendChild(c);
+    var c = document.createElement("button"); c.className = "bt cls"; c.textContent = "◀ もどる"; c.style.cssText = "position:sticky;bottom:-22px;"; c.addEventListener("click", closeSheet); inn.appendChild(c);
     d.addEventListener("click", function (e) { if (e.target === d) closeSheet(); });
     document.body.appendChild(d);
   }
@@ -3284,14 +3296,15 @@ window.resetLegendForTest = function () {
       var ch = $("fyChunkBtn"), chLock = !ch || ch.classList.contains("locked"), chGlow = ch && /fyPulse|fyGold/.test(ch.className);
       var ev = $("fyEvBtn"), evOn = !!(ev && ev.style.display !== "none");
       var uns = 0; try { uns = window.fyUnsentCount ? window.fyUnsentCount(idx) : 0; } catch (e) {}
-      var here = !doOk ? 1 : (chGlow ? 3 : 2);
+      var exUns = 0; try { exUns = window.fyExUnsent ? window.fyExUnsent(idx) : 0; } catch (e) {}
+      var here = (uns || exUns) ? 0 : (!doOk ? 1 : (chGlow ? 3 : 2));   /* 📨が あるときは、そちらを さきに しらせる */
       var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : "") + '">' + c[0] + '<i>' + (c[1] === "on" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
       var html =
         '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
           '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
           '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
-          (wk ? '<div class="wk">🌱 わかば</div>' : '') + '</div>' +
-        '<div class="pt"><b>' + pts + '</b><span>ポイント</span></div>' +
+          (wk ? '<button class="wk" id="fyNLWk">🌱 わかば</button>' : '') + '</div>' +
+        '<button class="pt' + (pts >= 10 ? " can" : "") + '" id="fyNLPt"><b>' + pts + '</b><span>ポイント</span>' + (exUns ? '<span class="dot" style="top:-8px;right:-6px;">📨</span>' : '') + '</button>' +
         '<div class="hk" id="fyNLHk">' + hk + '</div>' +
         '<div class="road">' +
           '<button class="st s1' + (here === 1 ? " here" : "") + '" id="fyNLDo"><div class="ic">🎵</div><div>6つの「ド」</div>' + (doOk ? '<span class="r">💮</span>' : '') + '</button>' +
@@ -3300,9 +3313,9 @@ window.resetLegendForTest = function () {
           (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
         '</div>' +
         '<div class="bar">' +
-          '<button id="fyNLRec"><b style="background:#ffe08a">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
+          '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
-          '<button id="fyNLEx"><b style="background:#b8ecc0">🎁</b>こうかん</button>' +
+          '<button id="fyNLEx"><b style="background:#b8ecc0">🎁</b>こうかん' + (exUns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLAd"><b style="background:#e3e3e3">⚙️</b>おとな</button>' +
         '</div><div class="gr"><div class="cr">音声：VOICEVOX:ずんだもん</div></div>';
       /* なかみが おなじなら、つくりなおさない（つくりなおしを くりかえすと、ボタンが おせなく なる） */
@@ -3319,13 +3332,21 @@ window.resetLegendForTest = function () {
       $("fyNLRec").addEventListener("click", function () { try { window.showCardCodes(); } catch (e) {} });
       $("fyNLBook").addEventListener("click", function () { try { window.showCardBook(); } catch (e) {} });
       $("fyNLEx").addEventListener("click", function () { clickOld("#fyExBtn"); });
+      $("fyNLPt").addEventListener("click", function () { clickOld("#fyExBtn"); });
+      /* 🌱 わかば：おすと たしざん → とけたら はずせる */
+      if ($("fyNLWk")) $("fyNLWk").addEventListener("click", function () { try { fyParentGate(function () { fyWakabaSet(false); schedule(); }, "🌱 わかばマークを はずします"); } catch (e) { clickOld("#fyWakabaChip"); } });
       $("fyNLAd").addEventListener("click", function () {
         sheet(function (inn) {
-          inn.innerHTML = '<div style="font-size:17px;font-weight:900;margin-bottom:4px;">⚙️ おとなの かたへ</div>';
-          [["📊 保護者・先生ページ", function () { closeSheet(); clickOld([].filter.call(document.querySelectorAll("#selectScreen > .select-button.challenge"), function (b) { return b.textContent.indexOf("保護者") !== -1; })[0]); }],
-           ["➕ プレイヤーを ふやす", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }],
-           [wk ? "🌱 わかばマーク：つけている（おすと はずす）" : "🌱 わかばマークを つける", function () { closeSheet(); clickOld("#fyWakabaChip"); }]
-          ].forEach(function (x) { var b = document.createElement("button"); b.className = "bt"; b.textContent = x[0]; b.addEventListener("click", x[1]); inn.appendChild(b); });
+          inn.innerHTML = '<div style="font-size:17px;font-weight:900;margin-bottom:4px;">⚙️ 大人の方へ</div>';
+          function go(fn) { return function () { closeSheet(); try { toggleModal("managementModal", true); resetMgSection(); fn(); } catch (e) { clickOld([].filter.call(document.querySelectorAll("#selectScreen > .select-button.challenge"), function (b) { return b.textContent.indexOf("保護者") !== -1; })[0]); } }; }
+          var items = [["👪 保護者ページ", go(function () { showParentAuth(); })],
+           ["🎹 先生ページ", go(function () { showTeacherAuth(); })],
+           ["➕ プレイヤーを増やす", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }]];
+          if (!wk) items.push(["🌱 わかばマークをつける（光と声の案内）", function () { closeSheet(); try { fyWakabaSet(true); } catch (e) {} schedule(); }]);
+          items.forEach(function (x) { var b = document.createElement("button"); b.className = "bt"; b.textContent = x[0]; b.addEventListener("click", x[1]); inn.appendChild(b); });
+          var cr = document.createElement("details"); cr.style.cssText = "margin-top:12px;font-size:12px;color:#806c5a;text-align:left;";
+          cr.innerHTML = '<summary style="font-weight:800;padding:6px 2px;">クレジット</summary><div style="line-height:1.9;padding:2px 6px;">音声：VOICEVOX:ずんだもん<br>効果音：効果音ラボ</div>';
+          inn.appendChild(cr);
         });
       });
       $("fyNLName").addEventListener("click", function () {
@@ -3338,6 +3359,8 @@ window.resetLegendForTest = function () {
             b.addEventListener("click", function () { closeSheet(); if (i === idx) return; try { var sel = $("profileSelect"); if (sel) { sel.value = String(i); confirmProfileSelect(); } } catch (e) {} schedule(); });
             inn.appendChild(b);
           });
+          var more = 0; profiles.forEach(function (p) { if (p) more++; });
+          if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:13px;background:#f3ede2;box-shadow:none;padding:10px;"; ad.textContent = "➕ プレイヤーを ふやす"; ad.addEventListener("click", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }); inn.appendChild(ad); }
         });
       });
       $("fyNLHk").addEventListener("click", function () {
@@ -3415,4 +3438,23 @@ window.resetLegendForTest = function () {
   window.fyNewLookSet = function (v) { try { localStorage.setItem("fy_newlook", v ? "on" : "off"); } catch (e) {} location.reload(); };
   if (document.readyState === "complete") setTimeout(hook, 300); else window.addEventListener("load", function () { setTimeout(hook, 300); });
   setTimeout(hook, 1500);
+})();
+
+/* 📨 「LINEで おくる」を おして、アプリに もどって きたとき：へんじを まってね の おしらせ */
+(function () {
+  var sentAt = 0;
+  document.addEventListener("click", function (e) {
+    try { var a = e.target.closest ? e.target.closest("a") : null; if (a && /line\.me\/R\/oaMessage/.test(a.href || "")) sentAt = Date.now(); } catch (e2) {}
+  }, true);
+  document.addEventListener("visibilitychange", function () {
+    try {
+      if (document.visibilityState !== "visible" || !sentAt || Date.now() - sentAt > 600000) return;
+      sentAt = 0;
+      var d = document.createElement("div");
+      d.style.cssText = "position:fixed;left:12px;right:12px;bottom:18px;z-index:10020;background:#06c755;color:#fff;border-radius:16px;padding:12px 14px;font-size:15px;font-weight:900;line-height:1.6;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3);";
+      d.innerHTML = "📨 おくったら、せんせいの へんじを まってね。<br><span style='font-size:12px;font-weight:700;'>へんじが こなかったら、もういちど おくってね</span>";
+      d.addEventListener("click", function () { d.remove(); });
+      document.body.appendChild(d); setTimeout(function () { try { d.remove(); } catch (e) {} }, 7000);
+    } catch (e3) {}
+  });
 })();
