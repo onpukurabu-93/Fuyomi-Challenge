@@ -317,6 +317,13 @@ document.getElementById("btnShot").addEventListener("click", function () {
   document.getElementById("shotBox").style.display = "block";
 });
 
+try {
+  var q = new URLSearchParams(location.search), qt = q.get("type"), qn = q.get("name"), qd = q.get("date"), qc = q.get("count");
+  if (qt) TYPES.forEach(function (x, i) { if (x.id === qt) cur = i; });
+  if (qn) nameEl.value = qn;
+  if (qd) { var dm = qd.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); dateEl.value = dm ? (+dm[1]) + "年" + (+dm[2]) + "月" + (+dm[3]) + "日" : qd; }
+  if (qc) countEl.value = qc;
+} catch (e) {}
 render();
 </script>
 </body>
