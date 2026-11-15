@@ -2,12 +2,12 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115g";
+window.FY_EXTRAS_VER = "1115h";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
 window.fyLineBtn = function (text, label, bg, toOA) {
-  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span class="' + (toOA ? "fyLineBlink" : "") + '" style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>' + (toOA ? '<div style="font-size:12px;font-weight:700;line-height:1.5;color:#806c5a;text-align:center;margin-top:5px;">おくったら、LINEの したの メニューを もういちど おしてね<br>（アプリに もどれるよ）</div>' : '');
+  return '<a href="' + (toOA && window.FY_OA_DIRECT ? "https://line.me/R/oaMessage/" + window.FY_OA + "/?" : "https://line.me/R/msg/text/?") + encodeURIComponent(text) + '" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><span class="' + (toOA ? "fyLineBlink" : "") + '" style="display:block;width:100%;box-sizing:border-box;border-radius:12px;padding:10px;font-size:15px;font-weight:800;text-align:center;background:' + (bg || "#06c755") + ';color:#fff;margin-top:6px;">' + (label || "LINEで せんせいに おくる") + '</span></a>' + (toOA && !window.fyNoBackNote ? '<div style="font-size:12px;font-weight:700;line-height:1.5;color:#806c5a;text-align:center;margin-top:5px;">おくったら、LINEの したの メニューを もういちど おしてね<br>（アプリに もどれるよ）</div>' : '');
 };
 /* アプリの リンク（タップすると じどうで しごとを する）。index.html の ある ところの アドレスを つかう */
 window.fyAppLink = function (kind, value) {
@@ -1603,18 +1603,46 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (/\b\d{2}-[A-Z0-9]{6}\b/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が だした「ごうかくコード」です（ふよみテスト か えんそう）。生徒の アプリで つかう もの</div>' };
       return ng("コードの かたちが わかりません。LINEの メッセージを、ぜんぶ 貼ってね。");
     }
-    var name = cleanName(nm[1]), code = cd[1], found = null, ds = [];
+    var name = cleanName(nm[1]), ds = [];
     for (var i = 0; i < 15; i++) ds.push(localDateStr(new Date(Date.now() - i * 86400000)));
-    var am = t.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = t.match(/のこり\s*(\d+)\s*p/);
-    ds.forEach(function (d) {
-      if (found) return;
-      ["treble", "bass", "master", "legend5", "maestro"].forEach(function (ty) { if (!found && codeFor(name, ty, 0, d) === code) found = { label: INFO[ty].label, d: d }; });
-      for (var n = 1; n <= 99 && !found; n++) if (codeFor(name, "stamp", n, d) === code) found = { label: "スタンプカード " + n + " まいめ", d: d };
-      for (var n2 = 100; n2 <= 1000 && !found; n2 += 100) if (codeFor(name, "legend", n2, d) === code) found = { label: "ふよみレジェンド（" + n2 + "回）", d: d };
-      if (!found && am && rm && window.fyExchangeCode(name, parseInt(am[1], 10), parseInt(rm[1], 10), d) === code) found = { label: "ポイント こうかん " + am[1] + "p（のこり " + rm[1] + "p）", d: d };
+    function one(code, line) {
+      var found = null, am = line.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = line.match(/のこり\s*(\d+)\s*p/);
+      ds.forEach(function (d) {
+        if (found) return;
+        ["treble", "bass", "master", "legend5", "maestro"].forEach(function (ty) { if (!found && codeFor(name, ty, 0, d) === code) found = { label: INFO[ty].label, d: d, card: ty === "legend5" ? "legend" : ty }; });
+        for (var n = 1; n <= 99 && !found; n++) if (codeFor(name, "stamp", n, d) === code) found = { label: "スタンプカード " + n + " まいめ", d: d };
+        for (var n2 = 100; n2 <= 1000 && !found; n2 += 100) if (codeFor(name, "legend", n2, d) === code) found = { label: "ふよみレジェンド（" + n2 + "回）", d: d, card: "meijin", count: n2 };
+        if (!found && am && rm && window.fyExchangeCode(name, parseInt(am[1], 10), parseInt(rm[1], 10), d) === code) found = { label: "ポイント こうかん " + am[1] + "p（のこり " + rm[1] + "p）", d: d, ex: 1 };
+      });
+      return found;
+    }
+    var lines = t.split("\n"), items = [], seen = {};
+    lines.forEach(function (ln, li) {
+      var re = /コード[：:]\s*([A-Z0-9]{4})/g, mm;
+      while ((mm = re.exec(ln))) { if (seen[mm[1]]) continue; seen[mm[1]] = 1; items.push({ code: mm[1], f: one(mm[1], ln) || one(mm[1], (lines[li - 1] || "") + " " + ln) }); }
     });
-    if (found) return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div><div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(name) + '</b><br>しゅるい：<b>' + esc3(found.label) + '</b><br>日づけ：' + found.d + '</div>' };
-    return ng("あいません。なまえ「" + esc3(name) + "」、コード「" + esc3(code) + "」。（15日より 前の コードは、「コード かくにん」で 日づけを 入れて しらべてね）");
+    var done = {}; try { done = JSON.parse(localStorage.getItem("fy_chk_done") || "{}") || {}; } catch (e5) {}
+    var okN = items.filter(function (x) { return x.f; }).length;
+    var html = '<div style="color:' + (okN === items.length ? "#2e7d32" : "#c62828") + ';font-weight:800;font-size:14px;">' + (okN === items.length ? "✅ 本物の コードです" : (okN ? "⚠ 本物 " + okN + "件 ／ ❌ あわない " + (items.length - okN) + "件" : "❌ あいません")) + '　なまえ：' + esc3(name) + '</div>';
+    items.forEach(function (x) {
+      var key = name + "|" + x.code, dn = done[key], bs = "border:none;border-radius:10px;padding:9px 12px;font-size:14px;font-weight:800;font-family:inherit;color:#fff;margin:4px 4px 0 0;";
+      html += '<div style="text-align:left;font-size:13px;line-height:1.6;margin-top:8px;padding:8px 10px;border-radius:12px;background:' + (x.f ? (dn ? "#f0efec" : "#eef8ee") : "#fdecea") + ';">';
+      if (!x.f) { html += '❌ <b>' + esc3(x.code) + '</b>　あいません（15日より 前なら「コード かくにん」で 日づけを 入れて しらべてね）</div>'; return; }
+      html += '<b>' + esc3(x.f.label) + '</b>　<span style="color:#806c5a;">' + x.f.d + '　コード ' + esc3(x.code) + '</span><br>';
+      if (dn) html += '<b style="color:#c62828;">⚠ この コードは ' + esc3(dn.d) + ' に 確認ずみです' + (x.f.ex ? "（もう わたして います）" : "") + '</b><br>';
+      else html += '<button data-k="' + esc3(key) + '" data-l="' + esc3(x.f.label) + '" onclick="window.fyChkDone(this)" style="' + bs + 'background:#2e7d32;">' + (x.f.ex ? "🎁 わたした" : "✓ 確認ずみに する") + '</button>';
+      if (x.f.card) html += '<a href="cards_print.html?type=' + x.f.card + '&name=' + encodeURIComponent(name) + '&date=' + x.f.d + (x.f.count ? '&count=' + x.f.count : '') + '" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;' + bs + 'background:#1565c0;">🖨 カードを 印刷</a>';
+      html += '</div>';
+    });
+    return { kind: "text", html: html };
+  };
+  window.fyChkDone = function (btn) {
+    try {
+      var key = btn.getAttribute("data-k"), lab = btn.getAttribute("data-l"), nm2 = key.split("|")[0], d = new Date().toISOString().slice(0, 10);
+      var done = JSON.parse(localStorage.getItem("fy_chk_done") || "{}") || {}; done[key] = { d: d, l: lab }; localStorage.setItem("fy_chk_done", JSON.stringify(done));
+      var ik = "fy_issued_" + nm2, io = JSON.parse(localStorage.getItem(ik) || "{}") || {}; io.recv = io.recv || []; io.recv.push({ l: lab, d: d }); localStorage.setItem(ik, JSON.stringify(io));
+      btn.outerHTML = '<b style="color:#2e7d32;">✓ ' + d + ' 確認ずみ（控えに 入れました）</b>　';
+    } catch (e) {}
   };
 
   window.fyCheckCode = function () {
@@ -3093,11 +3121,11 @@ window.resetLegendForTest = function () {
       });
       /* ⑥ 台帳：なまえ／ふよみテスト／えんそう／あげたポイント（タブくぎり → スプレッドシートに そのまま 貼れる） */
       $("fuLedgerBtn").addEventListener("click", function () {
-        var all = issuedAll(), rows = ["なまえ\tふよみテスト合格（曲数）\tふよみテスト合格（曲番号）\tえんそう合格（曲数）\tえんそう合格（曲番号）\tあげたポイント（合計）\tポイントの うちわけ"];
+        var all = issuedAll(), rows = ["なまえ\tふよみテスト合格（曲数）\tふよみテスト合格（曲番号）\tえんそう合格（曲数）\tえんそう合格（曲番号）\tあげたポイント（合計）\tポイントの うちわけ\t確認ずみの コード（カード・こうかん）"];
         Object.keys(all).sort().forEach(function (nm) {
           var o = all[nm], pa = (o.pass || []).slice().sort(), pl = (o.play || []).slice().sort(), g = o.gift || [], sum = 0;
           g.forEach(function (x) { sum += x.n || 0; });
-          rows.push([nm, pa.length, pa.join("・"), pl.length, pl.join("・"), sum, g.map(function (x) { return x.d + " " + x.n + "p" + (x.why ? "(" + x.why + ")" : ""); }).join(" / ")].join("\t"));
+          rows.push([nm, pa.length, pa.join("・"), pl.length, pl.join("・"), sum, g.map(function (x) { return x.d + " " + x.n + "p" + (x.why ? "(" + x.why + ")" : ""); }).join(" / "), (o.recv || []).map(function (x) { return x.d + " " + x.l; }).join(" / ")].join("\t"));
         });
         copyText(rows.join("\n"), "コピーしました（" + (rows.length - 1) + "人）。スプレッドシートの A1 を 長押し →「ペースト」。");
       });
@@ -3114,7 +3142,7 @@ window.resetLegendForTest = function () {
             var cur = {}; try { cur = JSON.parse(localStorage.getItem("fy_issued_" + nm) || "{}") || {}; } catch (e) {}
             var inc = o.issued[nm] || {};
             ["pass", "play"].forEach(function (k) { cur[k] = cur[k] || []; (inc[k] || []).forEach(function (c) { if (cur[k].indexOf(c) === -1) cur[k].push(c); }); });
-            if ((inc.gift || []).length > (cur.gift || []).length) cur.gift = inc.gift;
+            if ((inc.gift || []).length > (cur.gift || []).length) cur.gift = inc.gift; if ((inc.recv || []).length > (cur.recv || []).length) cur.recv = inc.recv;
             localStorage.setItem("fy_issued_" + nm, JSON.stringify(cur)); cnt++;
           });
           if (o.names && !localStorage.getItem("sensei_names")) localStorage.setItem("sensei_names", JSON.stringify(o.names));
@@ -3433,7 +3461,7 @@ window.FYAK = FYAK;
           if (lines.length) {
             var text = "【ふよみ】" + name + " さん\n" + lines.join("\n");
             h += '<div style="margin:14px 0 4px;font-size:15px;font-weight:900;color:#2e7d32;">📨 せんせいに おくる ものが あるよ（' + lines.length + 'こ）</div>' +
-                 '<div id="fyOwSend">' + window.fyLineCheck(text, "📨 まとめて せんせいに おくる") + '</div>' +
+                 '<div id="fyOwSend">' + (function () { window.fyNoBackNote = 1; var hh = window.fyLineBtn(text, "📨 まとめて せんせいに おくる", null, true); window.fyNoBackNote = 0; return hh; })() + '</div>' +
                  '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-top:4px;">おすと LINEが ひらくよ。<b>ひこうきの マーク</b>を おして おくってね</div>';
           } else if (pend.length || o.st.indexOf(today) !== -1) {
             h += '<div style="font-size:18px;font-weight:900;margin-top:12px;">きょうも がんばったね！<br>また あしたね 👋</div>';
