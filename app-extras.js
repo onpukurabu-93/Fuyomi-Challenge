@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115m";
+window.FY_EXTRAS_VER = "1115n";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2007,8 +2007,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   function dotHtml(kind) {
     var base = "width:42px;height:42px;border-radius:50%;margin:4px auto 0;display:flex;align-items:center;justify-content:center;";
-    if (kind === "on") return '<div style="' + base + 'font-size:38px;line-height:1;background:transparent;">💮</div>';
-    if (kind === "onNew") return '<div class="fy-glow" style="' + base + 'font-size:38px;line-height:1;background:transparent;">💮</div>';
+    if (kind === "on") return '<div style="' + base + 'font-size:38px;line-height:1;background:transparent;">⭐</div>';
+    if (kind === "onNew") return '<div class="fy-glow" style="' + base + 'font-size:38px;line-height:1;background:transparent;">⭐</div>';
     if (kind === "tmp") return '<div id="fyTmpStamp" class="fy-nudge" style="' + base + 'font-size:13px;font-weight:800;background:#fff;border:2px dashed #ff7043;color:#ff7043;cursor:pointer;">きょう</div>';
     return '<div style="' + base + 'font-size:22px;background:#e6e6e6;color:#aaa;">・</div>';
   }
@@ -2167,7 +2167,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       box.id = "fyHankoResult";
       box.style.cssText = "background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:8px 10px;margin:8px auto 0;width:92%;text-align:center;color:#5b4636;";
       var stampPart = isNew
-        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">💮</span></div>' +
+        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">⭐</span></div>' +
           '<div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
         : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>';
       box.innerHTML = stampPart +
@@ -3406,7 +3406,7 @@ window.FYAK = FYAK;
       var box = $("fyHankoTop"), row = box ? box.children[1] : null;
       for (var i = 0; i < 7; i++) {
         var c = row ? row.children[i] : null, k = "off";
-        if (c) { if (c.querySelector("#fyTmpStamp")) k = "tmp"; else if (c.textContent.indexOf("💮") !== -1) k = "on"; }
+        if (c) { if (c.querySelector("#fyTmpStamp")) k = "tmp"; else if (c.textContent.indexOf("⭐") !== -1) k = "on"; }
         if (k === "on" && okl) { var dd = new Date(mon.getTime()); dd.setDate(mon.getDate() + i); if (okl.pend.indexOf(ymd(dd)) !== -1) k = "pend"; }
         out.push([lab[i], k]);
       }
