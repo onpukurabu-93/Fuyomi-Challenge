@@ -1294,7 +1294,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1115p";
+var FY_INDEX_VER = "1115q";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1657,6 +1657,8 @@ function showGuide() {
     { sel: "#fyCodeBtn", txt: "がんばった きろくは、LINEで せんせいに おくれるのだ！" },
     { sel: "", txt: "それじゃあ、スタートなのだ！" }
   ];
+  /* あたらしい トップ画面では、あたらしい ボタンを さす */
+  try { if (window.fyNewLookOn && window.fyNewLookOn() && document.getElementById("fyTop")) { steps[0].sel = "#fyNLHk"; steps[1].sel = "#fyNLDo"; steps[2].sel = "#fyNLLeg"; steps[3].sel = "#fyNLOw"; steps[3].txt = "さいごに「きょうは おわり」を おすと、せんせいに おくれるのだ！"; } } catch (eG) {}
   var k = 0, au = null;
   var wrap = document.createElement("div");
   wrap.id = "fyGuide";
@@ -2565,6 +2567,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261115p"></script>
+<script src="app-extras.js?v=20261115q"></script>
 </body>
 </html>
