@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115n</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115o</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -2282,6 +2282,22 @@ function renderScore(bars, beatsPerBar, opt) {
       (NLK ? '' : window.fyLineCheck('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code)) +
       (gp ? '<div style="font-size:20px;font-weight:900;color:' + f.ac + ';margin-top:10px;">🎁 +' + gp + ' ポイント</div>' : '') +
       '<button class="btn back" id="awClose" style="margin-top:16px;position:sticky;bottom:8px;">◀ もどる</button></div>';
+    if (NLK) {
+      /* ふよみマスターの おいわいと おなじ 出かた：白い カードが ポンと 出る */
+      scr.style.cssText = "display:flex;align-items:center;justify-content:center;position:fixed;left:0;top:0;right:0;bottom:0;z-index:80;background:rgba(40,30,20,.6);overflow:auto;-webkit-overflow-scrolling:touch;";
+      scr.innerHTML = fall + '<div style="position:relative;background:#fff;border-radius:24px;padding:16px 14px;width:88%;max-width:360px;box-sizing:border-box;text-align:center;color:#5b4636;margin:auto;">' +
+        (test ? '<div style="font-size:11px;opacity:.8;">（せんせい用の テストです・記録には のこりません）</div>' : '') +
+        '<div style="font-size:40px;line-height:1.1;">🎉</div><div style="font-size:19px;font-weight:900;margin-bottom:8px;">おめでとう！</div>' +
+        '<div style="border:4px double ' + f.ac + ';border-radius:20px;background:' + f.bg + ';padding:16px 8px;color:' + f.tx + ';">' +
+        '<div class="aw-icon" style="font-size:64px;">' + f.icon + '</div>' +
+        '<div style="font-size:' + (String(f.label).length > 9 ? 24 : 28) + 'px;font-weight:900;margin:6px 0 2px;line-height:1.3;">' + f.label + '</div>' +
+        '<div style="font-size:' + (String(f.sub).length > 12 ? 15 : 20) + 'px;font-weight:900;color:' + f.ac + ';line-height:1.4;">' + f.sub + '</div>' +
+        '<div style="font-size:24px;font-weight:900;margin:10px 0 2px;">' + (rec.name || "") + ' さん</div>' +
+        '<div style="font-size:14px;">' + dt + '</div>' +
+        (gp ? '<div style="font-size:22px;font-weight:900;margin-top:8px;">🎁 +' + gp + ' ポイント</div>' : '') +
+        '</div>' +
+        '<button class="btn back" id="awClose" style="margin-top:12px;background:#ff9800;color:#fff;">◀ もどる</button></div>';
+    }
     scr.scrollTop = 0;
     /* 「LINEで おくる」を おしたら、おくった しるしを つける（トップの「きろくと コード」の ひかりが きえる） */
     scr.onclick = function (ev) { try { if (!test && ev.target.closest && ev.target.closest("a")) { var al = getJSON("fy_ach_" + PID, []); if (Array.isArray(al)) { al.forEach(function (r) { if (r && r.code === rec.code && !r.sentAt) r.sentAt = Date.now(); }); localStorage.setItem("fy_ach_" + PID, JSON.stringify(al)); } } } catch (e) {} };
