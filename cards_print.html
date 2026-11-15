@@ -63,6 +63,11 @@
     <input id="inDate" placeholder="ひづけ（空欄なら手書き）" maxlength="14">
     <div><button id="btnToday">きょうの日付を入れる</button></div>
   </div>
+  <div id="rowAward" style="display:none;">
+    <input id="inAward" placeholder="賞の なまえ（例：レベルアップ賞）" maxlength="12">
+    <div id="awardPick" style="margin:4px 0;"></div>
+    <input id="inEvent" placeholder="イベントの なまえ（例：ふゆの ふよみイベント）" maxlength="16">
+  </div>
   <div id="rowCount">
     <input id="inCount" type="number" min="1" max="9999" value="100" style="width:120px"> （まるい枠に入る数字）
   </div>
@@ -111,7 +116,8 @@ var TYPES = [
   { id: "master",  label: "ふよみマスター",   img: "master",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
   { id: "legend",  label: "ふよみレジェンド", img: "legend",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
   { id: "meijin",  label: "ふよみ名人", img: "meijin",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" },
-  { id: "maestro", label: "ふよみマエストロ", img: "maestro", cw: 56, ch: 83.6, name: 0.7265, date: 0.818, nx: 0.558, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 }
+  { id: "maestro", label: "ふよみマエストロ", img: "maestro", cw: 56, ch: 83.6, name: 0.7265, date: 0.818, nx: 0.558, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
+  { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.80, max: 0.050 } }
 ];
 
 /* 横長の配置（148×100mm）のなかの、おもて・うらの中心 */
@@ -119,11 +125,19 @@ var CX_FRONT = 41, CX_BACK = 107, CY = 50;
 var SW = 148, SH = 100;
 
 /* 画像を入れかえたら、この数字（日づけ）を かえる。Safariに 古い画像が のこるのを ふせぐ */
-var IMG_VER = "20261107a";
+var IMG_VER = "20261115i";
 var cur = 0;
 var nameEl = document.getElementById("inName");
 var dateEl = document.getElementById("inDate");
 var countEl = document.getElementById("inCount");
+var awardEl = document.getElementById("inAward"), eventEl = document.getElementById("inEvent");
+["レベルアップ賞", "のびのび賞", "がんばった賞", "せいかい賞"].forEach(function (a) {
+  var b = document.createElement("button"); b.textContent = a; b.style.cssText = "margin:2px 4px 2px 0;padding:6px 10px;font-size:13px;";
+  b.addEventListener("click", function () { awardEl.value = a; render(); });
+  document.getElementById("awardPick").appendChild(b);
+});
+awardEl.addEventListener("input", function () { render(); }); eventEl.addEventListener("input", function () { render(); });
+function fitFs(o, txt) { return Math.min(o.max, o.w / Math.max(String(txt).length, 1)); }
 
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function cnt() { var n = parseInt(countEl.value, 10); return isNaN(n) ? 100 : n; }
@@ -193,6 +207,8 @@ function render() {
     var fs2 = Math.min(t.df, 0.46 / Math.max(m, 1));
     cardF.appendChild(overlay("date", t.nx, t.date - t.dof, fs2, "#2b3a6a", esc(date), t.cw));
   }
+  if (t.award && awardEl.value) { var oa = overlay("award", t.award.x, t.award.y + fitFs(t.award, awardEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.award, awardEl.value), "#ffffff", esc(awardEl.value), t.cw); oa.style.fontWeight = "900"; cardF.appendChild(oa); }
+  if (t.ev && eventEl.value) { var oe = overlay("ev", t.ev.x, t.ev.y + fitFs(t.ev, eventEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.ev, eventEl.value), "#1f7a72", esc(eventEl.value), t.cw); oe.style.fontWeight = "900"; cardF.appendChild(oe); }
   if (t.cloud) {
     var digits = String(cnt()).length;
     var cw = t.cloud.w;
@@ -210,6 +226,7 @@ function render() {
     tabs.appendChild(b);
   });
   document.getElementById("rowCount").style.display = t.cloud ? "block" : "none";
+  document.getElementById("rowAward").style.display = t.award ? "block" : "none";
 }
 
 function todayStr() {
@@ -288,6 +305,8 @@ function buildHagaki() {
       ctx.font = "800 " + (fs2 * cw) + "px " + FONT;
       ctx.fillText(date, x0 + t.nx * cw, y0 + (t.date - t.dof) * ch);
     }
+    if (c.front && t.award && awardEl.value) { ctx.save(); ctx.fillStyle = "#ffffff"; ctx.font = "900 " + (fitFs(t.award, awardEl.value) * cw) + "px " + FONT; ctx.fillText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
+    if (c.front && t.ev && eventEl.value) { ctx.save(); ctx.fillStyle = "#1f7a72"; ctx.font = "900 " + (fitFs(t.ev, eventEl.value) * cw) + "px " + FONT; ctx.fillText(eventEl.value, x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, eventEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
     if (t.cloud) {
       var digits = String(cnt()).length;
       var fsn = Math.min(t.cloud.max || 0.30, t.cloud.w * 0.88 / (digits * 0.62));
@@ -323,6 +342,8 @@ try {
   if (qn) nameEl.value = qn;
   if (qd) { var dm = qd.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); dateEl.value = dm ? (+dm[1]) + "年" + (+dm[2]) + "月" + (+dm[3]) + "日" : qd; }
   if (qc) countEl.value = qc;
+  if (q.get("award")) awardEl.value = q.get("award");
+  if (q.get("ev")) eventEl.value = q.get("ev");
 } catch (e) {}
 render();
 </script>
