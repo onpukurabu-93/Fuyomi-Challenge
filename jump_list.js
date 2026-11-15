@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115q ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115r ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -39,7 +39,7 @@ window.FY_JUMPS = [
     run: function (idx) { localStorage.removeItem("fy_soundok"); location.reload(); } },
   { label: "🆕 1115q ②：おんぷカードの 数字を 長押し", note: "おんぷカードの 画面が ひらく → 数字を 長押し → その レベルに 出る 音の カードが ならぶ。ふつうに おすと、今まで どおり レベルが ひらく。下に 小さい 字で 説明",
     run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); } },
-  { label: "🆕 1115q ③：はじめての 案内（ずんだもんが トップを 案内）", note: "案内が はじまる。光る わくが ①今週の ハンコ ②6つの「ド」③レジェンドへの みち ④きょうは おわり の 順に うごく（声は 前の ままなので、④は 字と 声が 少し ちがいます）",
+  { label: "🆕 1115r：はじめての 案内（ずんだもんの 声つき）", note: "まん中の『▶ あんないを はじめる』を おす → 声つきで 案内が はじまる。光る わくが ①今週の ハンコ ②6つの「ド」③レジェンドへの みち ④きょうは おわり の 順に うごく（声は 前の ままなので、④は 字と 声が 少し ちがいます）",
     run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpGo("guide"); } },
   /* ---------- 見たい 場面へ ---------- */
   { label: "🎼 ト音記号マスターの 直前", note: "ト音 レベル5が すぐ始まる。『⏩ あと1もんへ』で さいごの1問だけ",
