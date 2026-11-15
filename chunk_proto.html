@@ -72,13 +72,15 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 </head>
 <body>
 <div id="app">
-  <h1>🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1114f</div>
+  <a id="fyBack" href="index.html" style="position:fixed;left:10px;top:10px;z-index:10002;display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:900;font-size:16px;box-shadow:0 4px 0 #c97800;">◀ もどる</a>
+  <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1115c</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
-  <div style="font-size:13px;"><a href="index.html" style="display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;">◀ トップへ もどる</a></div>
-  <div class="sub" id="who"></div>
+
+  <div class="sub" id="who" style="display:none;"></div>
   <div class="sub" id="subTx"></div>
   <div class="lv" id="lv"></div>
+  <button class="btn back" id="evBtn" style="margin-top:8px;padding:10px;font-size:15px;background:#ffb300;color:#fff;">🏆 イベントの きろく</button>
   <div id="songScr" style="display:none;"></div>
   <div class="card" id="card">
     <div class="ov" id="ov" style="display:none;"></div>
@@ -118,7 +120,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
       <div style="font-size:12px;margin-top:4px;">ピアノの 音を マイクで きいて こたえます。<br>ピアノの ちかくに おいてね。シャープ（くろい けんばん）は むしします。<br>どの オクターブでも だいじょうぶ。</div>
     </div>
   </div>
-  <button class="btn back" id="evBtn" style="margin-top:14px;">🏆 イベントの きろく</button>
   <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tLeg" style="color:#806c5a;">せんせい用：レジェンド表彰テスト</a>　<a href="#" id="tMae" style="color:#806c5a;">せんせい用：マエストロ表彰テスト</a><br><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
   <div class="note" id="howTx">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
@@ -515,7 +516,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* ---- 音声ファイル（GitHubの おなじ ばしょに おく）---- */
-  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlstart: "zunda-legend-start.mp3", zlpiano: "zunda-legend-piano.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zlv5b: "zunda-legend-lv5.mp3", zlplay: "zunda-legend-play.mp3", zlock: "zunda-lock.mp3", kansei: "kansei.mp3", zmae: "zunda-maestro.mp3", znext: "zunda-next-meijin.mp3", zcomp: "zunda-complete.mp3", zs1: "zunda-song1.mp3", zs2: "zunda-song2.mp3", zs3: "zunda-song3.mp3", zs4: "zunda-song4.mp3", zlcount: "zunda-legend-count.mp3", zlclear: "zunda-legend-clear.mp3", zom: "zunda-omedeto.mp3", zenc: "zunda-encourage.mp3" };
+  var FILES = { osi: "osi.mp3", sugoi: "sugoi.mp3", fanfare: "Tassei-fanfare.mp3", ganbatte: "ganbatte.mp3", levelOpen: "chunk-level-open.mp3", level5: "chunk-level5.mp3", awardLegend: "表彰ファンファーレ.mp3", awardMaestro: "chunk-maestro.mp3", zintro: "zunda-legend-intro.mp3", zlstart: "zunda-legend-start.mp3", zlpiano: "zunda-legend-piano.mp3", zlv1: "zunda-levelup1.mp3", zlv2: "zunda-levelup2.mp3", zlv3: "zunda-levelup3.mp3", zlv4: "zunda-levelup4.mp3", zlv5: "zunda-levelup5.mp3", zlv5b: "zunda-legend-lv5.mp3", zlplay: "zunda-legend-play.mp3", zlock: "zunda-lock.mp3", kansei: "kansei.mp3", kansei2: "kansei2.mp3", kodomo: "kodomo.mp3", zmae: "zunda-maestro.mp3", znext: "zunda-next-meijin.mp3", zcomp: "zunda-complete.mp3", zs1: "zunda-song1.mp3", zs2: "zunda-song2.mp3", zs3: "zunda-song3.mp3", zs4: "zunda-song4.mp3", zlcount: "zunda-legend-count.mp3", zlclear: "zunda-legend-clear.mp3", zom: "zunda-omedeto.mp3", zenc: "zunda-encourage.mp3" };
   var bufs = {}, status = {};
   var actx = null;
   function ensureCtx() {
@@ -768,14 +769,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       function has(t) { for (var i = 0; i < ach.length; i++) if (ach[i] && (ach[i].type === t || (t === "legend" && ach[i].type === "legend1000"))) return true; return false; }
       var run = 0; try { run = parseInt(localStorage.getItem("fy_meijin_run_" + PID), 10) || 0; } catch (e) {}
       var N = SONGS.length, pn = passCount(), pl = playCount();
+      /* メダル 3まい を よこ 1れつに（がめんを みじかく する） */
       function row(icon, name, hv, prog) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin:2px 0;border-radius:10px;font-size:13px;font-weight:800;' + (hv ? 'background:#fff3b0;color:#5a3a00;' : 'background:#f3ece0;color:#8a7a66;') + '"><span>' + icon + ' ' + name + '</span><span>' + (hv ? '✓ できた！' : prog) + '</span></div>';
+        return '<div style="flex:1;text-align:center;padding:5px 2px;border-radius:12px;font-weight:800;line-height:1.25;' + (hv ? 'background:#fff3b0;color:#5a3a00;' : 'background:#f3ece0;color:#8a7a66;') + '"><div style="font-size:20px;">' + icon + '</div><div style="font-size:10.5px;">' + name + '</div><div style="font-size:11px;">' + (hv ? '✓ できた！' : prog) + '</div></div>';
       }
-      el0.style.cssText = "margin:8px 0;padding:6px;background:#fff;border-radius:14px;";
-      el0.innerHTML = '<div style="font-size:12px;font-weight:900;color:#806c5a;margin:0 0 2px 4px;">🏁 3つの ちょうせん</div>' +
-        (function () { var mb = meijinBest(), goal = (Math.floor(Math.max(mb, 0) / 100) + 1) * 100; return row("🏅", mb ? "ふよみ名人 " + mb + "かい ✓　つぎは " + goal + "かい" : "ふよみ名人", false, "あと " + Math.max(0, goal - run) + "かい"); })() +
-        row("👑", "ふよみレジェンド", has("legend5"), "✅ " + pn + " / " + N) +
-        row("🎹", "ふよみマエストロ", has("maestro"), "⭐ " + pl + " / " + N);
+      el0.style.cssText = "margin:6px 0;padding:5px;background:#fff;border-radius:14px;display:flex;gap:5px;";
+      el0.innerHTML =
+        (function () { var mb = meijinBest(), goal = (Math.floor(Math.max(mb, 0) / 100) + 1) * 100; return row("🏅", mb ? "名人 " + mb + "かい✓" : "ふよみ名人", false, (mb ? "つぎ " + goal + "：" : "") + "あと " + Math.max(0, goal - run) + "かい"); })() +
+        row("👑", "レジェンド", has("legend5"), "✅ " + pn + " / " + N) +
+        row("🎹", "マエストロ", has("maestro"), "⭐ " + pl + " / " + N);
     } catch (e) {}
   }
   function renderLv() {
@@ -1120,8 +1122,8 @@ function renderScore(bars, beatsPerBar, opt) {
     sc.style.display = "block";
     var ps = getPass(), pl = getPlay();
     var h = (passBanner ? '<div style="background:#fff3cd;border:2px solid #f5c242;border-radius:12px;padding:10px;font-weight:900;text-align:center;margin:6px 0;">' + passBanner + '</div>' : '') +
-            '<div style="font-size:17px;font-weight:900;margin:6px 0;">🎼 がくふを みて ひいてみよう<br><span style="font-size:14px;color:#2e7d32;">✅ ふよみテスト ごうかく ' + passCount() + ' / ' + SONGS.length + '</span><br><span style="font-size:14px;color:#b26a00;">⭐ せんせいの ごうかく ' + playCount() + ' / ' + SONGS.length + '</span></div>' +
-            '<div style="font-size:13px;color:#806c5a;margin-bottom:6px;">おうちで がくふを みて れんしゅうして、レッスンで せんせいに きいてもらおう。<br>ごうかくの コードを もらったら、したに いれてね。つぎの きょくが ひらくよ。</div>';
+            '' +
+            '<details style="font-size:12px;color:#806c5a;margin-bottom:4px;"><summary style="font-weight:800;">？ せつめい</summary>おうちで がくふを みて れんしゅうして、レッスンで せんせいに きいてもらおう。ごうかくの コードを もらったら、つぎの きょくが ひらくよ。<br>✅＝ふよみテスト ごうかく　⭐＝えんそうの ごうかく</div></details>';
     /* きょくを レベルごとの グループに わける（ふえた ときは、GROUPS の ids に c を たす） */
     var inG = {};
     GROUPS.forEach(function (g) { g.list = []; g.ids.forEach(function (c) { SONGS.forEach(function (sg, i) { if (sg.c === c) { g.list.push(i); inG[c] = 1; } }); }); });
@@ -1132,24 +1134,29 @@ function renderScore(bars, beatsPerBar, opt) {
     var ordPos = {}, pc = 0; gs.forEach(function (g) { g.list.forEach(function (i) { ordPos[SONGS[i].c] = pc++; }); });
     var openN = passCount() + 2;
     function songOpen(sg) { return openAll || ps[sg.c] || pl[sg.c] || (ordPos[sg.c] !== undefined && ordPos[sg.c] < openN); }
-    if (groupOpen === null) {
-      groupOpen = -1;
-      gs.forEach(function (g, gi) { if (groupOpen === -1 && g.list.some(function (i) { return !ps[SONGS[i].c]; })) groupOpen = gi; });
+    if (groupOpen === null) groupOpen = -1;   /* グループは とじて おく（いまの きょくは うえに だす） */
+    /* 🎵 いまの きょく：ひらいて いて、まだ ⭐（えんそうの ごうかく）が ついて いない きょく */
+    var nowList = [];
+    gs.forEach(function (g) { g.list.forEach(function (i) { var sgN = SONGS[i]; if (songOpen(sgN) && !pl[sgN.c] && nowList.length < 4) nowList.push(i); }); });
+    if (nowList.length) {
+      h += '<div style="font-size:14px;font-weight:900;color:#5b4636;margin:8px 0 2px;">🎵 いまの きょく</div>';
+      nowList.forEach(function (i) { var sgN = SONGS[i]; h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:6px 0 0;padding:14px 14px;font-size:18px;text-align:left;">' + (ps[sgN.c] ? '✅ ' : '') + sgN.title + '</button>'; });
     }
+    h += '<details id="passBox"' + (passBanner ? ' open' : '') + ' style="margin-top:10px;padding:6px 10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;"><summary style="font-weight:800;padding:4px 0;">🔑 コードを いれる</summary>' +
+         '<input id="passIn" type="text" autocomplete="off" autocapitalize="characters" placeholder="例：03-AB12CD" style="font-size:16px;padding:8px;width:60%;border:2px solid #e0d0ba;border-radius:8px;"> ' +
+         '<button id="passBtn" style="font-size:15px;font-weight:800;padding:9px 12px;border:none;border-radius:8px;background:#ff7043;color:#fff;">おくる</button>' +
+         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></details>';
+    h += '<div style="font-size:13px;font-weight:900;color:#806c5a;margin:14px 0 0;">📚 ぜんぶの きょく（おすと ひらくよ）</div>';
     gs.forEach(function (g, gi) {
       var ok = 0, okp = 0; g.list.forEach(function (i) { if (ps[SONGS[i].c]) ok++; if (pl[SONGS[i].c]) okp++; });
       var open = (gi === groupOpen);
-      h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:8px;padding:14px;font-size:18px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　⭐ ' + okp + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
+      h += '<button class="btn" data-g="' + gi + '" style="background:' + g.color + ';margin-top:6px;padding:9px 14px;font-size:16px;text-align:left;display:flex;justify-content:space-between;align-items:center;"><span>' + g.icon + ' ' + g.name + '</span><span style="font-size:14px;">✅ ' + ok + ' / ' + g.list.length + '　⭐ ' + okp + ' / ' + g.list.length + '　' + (open ? '▲' : '▼') + '</span></button>';
       if (open) g.list.forEach(function (i) {
         var sg = SONGS[i], so = songOpen(sg);
         h += '<button class="btn" data-i="' + i + '"' + (so ? '' : ' data-lock="1"') + ' style="background:' + (so ? '#7e57c2' : '#b0a6c4') + ';margin:4px 0 0 14px;width:calc(100% - 14px);padding:9px 12px;font-size:16px;text-align:left;' + (so ? '' : 'opacity:.75;') + '">' + (so ? '' : '🔒 ') + (ps[sg.c] ? '✅ ' : '') + (pl[sg.c] ? '⭐ ' : '') + dispNo(sg) + '．' + sg.title + (COMPOSERS[sg.c] ? '<span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">' + COMPOSERS[sg.c] + '</span>' : '') + '</button>';
       });
     });
-    h += '<details id="passBox"' + (passBanner ? ' open' : '') + ' style="margin-top:14px;padding:6px 10px;background:#fff;border-radius:12px;font-size:13px;color:#806c5a;"><summary style="font-weight:800;padding:4px 0;">🔑 コードを いれる</summary>' +
-         '<input id="passIn" type="text" autocomplete="off" autocapitalize="characters" placeholder="例：03-AB12CD" style="font-size:16px;padding:8px;width:60%;border:2px solid #e0d0ba;border-radius:8px;"> ' +
-         '<button id="passBtn" style="font-size:15px;font-weight:800;padding:9px 12px;border:none;border-radius:8px;background:#ff7043;color:#fff;">おくる</button>' +
-         '<div id="passMsg" style="margin-top:6px;font-weight:800;min-height:18px;"></div></details>' +
-         '<button class="btn back" id="lvTop" style="margin-top:14px;margin-bottom:24px;padding:16px;font-size:17px;">◀ トップへ もどる</button>';
+    h += '<span id="lvTop" style="display:none;"></span>';
     passBanner = "";
     sc.innerHTML = h;
     document.getElementById("passBtn").addEventListener("click", function () {
@@ -2183,12 +2190,12 @@ function renderScore(bars, beatsPerBar, opt) {
       '<div style="font-size:36px;font-weight:900;letter-spacing:6px;color:' + f.ctx + ';background:' + f.cbg + ';border-radius:12px;padding:8px 0;margin:10px 0;">' + rec.code + '</div>' +
       window.fyLineCheck('【ふよみ】' + (rec.name || '') + ' さん　' + f.label + '　' + f.sub + '\nコード：' + rec.code) +
       (gp ? '<div style="font-size:20px;font-weight:900;color:' + f.ac + ';margin-top:10px;">🎁 +' + gp + ' ポイント</div>' : '') +
-      '<button class="btn back" id="awClose" style="margin-top:16px;">とじる</button></div>';
+      '<button class="btn back" id="awClose" style="margin-top:16px;position:sticky;bottom:8px;">◀ もどる</button></div>';
     scr.scrollTop = 0;
     /* 「LINEで おくる」を おしたら、おくった しるしを つける（トップの「きろくと コード」の ひかりが きえる） */
     scr.onclick = function (ev) { try { if (!test && ev.target.closest && ev.target.closest("a")) { var al = getJSON("fy_ach_" + PID, []); if (Array.isArray(al)) { al.forEach(function (r) { if (r && r.code === rec.code && !r.sentAt) r.sentAt = Date.now(); }); localStorage.setItem("fy_ach_" + PID, JSON.stringify(al)); } } } catch (e) {} };
     document.getElementById("awClose").addEventListener("click", function () {
-      scr.style.display = "none"; celHold = 0;
+      scr.style.display = "none"; celHold = 0; try { playSeq([], null, true); } catch (e0) {}   /* とじたら ファンファーレを とめる */
       /* おいわいの あと：つぎの ちょうせんを おしえる（3つ ぜんぶ とれたら とくべつな こえ） */
       try {
         if (test) return;
@@ -2203,13 +2210,15 @@ function renderScore(bars, beatsPerBar, opt) {
     var fanSec = bufs[f.snd] ? bufs[f.snd].duration : 3, vSec = bufs[vKey] ? bufs[vKey].duration : 2;
     if (kind === "maestro") {
       /* マエストロ：ながい ファンファーレに、はくしゅ（3びょうめ）と こえ（まんなか）を かさねる */
-      celHold = Date.now() + (fanSec + 1) * 1000;
+      celHold = Date.now() + Math.min(fanSec + 1, 14) * 1000;
       setTimeout(function () { playSeq([f.snd], null, true); }, 300);
-      playOver("kansei", 300 + 3000);
-      playOver(vKey, 300 + Math.max(4000, fanSec * 500));
+      playOver("kansei", 300 + 2000);
+      playOver("kodomo", 300 + 4000);
+      playOver(vKey, 300 + 7000);
     } else {
       celHold = Date.now() + (fanSec + vSec + 1.5) * 1000;
       setTimeout(function () { playSeq([f.snd, vKey], null, true); }, 300);
+      playOver("kansei2", 300 + 2000);
     }
   }
   function md(ds) { var p = ds.split("-"); return (+p[1]) + "月" + (+p[2]) + "日"; }
