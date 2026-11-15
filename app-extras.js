@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115o";
+window.FY_EXTRAS_VER = "1115p";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -315,8 +315,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   /* ポイントこうかんの コード（生徒の画面と、先生の コードかくにん で、同じ 計算を つかう） */
-  window.fyExchangeCode = function (name, amt, rest, dateStr) {
-    return codeFor(name, "exchange", (amt | 0) + "-" + (rest | 0), dateStr);
+  window.fyExchangeCode = function (name, amt, rest, dateStr, seq) {
+    return codeFor(name, "exchange", (amt | 0) + "-" + (rest | 0) + (seq ? "-" + (seq | 0) : ""), dateStr);
   };
 
   var INFO = {
@@ -458,6 +458,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       celQueue = [];
       /* 結果画面のボタンが、まだ薄いままのときは、ここで色づける */
       try { closeAwardModal(); } catch (e) {}
+      /* おいわいの あとは「つぎに やる ところ」へ：ふよみマスター → トップ（レジェンドへの みちが ひかる）／ト音・ヘ音 → おんぷカード */
+      try {
+        var go = window.__fyCelGo; window.__fyCelGo = null;
+        if (window.fyNewLookOn && window.fyNewLookOn()) {
+          if (go === "top") showSelectScreen(); else if (go === "grid") showLevelScreen();
+        }
+      } catch (e9) {}
     }
   });
 
@@ -487,6 +494,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   function showCel(recs, viewOnly) {
     if (!Array.isArray(recs)) recs = [recs];
     celebrating = !viewOnly;
+    try { window.__fyCelGo = viewOnly ? null : (recs.some(function (r) { return r.type === "master"; }) ? "top" : (recs.some(function (r) { return r.type === "treble" || r.type === "bass"; }) ? "grid" : null)); } catch (e8) {}
     var body =
       '<div style="font-size:40px;">🎉</div>' +
       '<div style="font-size:19px;font-weight:900;margin-bottom:8px;">' + (viewOnly ? "たっせいの きろく" : "おめでとう！") + '</div>';
@@ -1631,13 +1639,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var name = cleanName(nm[1]), ds = [];
     for (var i = 0; i < 15; i++) ds.push(localDateStr(new Date(Date.now() - i * 86400000)));
     function one(code, line) {
-      var found = null, am = line.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = line.match(/のこり\s*(\d+)\s*p/);
+      var found = null, am = line.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = line.match(/のこり\s*(\d+)\s*p/), sm = line.match(/[（(]\s*(\d+)\s*かいめ\s*[）)]/);
       ds.forEach(function (d) {
         if (found) return;
         ["treble", "bass", "master", "legend5", "maestro"].forEach(function (ty) { if (!found && codeFor(name, ty, 0, d) === code) found = { label: INFO[ty].label, d: d, card: ty === "legend5" ? "legend" : ty }; });
         for (var n = 1; n <= 99 && !found; n++) if (codeFor(name, "stamp", n, d) === code) found = { label: "スタンプカード " + n + " まいめ", d: d };
         for (var n2 = 100; n2 <= 1000 && !found; n2 += 100) if (codeFor(name, "legend", n2, d) === code) found = { label: "ふよみレジェンド（" + n2 + "回）", d: d, card: "meijin", count: n2 };
-        if (!found && am && rm && window.fyExchangeCode(name, parseInt(am[1], 10), parseInt(rm[1], 10), d) === code) found = { label: "ポイント こうかん " + am[1] + "p（のこり " + rm[1] + "p）", d: d, ex: 1 };
+        if (!found && am && rm && window.fyExchangeCode(name, parseInt(am[1], 10), parseInt(rm[1], 10), d, sm ? parseInt(sm[1], 10) : 0) === code) found = { label: "ポイント こうかん " + am[1] + "p" + (sm ? "（" + sm[1] + "かいめ）" : "") + "（のこり " + rm[1] + "p）", d: d, ex: 1 };
       });
       return found;
     }
@@ -2223,8 +2231,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       '</div>';
   }
   /* まだ せんせいに おくっていない こうかんの かず */
-  window.fyExAllLines = function (idx) { try { return exLog(idx).filter(function (e) { return e && e.us; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
-  window.fyExUnsentLines = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
+  window.fyExAllLines = function (idx) { try { return exLog(idx).filter(function (e) { return e && e.us; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p" + (e.seq ? "（" + e.seq + "かいめ）" : "") + "　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
+  window.fyExUnsentLines = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).map(function (e) { return "🎁 ポイント こうかん " + e.amt + "p" + (e.seq ? "（" + e.seq + "かいめ）" : "") + "　コード：" + e.code + "（のこり " + e.rest + "p）"; }); } catch (e) { return []; } };
   window.fyMarkExSent = function (idx) { try { var log = exLog(idx), ch = false; log.forEach(function (e) { if (e.us && !e.sentAt) { e.sentAt = Date.now(); ch = true; } }); if (ch) Storage.set("fy_tp_log_" + idx, log); } catch (e) {} };
   window.fyExUnsent = function (idx) { try { return exLog(idx).filter(function (e) { return e.us && !e.sentAt; }).length; } catch (e) { return 0; } };
   document.addEventListener("click", function (ev) {
@@ -2289,8 +2297,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var rest = tp - amt;
       var d = dstr(new Date());
       var name = (typeof profiles !== "undefined" && profiles[idx]) || "";
-      var code = (typeof window.fyExchangeCode === "function") ? window.fyExchangeCode(name, amt, rest, d) : "----";
-      var e = { t: Date.now(), d: d, amt: amt, rest: rest, code: code, name: name };
+      var seq = (parseInt(localStorage.getItem("fy_tp_seq_" + idx), 10) || 0) + 1; try { localStorage.setItem("fy_tp_seq_" + idx, String(seq)); } catch (eS) {}
+      var code = (typeof window.fyExchangeCode === "function") ? window.fyExchangeCode(name, amt, rest, d, seq) : "----";
+      var e = { t: Date.now(), d: d, amt: amt, rest: rest, code: code, name: name, seq: seq };
       Storage.set(K.tp(idx), rest);
       e.us = 1;
       var log = exLog(idx); log.push(e);
@@ -3445,7 +3454,7 @@ window.FYAK = FYAK;
       var ev = $("fyEvBtn"), evOn = !!(ev && ev.style.display !== "none");
       var uns = 0; try { uns = window.fyUnsentCount ? window.fyUnsentCount(idx) : 0; } catch (e) {}
       var exUns = 0; try { exUns = window.fyExUnsent ? window.fyExUnsent(idx) : 0; } catch (e) {}
-      var here = (uns || exUns) ? 0 : (!doOk ? 1 : (chGlow ? 3 : 2));
+      var here = (!doOk ? 1 : (chGlow ? 3 : 2));   /* 送りわすれは 📨の チカチカで しらせる。金の ひかりは「つぎに やる ところ」 */
    /* 📨が あるときは、そちらを さきに しらせる */
       var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : c[1] === "pend" ? "p" : "") + '">' + c[0] + '<i>' + (c[1] === "on" || c[1] === "pend" ? "⭐" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
       var pendN = 0; try { pendN = okList(idx).pend.length; } catch (e) {}
@@ -3685,4 +3694,46 @@ window.FYAK = FYAK;
       document.body.appendChild(d); setTimeout(function () { try { d.remove(); } catch (e) {} }, 7000);
     } catch (e3) {}
   });
+})();
+
+/* ===== テスト用（先生の チェック）：「⏩ あと1もんへ」と、ジャンプの つづき ===== */
+(function () {
+  function skipOn() { try { return localStorage.getItem("fy_test_skip") === "1"; } catch (e) { return false; } }
+  window.fySkipSet = function (v) { try { if (v) localStorage.setItem("fy_test_skip", "1"); else localStorage.removeItem("fy_test_skip"); } catch (e) {} };
+  var running = false;
+  function runSkip() {
+    if (running) return; running = true;
+    var last = -1, stuck = 0;
+    var tm = setInterval(function () {
+      try {
+        var scr = document.getElementById("cardScreen");
+        if (!scr || scr.classList.contains("hidden") || !trainingMode || trainingCorrectCount >= targetValue - 1) { clearInterval(tm); running = false; return; }
+        if (trainingCorrectCount === last) { if (++stuck > 12) { clearInterval(tm); running = false; return; } } else { stuck = 0; last = trainingCorrectCount; }
+        pressKey(currentCards[currentIndex].key);
+      } catch (e) { clearInterval(tm); running = false; }
+    }, 420);
+  }
+  setInterval(function () {
+    try {
+      var b = document.getElementById("fySkipBtn"), scr = document.getElementById("cardScreen");
+      var show = skipOn() && scr && !scr.classList.contains("hidden") && typeof trainingMode !== "undefined" && trainingMode && trainingCorrectCount < targetValue - 1 && !running;
+      if (show && !b) {
+        b = document.createElement("button"); b.id = "fySkipBtn"; b.textContent = "⏩ あと1もんへ（テスト）";
+        b.style.cssText = "position:fixed;right:8px;top:8px;z-index:9500;border:none;border-radius:14px;padding:7px 10px;font-size:12px;font-weight:900;background:#37474f;color:#fff;font-family:inherit;opacity:.85;";
+        b.addEventListener("click", function () { b.remove(); runSkip(); });
+        document.body.appendChild(b);
+      } else if (!show && b) b.remove();
+    } catch (e) {}
+  }, 700);
+  /* ジャンプの あと（よみこみ なおした あと）に、見たい 画面を ひらく */
+  setTimeout(function () {
+    try {
+      var j = sessionStorage.getItem("fy_jump_after"); if (!j) return; sessionStorage.removeItem("fy_jump_after");
+      var p = j.split(":");
+      if (p[0] === "train") { selectedClef = p[1]; selectedLevel = parseInt(p[2], 10); try { Storage.set("fy_color_" + activeProfileIndex + "_" + p[1], "off"); } catch (e1) {} proceedToCards(); startTrainingDirect(true); }
+      else if (p[0] === "grid") { var c = document.getElementById("fyNLCard"); if (c) c.click(); }
+      else if (p[0] === "click") { var el = document.getElementById(p[1]); if (el) el.click(); }
+      else if (p[0] === "teacher") { var ad = document.getElementById("fyNLAd"); if (ad) ad.click(); }
+    } catch (e) {}
+  }, 1600);
 })();
