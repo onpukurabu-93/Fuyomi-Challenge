@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115p ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115q ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -35,14 +35,12 @@ function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); 
 function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
 window.FY_JUMPS = [
   /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
-  { label: "🆕 1115p ①：ふよみマスターの お祝い → トップに もどる", note: "全カード レベル5が すぐ始まる →右上の『⏩ あと1もんへ』→ さいごの1問を こたえる → お祝いを とじる → トップに もどって『レジェンドへの みち』だけ 光る",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); fyJmpUnPt(idx, ["award_master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); fySkipSet(true); fyJmpGo("train:all:5"); } },
-  { label: "🆕 1115p ②：ト音記号マスターの お祝い → おんぷカードに もどる", note: "ト音 レベル5が すぐ始まる →『⏩ あと1もんへ』→ さいごの1問 → お祝いを とじる → おんぷカードの 画面（ヘ音の 1が『いまここ』）",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpSet(idx, "bass", 0); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["treble", "bass", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
-  { label: "🆕 1115p ③：こうかんコードの『○かいめ』", note: "40ポイントに して こうかんの 画面を ひらく → 10pを 2かい こうかん →『きょうは おわり』→ LINEの 文に（1かいめ）（2かいめ）と 出て、コードが ちがう → 先生ページ④に 貼って 2つとも 本物と 出る",
-    run: function (idx) { Storage.set("fy_tp_" + idx, 40); fyJmpGo("click:fyNLEx"); } },
-  { label: "🆕 1115p ④：イベントカード（太い字・丸い角）", note: "印刷ページが『イベント』で ひらく。リボンの 字と イベント名が 太い／角が 丸い",
-    run: function (idx) { location.href = "cards_print.html?type=event&name=" + encodeURIComponent("おんぷ") + "&award=" + encodeURIComponent("レベルアップ賞") + "&ev=" + encodeURIComponent("ふよみイベント"); } },
+  { label: "🆕 1115q ①：🔊 おとが きこえる？（はじめて あそぶ とき）", note: "トップに もどる →『6つの「ド」』か『おんぷカード』を おす → おとの かくにんが 出る →『▶ おとを ならす』→『⭕ きこえた！』で そのまま 先へ すすむ。『❌ きこえない』で たしかめ方が 出る。2かいめからは 出ない",
+    run: function (idx) { localStorage.removeItem("fy_soundok"); location.reload(); } },
+  { label: "🆕 1115q ②：おんぷカードの 数字を 長押し", note: "おんぷカードの 画面が ひらく → 数字を 長押し → その レベルに 出る 音の カードが ならぶ。ふつうに おすと、今まで どおり レベルが ひらく。下に 小さい 字で 説明",
+    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); } },
+  { label: "🆕 1115q ③：はじめての 案内（ずんだもんが トップを 案内）", note: "案内が はじまる。光る わくが ①今週の ハンコ ②6つの「ド」③レジェンドへの みち ④きょうは おわり の 順に うごく（声は 前の ままなので、④は 字と 声が 少し ちがいます）",
+    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpGo("guide"); } },
   /* ---------- 見たい 場面へ ---------- */
   { label: "🎼 ト音記号マスターの 直前", note: "ト音 レベル5が すぐ始まる。『⏩ あと1もんへ』で さいごの1問だけ",
     run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
