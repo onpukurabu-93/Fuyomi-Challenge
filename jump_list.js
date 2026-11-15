@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115s ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1115t ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -35,18 +35,12 @@ function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); 
 function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
 window.FY_JUMPS = [
   /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
-  { label: "🆕 1115q ①：🔊 おとが きこえる？（はじめて あそぶ とき）", note: "トップに もどる →『6つの「ド」』か『おんぷカード』を おす → おとの かくにんが 出る →『▶ おとを ならす』→『⭕ きこえた！』で そのまま 先へ すすむ。『❌ きこえない』で たしかめ方が 出る。2かいめからは 出ない",
-    run: function (idx) { localStorage.removeItem("fy_soundok"); location.reload(); } },
-  { label: "🆕 1115q ②：おんぷカードの 数字を 長押し", note: "おんぷカードの 画面が ひらく → 数字を 長押し → その レベルに 出る 音の カードが ならぶ。ふつうに おすと、今まで どおり レベルが ひらく。下に 小さい 字で 説明",
-    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); } },
-  { label: "🆕 1115s：はじめての 案内（ずんだもんの 声つき）", note: "おすと、先生ページが とじて、すぐに 案内が はじまる（声つき）。光る わくが ①今週の ハンコ ②6つの「ド」③レジェンドへの みち ④きょうは おわり の 順に うごく",
-    run: function (idx) {
-      localStorage.setItem("fy_soundok", "1");
-      /* 読みなおさずに、おした その場で はじめる（iPhoneは おした すぐあと で ないと 声が 出ない） */
-      try { [].forEach.call(document.querySelectorAll("body > div"), function (d) { var c = getComputedStyle(d); if (c.position === "fixed" && d.offsetHeight > 300 && d.id !== "fyTop") d.style.display = "none"; }); } catch (e) {}
-      try { showSelectScreen(); } catch (e) {}
-      try { showGuide(); } catch (e) { alert("案内を はじめられませんでした：" + e.message); }
-    } },
+  { label: "🆕 1115t ①：週の きろく（生徒 → 先生）", note: "ハンコを 3日ぶん 入れて トップに もどる →『🌙 きょうは おわり』を おす → 送る ものに『📋 しゅうの きろく：れんしゅう ○日／ポイント ○p』が 入っている → LINEで おくる。7日に 1回だけ 入る",
+    run: function (idx) { var a = []; for (var i = 0; i < 3; i++) { var d = new Date(Date.now() - i * 86400000); a.push(d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)); } Storage.set("fy_hanko_" + idx, a.reverse()); localStorage.removeItem("fy_rep_last_" + idx); localStorage.setItem("fy_soundok", "1"); location.reload(); } },
+  { label: "🆕 1115t ②：さいきんの れんらく（先生ページ）", note: "見本の 3人を 入れる（きょう・5日まえ・12日まえ）→ 先生ページの ④の 下『📋 さいきんの れんらく』を ひらく → れんらくが 古い 人が 上。10日 いじょうは オレンジ。①で 届いた LINEの 文を ④に 貼ると、その子も 入る",
+    run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} function dd(n) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10); } sn["みほんA"] = { d: dd(0), r: "れんしゅう 5日（この 7日間）／ポイント 12p" }; sn["みほんB"] = { d: dd(5), r: "れんしゅう 3日（この 7日間）／ポイント 4p" }; sn["みほんC"] = { d: dd(12), r: "" }; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 入れました。先生ページを いちど とじて、ひらき直して ください。"); } },
+  { label: "🆕 1115t ③：イベントの コード → 賞の 名前が 自動で 入る", note: "イベントの コード（FYE1…）を 先生ページの ④に 貼る →『🖨 カードを 印刷』→ 印刷ページの リボンに 賞の 名前が もう 入っている（イベントの コードが ない ときは、あとで 大丈夫です）",
+    run: function (idx) { alert("イベントの コードを、先生ページの ④に 貼って ためして ください。"); } },
   /* ---------- 見たい 場面へ ---------- */
   { label: "🎼 ト音記号マスターの 直前", note: "ト音 レベル5が すぐ始まる。『⏩ あと1もんへ』で さいごの1問だけ",
     run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
