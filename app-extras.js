@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115i";
+window.FY_EXTRAS_VER = "1115j";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2708,7 +2708,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">LINEで 届いた メッセージを、そのまま 貼ってください。<br>イベント・達成・ポイント こうかん・うつしコードを じどうで みわけます。</div>' +
         '<textarea id="faIn" class="modal-input" style="height:80px;font-size:12px;" placeholder="ここに 貼る"></textarea>' +
         '<button class="modal-btn" style="background:#ef6c00;font-size:13px;padding:9px;" onclick="fyCheckAny()">かくにん する</button>' +
-        '<div id="faOut" style="margin:6px 0 4px;"></div>';
+        '<div id="faOut" style="margin:6px 0 4px;"></div>' +
+        '<a href="cards_print.html" target="_blank" rel="noopener" style="display:block;text-decoration:none;text-align:center;border-radius:12px;padding:10px;font-size:14px;font-weight:800;background:#e3f2fd;color:#1565c0;margin:8px 0 4px;">🖨 カードの 印刷ページ（見本・テスト用）</a>';
       t3.insertBefore(a, t3.firstChild);
     }
   } catch (e) {}
@@ -3325,6 +3326,7 @@ window.FYAK = FYAK;
     "#fyTop .ow{flex:none;margin:9px 14px 0;height:44px;border-radius:22px;border:3px solid #fff;background:#5c6bc0;color:#fff;font-size:17px;font-weight:900;font-family:inherit;box-shadow:0 4px 0 rgba(40,50,120,.3);position:relative;touch-action:manipulation}" +
     "@keyframes fyNLo{0%{box-shadow:0 4px 0 rgba(40,50,120,.3),0 0 0 0 rgba(92,107,192,.9)}100%{box-shadow:0 4px 0 rgba(40,50,120,.3),0 0 0 14px rgba(92,107,192,0)}}#fyTop .ow.go{animation:fyNLo 1.3s ease-out infinite}" +
     "#fyTop .hk .p i{opacity:.4}" +
+    "@keyframes fyOwd{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.35);filter:brightness(1.25)}}#fyTop .ow .owd{font-size:17px;padding:3px 9px;animation:fyOwd .8s ease-in-out infinite}" +
     "@keyframes fyPon{0%{transform:scale(3.2) rotate(-18deg);opacity:0}55%{transform:scale(.85) rotate(-10deg);opacity:1}100%{transform:scale(1) rotate(-10deg);opacity:1}}" +
     "#fyTop .bar{flex:none;display:flex;justify-content:space-around;padding:8px 10px 4px}" +
     "#fyTop .bar button{width:68px;text-align:center;font-size:11px;font-weight:900;color:#3b7fb8;position:relative;background:none;border:none;font-family:inherit;touch-action:manipulation}" +
@@ -3418,7 +3420,7 @@ window.FYAK = FYAK;
       var uns = 0; try { uns = window.fyUnsentCount ? window.fyUnsentCount(idx) : 0; } catch (e) {}
       var exUns = 0; try { exUns = window.fyExUnsent ? window.fyExUnsent(idx) : 0; } catch (e) {}
       var here = (uns || exUns) ? 0 : (!doOk ? 1 : (chGlow ? 3 : 2));
-      try { if (okList(idx).pend.length) here = 0; } catch (e) {}   /* ハンコが まっている ときは「きょうは おわり」を ひからせる */   /* 📨が あるときは、そちらを さきに しらせる */
+   /* 📨が あるときは、そちらを さきに しらせる */
       var hk = hankoCells().map(function (c) { return '<div class="' + (c[1] === "tmp" ? "t" : c[1] === "pend" ? "p" : "") + '">' + c[0] + '<i>' + (c[1] === "on" || c[1] === "pend" ? "🌸" : c[1] === "tmp" ? "きょう" : "") + '</i></div>'; }).join("");
       var pendN = 0; try { pendN = okList(idx).pend.length; } catch (e) {}
       /* 版の ばんごう（テストの あいだ だけ。もとの「版」の ひょうじを そのまま うつす） */
@@ -3437,7 +3439,7 @@ window.FYAK = FYAK;
           '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
           (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
         '</div>' +
-        '<button class="ow' + ((pendN || uns || exUns) ? " go" : "") + '" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot" style="top:-8px;right:8px;">📨</span>' : '') + '</button>' +
+        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : (pendN ? '<span class="dot owd" style="top:-12px;right:6px;">🌸</span>' : '')) + '</button>' +
         '<div class="bar">' +
           '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
