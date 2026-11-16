@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1116b";
+window.FY_EXTRAS_VER = "1116c";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3376,20 +3376,20 @@ window.FYAK = FYAK;
     "#fyTop .hello small{font-size:12px}" +
     "#fyTop .wk{position:absolute;left:94px;top:72px;font-size:12px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:3px 10px;color:#2e7d32;font-family:inherit;touch-action:manipulation}" +
     "#fyTop .pt{position:absolute;right:14px;top:40px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:64px;height:64px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 5px 0 rgba(160,60,90,.35);transform:rotate(8deg);font-family:inherit;padding:0;touch-action:manipulation}" +
-    "@keyframes fyNLp{0%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 0 rgba(255,143,171,.9)}100%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 14px rgba(255,143,171,0)}}#fyTop .pt.can{animation:fyNLp 1.3s ease-out infinite}" +
+    "@keyframes fyNLp{0%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 0 rgba(255,143,171,.9)}100%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 14px rgba(255,143,171,0)}}#fyTop .pt.can{animation:none}" +
     "#fyTop .pt b{font-size:21px;display:block;line-height:1;margin-top:11px}#fyTop .pt span{font-size:9px}" +
     "#fyTop .hk{flex:none;margin:6px 14px 0;background:#fff;border-radius:22px;padding:6px 12px 7px;border:3px dashed #a9d8f5;display:flex;justify-content:space-between;cursor:pointer}" +
     "#fyTop .hk div{width:38px;text-align:center;font-size:11px;font-weight:900;color:#9bb4c7}" +
     "#fyTop .hk i{display:block;width:38px;height:38px;border-radius:50%;background:#eef6fc;margin-top:2px;font-style:normal;font-size:24px;line-height:38px}" +
-    "#fyTop .hk .t{color:#ff7043}#fyTop .hk .t i{background:#fff;box-shadow:inset 0 0 0 3px #ffab91;font-size:10px;font-weight:900;animation:fyNudge 1.6s ease-in-out infinite}" +
+    "#fyTop .hk .t{color:#ff7043}#fyTop .hk .t i{background:#fff;box-shadow:inset 0 0 0 3px #ffab91;font-size:10px;font-weight:900;box-shadow:inset 0 0 0 2px #ffccbc}" +
     "#fyTop .road{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;margin:9px 14px 0;min-height:0}" +
     "#fyTop .st{flex:1 1 0;min-height:50px;max-height:96px;display:flex;align-items:center;gap:14px;border-radius:26px;padding:0 16px;color:#fff;font-weight:900;font-size:20px;position:relative;border:4px solid #fff;box-shadow:0 6px 0 rgba(90,70,54,.14);text-align:left;font-family:inherit;touch-action:manipulation}" +
     "#fyTop .st .ic{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}" +
     "#fyTop .st small{display:block;font-size:12px;margin-top:2px;font-weight:800}" +
     "#fyTop .s1{background:#8ed99a}#fyTop .s2{background:#7cc4ff}#fyTop .s3{background:#b79be8}#fyTop .s4{background:#ffb300}" +
     "#fyTop .lk{background:#e6dff0;color:#b0a3c8}#fyTop .lk .ic{opacity:.6}#fyTop .st .r{margin-left:auto;font-size:24px}" +
-    "@keyframes fyNLh{0%{box-shadow:0 0 0 4px #ffc93c,0 0 0 4px rgba(255,201,60,.9)}100%{box-shadow:0 0 0 4px #ffc93c,0 0 0 16px rgba(255,201,60,0)}}" +
-    "#fyTop .here{animation:fyNLh 1.2s ease-out infinite}" +
+    "@keyframes fyNLh{0%{box-shadow:0 0 0 6px #ffb300,0 0 0 6px rgba(255,179,0,.95);transform:scale(1)}50%{transform:scale(1.025)}100%{box-shadow:0 0 0 6px #ffb300,0 0 0 26px rgba(255,179,0,0);transform:scale(1)}}" +
+    "#fyTop .here{animation:fyNLh 1.1s ease-out infinite;position:relative;z-index:2}" +
     "#fyTop .ow{flex:none;margin:9px 14px 0;height:44px;border-radius:22px;border:3px solid #fff;background:#5c6bc0;color:#fff;font-size:17px;font-weight:900;font-family:inherit;box-shadow:0 4px 0 rgba(40,50,120,.3);position:relative;touch-action:manipulation}" +
     "@keyframes fyNLo{0%{box-shadow:0 4px 0 rgba(40,50,120,.3),0 0 0 0 rgba(92,107,192,.9)}100%{box-shadow:0 4px 0 rgba(40,50,120,.3),0 0 0 14px rgba(92,107,192,0)}}#fyTop .ow.go{animation:fyNLo 1.3s ease-out infinite}" +
     "#fyTop .hk .p i{opacity:.4}" +
@@ -3532,17 +3532,19 @@ window.FYAK = FYAK;
       $("fyNLOw").addEventListener("click", function () {
         var o = okList(idx), pend = o.pend.slice(), today = ymd(new Date());
         var lines = []; try { lines = (window.fyUnsentLines(idx) || []).concat(window.fyExUnsentLines(idx) || []); } catch (e) {}
+        var demo = !!(window.fyDemoOn && window.fyDemoOn());
+        if (demo) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); } catch (eD) {} lines = []; }
         var repDue = false;
         try {
           var rl0 = parseInt(localStorage.getItem("fy_rep_last_" + idx), 10) || 0;
-          if (o.st.length && Date.now() - rl0 >= 7 * 86400000) {
+          if (!demo && o.st.length && Date.now() - rl0 >= 7 * 86400000) {
             var lim7 = ymd(new Date(Date.now() - 6 * 86400000)), n7 = o.st.filter(function (d) { return d >= lim7; }).length;
             lines.push("📋 しゅうの きろく：れんしゅう " + n7 + "日（この 7日間）／ポイント " + (parseInt(Storage.get("fy_tp_" + idx, 0), 10) || 0) + "p");
             repDue = true;
           }
         } catch (eR) {}
         var evDue = false;
-        try { if (o.st.indexOf(today) !== -1) { var evl = window.fyEvDailyLine ? window.fyEvDailyLine(idx) : ""; if (evl) { lines.push(evl); evDue = true; } } } catch (eE) {}
+        try { if (!demo && o.st.indexOf(today) !== -1) { var evl = window.fyEvDailyLine ? window.fyEvDailyLine(idx) : ""; if (evl) { lines.push(evl); evDue = true; } } } catch (eE) {}
         if (pend.length) { Storage.set("fy_hanko_ok_" + idx, o.ok.concat(pend).slice(-90)); try { playAudioCloned("seikaiAudio"); } catch (e) {} }
         sheet(function (inn) {
           var h = "";
@@ -3563,6 +3565,7 @@ window.FYAK = FYAK;
           } else if (pend.length || o.st.indexOf(today) !== -1) {
             h += '<div style="font-size:18px;font-weight:900;margin-top:12px;">きょうも がんばったね！<br>また あしたね 👋</div>';
           }
+          if (demo) h += '<div style="font-size:12px;color:#78909c;background:#eceff1;border-radius:10px;padding:8px;margin-top:10px;">🏫 きょうしつ用（見本）なので、せんせいには おくりません</div>';
           inn.innerHTML = h;
           var sd = inn.querySelector("#fyOwSend");
           if (sd) sd.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("a")) { try { window.fyMarkAchSent(idx); window.fyMarkExSent(idx); if (repDue) localStorage.setItem("fy_rep_last_" + idx, String(Date.now())); if (evDue) window.fyEvDailySent(idx); } catch (e2) {} setTimeout(schedule, 500); } });
@@ -3791,7 +3794,7 @@ window.FYAK = FYAK;
     try {
       var j = sessionStorage.getItem("fy_jump_after"); if (!j) return; sessionStorage.removeItem("fy_jump_after");
       var p = j.split(":");
-      if (p[0] === "train") { selectedClef = p[1]; selectedLevel = parseInt(p[2], 10); try { Storage.set("fy_color_" + activeProfileIndex + "_" + p[1], "off"); } catch (e1) {} proceedToCards(); startTrainingDirect(true); }
+      if (p[0] === "train" || p[0] === "trainc") { selectedClef = p[1]; selectedLevel = parseInt(p[2], 10); try { Storage.set("fy_color_" + activeProfileIndex + "_" + p[1], p[0] === "trainc" ? "on" : "off"); } catch (e1) {} proceedToCards(); startTrainingDirect(true); }
       else if (p[0] === "grid") { var c = document.getElementById("fyNLCard"); if (c) c.click(); }
       else if (p[0] === "click") { var el = document.getElementById(p[1]); if (el) el.click(); }
       else if (p[0] === "guide") {
@@ -3836,4 +3839,46 @@ window.FYAK = FYAK;
       show(function () { try { b.click(); } catch (e2) {} });
     } catch (e3) {}
   }, true);
+})();
+
+/* ===== 🎵 色モード：せいかいの とき、ずんだもんが おとの なまえを いう（黒い カードでは いわない） ===== */
+(function () {
+  var MAP = { "ド": "do", "レ": "re", "ミ": "mi", "ファ": "fa", "ソ": "so", "ラ": "la", "シ": "si" }, cache = {};
+  window.fySayNote = function (key) {
+    try {
+      var n = MAP[String(key)]; if (!n) return;
+      var a = cache[n] || (cache[n] = new Audio("zunda-" + n + ".mp3"));
+      setTimeout(function () { try { a.currentTime = 0; var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} }, 180);
+    } catch (e) {}
+  };
+})();
+
+/* ===== 🏫 きょうしつ用（見本）：ぜんぶ ひらいた 状態で 見せる。せんせいには 送らない ===== */
+(function () {
+  window.fyDemoOn = function () { try { return localStorage.getItem("fy_demo") === "1"; } catch (e) { return false; } };
+  function setup(idx) {
+    try {
+      if (typeof fyJmpBase === "function") { fyJmpBase(idx); ["treble", "bass", "all"].forEach(function (c) { fyJmpSet(idx, c, 5); }); }
+      else { fyTestBasics(idx); [1, 2, 3, 4, 5].forEach(function (l) { fyTestPass(idx, "treble", l); fyTestPass(idx, "bass", l); }); }
+      Storage.set("fy_test_master_" + idx, true);
+      localStorage.setItem("fy_soundok", "1");
+    } catch (e) {}
+  }
+  window.fyDemoSet = function (v) {
+    if (v) {
+      if (!confirm("この 機械を「きょうしつ用（見本）」に します。\nいまの プレイヤーの レベルを ぜんぶ ひらきます。\n（生徒の スマホでは おさないで ください）")) return;
+      try { localStorage.setItem("fy_demo", "1"); } catch (e) {}
+      setup(activeProfileIndex);
+    } else { try { localStorage.removeItem("fy_demo"); } catch (e) {} alert("きょうしつ用を やめました。\n（ひらいた レベルは そのまま です）"); }
+    location.reload();
+  };
+  window.fyDemoReset = function () { if (!confirm("きょうしつ用の きろくを、ぜんぶ ひらいた はじめの 状態に もどします。")) return; setup(activeProfileIndex); location.reload(); };
+  function tag() {
+    try {
+      var t = document.getElementById("fyDemoTag");
+      if (!window.fyDemoOn()) { if (t) t.remove(); return; }
+      if (!t) { t = document.createElement("div"); t.id = "fyDemoTag"; t.textContent = "🏫 きょうしつ用（みほん）"; t.style.cssText = "position:fixed;left:50%;bottom:3px;transform:translateX(-50%);z-index:9400;background:#78909c;color:#fff;font-size:11px;font-weight:900;border-radius:10px;padding:2px 10px;pointer-events:none;opacity:.92;white-space:nowrap;"; document.body.appendChild(t); }
+    } catch (e) {}
+  }
+  setTimeout(tag, 800);
 })();
