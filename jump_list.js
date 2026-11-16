@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1116a ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1116b ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -35,10 +35,12 @@ function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); 
 function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
 window.FY_JUMPS = [
   /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
-  { label: "🆕 1116a ①：とうろくの あとの ごあいさつ（声は おして から）", note: "『ようこそ』の 画面が 出る（声は まだ 鳴らない）→『🔊 おはなしを きく』を おす → 声が はじまり、ボタンが『はじめる ▶』に かわる →『🔁 もういちど きく』で はじめから → 『はじめる ▶』で ずんだもんの 案内へ",
-    run: function (idx) { showWelcome(profiles[idx] || ""); } },
-  { label: "🆕 1116a ②：イベントの ページの マーク", note: "💯＝20問 ぜんぶ 一発／✅＝ふよみテスト ごうかく／⭐＝えんそう ごうかく に なっている",
-    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpGo("click:fyNLEv"); } },
+  { label: "🆕 1116b：とうろくの あとの ごあいさつ（光りかた）", note: "先生ページが とじて『ようこそ』が 出る →『🔊 おはなしを きく』が 光っている → おすと 声が はじまる。『はじめる ▶』は うすく なって 光らない・おせない → 声が おわると『はじめる ▶』が 光って おせる",
+    run: function (idx) {
+      try { [].forEach.call(document.querySelectorAll("body > div"), function (d) { var c = getComputedStyle(d); if (c.position === "fixed" && d.offsetHeight > 300 && d.id !== "fyTop") d.style.display = "none"; }); } catch (e) {}
+      try { showSelectScreen(); } catch (e) {}
+      showWelcome(profiles[idx] || "");
+    } },
   { label: "🧹 見本の 3人（みほんA・B・C）を けす", note: "『さいきんの れんらく』から 見本だけ 消す。本物の 生徒は 残る",
     run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} delete sn["みほんA"]; delete sn["みほんB"]; delete sn["みほんC"]; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 消しました。"); } },
   /* ---------- 見たい 場面へ ---------- */
