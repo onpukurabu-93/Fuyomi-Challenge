@@ -1227,7 +1227,8 @@ function showWelcome(name) {
     '<div style="font-size:44px;line-height:1.1;">🎉🎼</div>' +
     '<div style="font-size:21px;font-weight:900;color:#e65100;margin:8px 0;">ようこそ、' + safe + ' さん！</div>' +
     '<div style="font-size:15px;font-weight:700;color:#5d4037;line-height:1.8;">ふよみチャレンジへ ようこそ。<br>おんぷが すらすら よめるように なる<br>ぼうけんの はじまりだよ。<br><br>まちがえても だいじょうぶ！<br>1もん ずつ、たのしく いこうね。<br>せんせいも おうえんしてるよ 🌟</div>' +
-    '<button id="fyWelcomeGo" style="margin-top:16px;width:100%;padding:14px;font-size:18px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:14px;">はじめる ▶</button></div>';
+    '<button id="fyWelcomeGo" style="margin-top:16px;width:100%;padding:14px;font-size:18px;font-weight:900;color:#fff;background:#ff7043;border:none;border-radius:14px;">🔊 おはなしを きく</button>' +
+    '<div id="fyWelcomeHint" style="font-size:12px;color:#8d6e63;margin-top:8px;">おこさまが 画面の 前に きてから、おして ください</div></div>';
   document.body.appendChild(d);
   /* 先生の こえ → ずんだもんの こえ（1つの audio で つづけて ならす。「はじめる」で すぐ とまる） */
   var au = null, stopped = false;
@@ -1242,15 +1243,30 @@ function showWelcome(name) {
     };
     setTimeout(glowGo, 30000);   /* こえが ならなかった ときの ほけん */
     var adv = function () {
+      if (!heard) return;   /* おす 前は、なにも 鳴らさない */
       k++;
       if (!stopped && k < files.length) { au.src = files[k]; var q = au.play(); if (q && q.catch) q.catch(function () {}); }
       else glowGo();
     };
     au.addEventListener("ended", adv);
     au.addEventListener("error", adv);
-    var p0 = au.play(); if (p0 && p0.catch) p0.catch(function () {});
+    /* こえは、ボタンを おして から（おこさまが 画面の 前に きて から）はじめる */
   } catch (e) {}
+  var heard = false;
   document.getElementById("fyWelcomeGo").addEventListener("click", function () {
+    if (!heard) {
+      heard = true;
+      this.textContent = "はじめる ▶";
+      try { var hh = document.getElementById("fyWelcomeHint"); if (hh) hh.textContent = "もういちど ききたい ときは、下の「🔁 もういちど」"; } catch (e) {}
+      try { if (au) { k = 0; au.src = files[0]; var p0 = au.play(); if (p0 && p0.catch) p0.catch(function () {}); } } catch (e) {}
+      try {
+        var rb = document.createElement("button"); rb.textContent = "🔁 もういちど きく";
+        rb.style.cssText = "margin-top:8px;width:100%;padding:9px;font-size:14px;font-weight:800;color:#5d4037;background:#fff3e0;border:2px solid #ffcc80;border-radius:12px;font-family:inherit;";
+        rb.addEventListener("click", function () { try { var gb = document.getElementById("fyWelcomeGo"); if (gb) gb.classList.remove("fyNudge"); k = 0; au.src = files[0]; var q = au.play(); if (q && q.catch) q.catch(function () {}); } catch (e2) {} });
+        this.parentNode.appendChild(rb);
+      } catch (e) {}
+      return;
+    }
     stopped = true;
     try { if (au) { au.pause(); au.removeAttribute("src"); au.load(); } } catch (e) {}
     d.remove();
@@ -1294,7 +1310,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1115v";
+var FY_INDEX_VER = "1116a";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2567,6 +2583,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261115v"></script>
+<script src="app-extras.js?v=20261116a"></script>
 </body>
 </html>
