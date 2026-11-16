@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1115v";
+window.FY_EXTRAS_VER = "1116a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1493,7 +1493,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           esc(progressText(idx, "all", "全カード")) + '</div>' +
         GR + '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '</div>' +
         GR + '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '</div>' +
-        BL + '<b>✅ 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
+        BL + '<b>💯 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
         BL + '<b>🏅 トレーニングポイント</b> ' + ((typeof window.fyParentTP === "function") ? window.fyParentTP(idx) : "") + '</div>' +
         BL + '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '</div>' +
         ((typeof window.fyParentChunk === "function") ? window.fyParentChunk(idx) : '') +
@@ -2593,7 +2593,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (up >= 1) c.push({ s: up, name: "🚀 レベルアップ賞", d: "ごうかくした レベル " + g.lv0 + " → " + g.lv1 });
     var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
     if (ga !== null && ga >= 5) c.push({ s: ga / 10, name: "🎯 せいかいりつ のびのび賞", d: "一発せいかいりつ " + g.rb + "% → " + g.rd + "%" });
-    if (g.perf >= 1) c.push({ s: g.perf / 3, name: "✅ ぜんぶ せいかい賞", d: "20問 ぜんぶ 一発せいかい " + g.perf + "回" });
+    if (g.perf >= 1) c.push({ s: g.perf / 3, name: "💯 ぜんぶ せいかい賞", d: "20問 ぜんぶ 一発せいかい " + g.perf + "回" });
     var best = null;
     c.forEach(function (x) { if (!best || x.s > best.s) best = x; });
     return best || { name: "💮 れんしゅう がんばった賞", d: "さいごまで れんしゅう がんばったね" };
@@ -2604,7 +2604,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var box = "background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px 8px;margin-top:6px;font-size:13px;line-height:1.7;text-align:left;";
     return '<div style="' + box + '"><b>📈 のびた きろく</b><br>' +
       '🎯 一発せいかいりつ：' + (g.rb >= 0 ? g.rb + "%" : "—") + " → " + (g.rd >= 0 ? g.rd + "%" : "—") + (ga !== null ? "（" + (ga >= 0 ? "+" : "") + ga + "）" : "") + '<br>' +
-      '✅ 20問 ぜんぶ 一発せいかい：<b>' + g.perf + '</b> 回<br>' +
+      '💯 20問 ぜんぶ 一発せいかい：<b>' + g.perf + '</b> 回<br>' +
       '🚀 ごうかくした レベル：' + g.lv0 + " → " + g.lv1 + (up !== null ? "（+" + up + "）" : "") + '</div>' +
       (pre ? '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:14px;">🏅 賞は イベントが はじまってから 決まるよ！<br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + md(EVENT.start) + 'から がんばろうね</span></div>' : '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:16px;">🏅 ' + (who ? who + "さんの 賞" : "賞は せんせいが きめて<br>おしらせするよ！") + (who ? '<br><span style="font-size:20px;">' + aw.name + '</span><br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + aw.d + '</span>' : '') + '</div>');
   };
@@ -2635,7 +2635,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (r.bestPerfect || rate) anyT = true;
       rows += '<tr><td style="' + cell + '">レベル' + l + " <span style='font-size:11px'>(" + LV[l - 1] + '音)</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
     }
-    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">ふよみテスト ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>' +
+    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">✅ ふよみテスト ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>' +
       '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">⭐ えんそう ごうかく <b>' + evPlayCount(idx) + '</b> きょく</td></tr>';
     var c = makeEventCode(idx), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
@@ -2743,7 +2743,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var a = f[4 + l].split(","), best = parseInt(a[0], 10) || 0, rate = parseInt(a[1], 10) || 0;
       rows += "<tr><td>レベル" + l + "</td><td>" + (best ? fmt(best) : "—") + "</td><td>" + (rate ? rate + "%" : "—") + "</td></tr>";
     }
-    if (f.length >= 10) rows += "<tr><td>レベル5</td><td colspan='2'>ふよみテスト合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
+    if (f.length >= 10) rows += "<tr><td>レベル5</td><td colspan='2'>✅ ふよみテスト合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
     if (f.length >= 11) rows += "<tr><td>レベル5</td><td colspan='2'>⭐ 演奏合格 <b>" + (parseInt(f[10], 10) || 0) + "</b> 曲</td></tr>";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
