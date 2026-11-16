@@ -1,4 +1,4 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1116b ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1116c ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
 /* --- じゅんびの どうぐ --- */
@@ -35,12 +35,14 @@ function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); 
 function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
 window.FY_JUMPS = [
   /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
-  { label: "🆕 1116b：とうろくの あとの ごあいさつ（光りかた）", note: "先生ページが とじて『ようこそ』が 出る →『🔊 おはなしを きく』が 光っている → おすと 声が はじまる。『はじめる ▶』は うすく なって 光らない・おせない → 声が おわると『はじめる ▶』が 光って おせる",
-    run: function (idx) {
-      try { [].forEach.call(document.querySelectorAll("body > div"), function (d) { var c = getComputedStyle(d); if (c.position === "fixed" && d.offsetHeight > 300 && d.id !== "fyTop") d.style.display = "none"; }); } catch (e) {}
-      try { showSelectScreen(); } catch (e) {}
-      showWelcome(profiles[idx] || "");
-    } },
+  { label: "🆕 1116c ①：トップの 光は 1つだけ", note: "トップに もどる。光って 動くのは『つぎに やる ところ』（おんぷカード）だけ。金の わくが 太く、ふわっと 大きく 光る。『きょう』の まると ポイントの シールは 動かない",
+    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 0); fyJmpSet(idx, "bass", 0); fyJmpSet(idx, "all", 0); Storage.set("fy_tp_" + idx, 22); location.reload(); } },
+  { label: "🆕 1116c ②：色モードで ドレミの 声", note: "ト音 レベル1が 色つきで すぐ はじまる → 正解すると ずんだもんが『ド』『レ』…と いう。まちがえた ときは いわない",
+    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fySkipSet(false); fyJmpBase(idx); fyJmpGo("trainc:treble:1"); } },
+  { label: "🆕 1116c ③：黒い カードでは 声が 出ない", note: "ト音 レベル1が 黒で すぐ はじまる → 正解しても『ド』『レ』と いわない（今まで どおり）",
+    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fySkipSet(false); fyJmpBase(idx); fyJmpGo("train:treble:1"); } },
+  { label: "🆕 1116c ④：🏫 教室用（見本）", note: "先生ページ →『⚙ そのほか』を ひらく →『🏫 この 機械を 教室用に する』→ 全部の レベルが ひらく／画面の 上に 灰色の『きょうしつ用（みほん）』／『きょうは おわり』を おしても 送る ボタンが 出ない。おわったら『教室用を やめる』",
+    run: function (idx) { alert("先生ページの『⚙ そのほか』を ひらいて、『🏫 この 機械を 教室用に する』を おして ください。"); } },
   { label: "🧹 見本の 3人（みほんA・B・C）を けす", note: "『さいきんの れんらく』から 見本だけ 消す。本物の 生徒は 残る",
     run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} delete sn["みほんA"]; delete sn["みほんB"]; delete sn["みほんC"]; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 消しました。"); } },
   /* ---------- 見たい 場面へ ---------- */
