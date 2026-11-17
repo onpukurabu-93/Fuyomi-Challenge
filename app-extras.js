@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1117d";
+window.FY_EXTRAS_VER = "1117e";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3890,6 +3890,9 @@ window.FYAK = FYAK;
       else { fyTestBasics(idx); [1, 2, 3, 4, 5].forEach(function (l) { fyTestPass(idx, "treble", l); fyTestPass(idx, "bass", l); }); }
       Storage.set("fy_test_master_" + idx, true);
       localStorage.setItem("fy_soundok", "1");
+      /* レジェンドへの みちの きょくも、ぜんぶ ひらく（chunk_proto.html 側の キー） */
+      localStorage.setItem("fy_chunk_max_" + idx, "5");
+      localStorage.setItem("fy_lv5_openall_" + idx, "1");
     } catch (e) {}
   }
   window.fyDemoSet = function (v) {
