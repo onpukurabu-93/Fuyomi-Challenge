@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118i";
+window.FY_EXTRAS_VER = "1118j";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1250,6 +1250,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   };
 
   window.selectClef = function (clef) {
+    if (!window.fyRequireLogin()) return;
     var L = lockState();
     if (clef === "bass" && !L.bass) { fySay("まずは ト音記号の\nレベル1に ごうかくしよう！", "zunda-lock.mp3"); return; }
     if (clef === "all" && !L.all) { fySay("ト音記号と ヘ音記号に\nごうかくすると ひらくよ！", "zunda-lock.mp3"); return; }
@@ -1353,6 +1354,16 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     cancelable = true;
     codeInput.value = "";
     showCode("ふえる プレイヤーの あいことばを いれてね", false);
+  };
+
+  /* 2026-11-17 から：トップ画面は だれでも 見られるけど、
+     じっさいに「あそぶ」ボタン（6つのド・おんぷカード・レジェンドへの みち）を 押したときだけ、
+     とうろく（あいことば）が 必要に なる。とうろく されていれば true、されていなければ
+     あいことば がめんを 出して false を かえす（よびもとは、false の ときは なにも しない）。 */
+  window.fyRequireLogin = function () {
+    if (isRegistered(activeProfileIndex)) return true;
+    window.fyGateAddPlayerCode();
+    return false;
   };
 
   var origSwitch = window.switchProfile;
@@ -1931,17 +1942,16 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   toggleModal("registerModal", false);
   initProfiles();
 
-  /* 2026-11-17 から：とうろく には あいことばが 必要（サブスクの かくにん の ため）。
-     いま えらんでいる わくが とうろく されていなければ、ほかの わくが とうろく されていても、
-     ここでは かならず あいことば がめんを 出す（あいことばを いれないと あたらしい プレイヤーを つくれない）。 */
+  /* 2026-11-17 から：トップ画面は だれでも（あいことば なしでも）見られるように する。
+     あいことばが 必要なのは、じっさいに「あそぶ」ボタン（6つのド・おんぷカード・レジェンドへの みち、
+     window.fyRequireLogin）を 押した ときだけ。ここ（きどう時）では、もう あいことばで ひもづけ
+     されている プレイヤーだけ、しずかに ログインさせる。 まだの ときは 画面を 出さず、トップ画面を
+     そのまま 見せる（おす まで、あいことばは 聞かない）。 */
   var startCode = isRegistered(activeProfileIndex) ? codeOfSlot(activeProfileIndex) : "";
   if (startCode) {
     tryCode(startCode, false);
   } else {
-    /* ・いま えらんでいる わくが とうろく されていない（まっさらな きかい、または その わくだけ 未とうろく）
-       ・または、とうろく されているけど この たんまつに あいことばの ひもづけが ない（べつの たんまつで とうろくした など）
-       どちらも、あいことばを いれて もらう。 */
-    showCode("あいことばを いれてね", false);
+    openApp();
   }
 })();
 
@@ -2491,6 +2501,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var anc = (all.parentNode.classList && all.parentNode.classList.contains("clef-row")) ? all.parentNode : all;
       anc.parentNode.insertBefore(b, anc.nextSibling);
       b.addEventListener("click", function () {
+        if (!window.fyRequireLogin()) return;
         if (!isMaster(activeProfileIndex)) { fySay("ふよみマスターに なると\nひらくよ！", "zunda-lock.mp3"); return; }
         try { Storage.set("fy_legend_opened_" + activeProfileIndex, true); } catch (e) {}
         location.href = PAGE;
