@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1117h";
+window.FY_EXTRAS_VER = "1118a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3615,6 +3615,8 @@ window.FYAK = FYAK;
       });
       $("fyNLAk").addEventListener("click", function () {
         sheet(function (inn) {
+          /* 「いれる」を おしたら かってに すすむので、下の「◀ もどる」は この がめんだけ かくす */
+          setTimeout(function () { try { var cb = inn.querySelector(".cls"); if (cb) cb.style.display = "none"; } catch (e0) {} }, 0);
           inn.innerHTML = '<div style="font-size:18px;font-weight:900;">📩 せんせいの あいことば</div>' +
             '<div style="font-size:13px;color:#806c5a;margin:4px 0 8px;">せんせいから もらった ひらがなを いれてね</div>' +
             '<input id="fyAkIn" type="text" autocomplete="off" placeholder="ひらがな 5もじ" style="width:100%;box-sizing:border-box;font-size:26px;font-weight:900;text-align:center;padding:12px;border:3px solid #ffcc9a;border-radius:16px;letter-spacing:4px;">' +
@@ -3957,6 +3959,13 @@ window.FYAK = FYAK;
       if (!confirm("この 機械を「きょうしつ用（見本）」に します。\nいまの プレイヤーの レベルを ぜんぶ ひらきます。\n（生徒の スマホでは おさないで ください）")) return;
       try { localStorage.setItem("fy_demo", "1"); } catch (e) {}
       setup(activeProfileIndex);
+      /* ここで いっしょに ドレミの いろも きめる（あとで もう一回 せんせいページを ひらかなくて いいように） */
+      try {
+        var idx = activeProfileIndex;
+        var toColor = confirm("ドレミを 色おんぷに しますか？\nOK＝色おんぷ　キャンセル＝くろおんぷ");
+        Storage.set("fy_color_" + idx + "_treble", toColor ? "on" : "off");
+        Storage.set("fy_color_" + idx + "_bass", toColor ? "on" : "off");
+      } catch (e2) {}
     } else { try { localStorage.removeItem("fy_demo"); } catch (e) {} alert("きょうしつ用を やめました。\n（ひらいた レベルは そのまま です）"); }
     location.reload();
   };
@@ -3974,8 +3983,11 @@ window.FYAK = FYAK;
   function tag() {
     try {
       var t = document.getElementById("fyDemoTag");
-      if (!window.fyDemoOn()) { if (t) t.remove(); return; }
+      var ov = document.getElementById("fyDemoDim");
+      if (!window.fyDemoOn()) { if (t) t.remove(); if (ov) ov.remove(); return; }
       if (!t) { t = document.createElement("div"); t.id = "fyDemoTag"; t.textContent = "🏫 きょうしつ用（みほん）"; t.style.cssText = "position:fixed;left:50%;bottom:3px;transform:translateX(-50%);z-index:9400;background:#78909c;color:#fff;font-size:11px;font-weight:900;border-radius:10px;padding:2px 10px;pointer-events:none;opacity:.92;white-space:nowrap;"; document.body.appendChild(t); }
+      /* 画面ぜんたいを すこし 暗くして、わくを つける（本物と まちがえない ため。おしても そのまま 送れる） */
+      if (!ov) { ov = document.createElement("div"); ov.id = "fyDemoDim"; ov.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:9300;pointer-events:none;background:rgba(0,0,0,.10);box-shadow:inset 0 0 0 6px rgba(69,90,100,.88);"; document.body.appendChild(ov); }
     } catch (e) {}
   }
   setTimeout(tag, 800);
