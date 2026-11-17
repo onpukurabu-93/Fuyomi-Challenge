@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118a";
+window.FY_EXTRAS_VER = "1118b";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
