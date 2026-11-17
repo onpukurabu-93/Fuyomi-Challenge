@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118c";
+window.FY_EXTRAS_VER = "1117h";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3615,8 +3615,6 @@ window.FYAK = FYAK;
       });
       $("fyNLAk").addEventListener("click", function () {
         sheet(function (inn) {
-          /* 「いれる」を おしたら かってに すすむので、下の「◀ もどる」は この がめんだけ かくす */
-          setTimeout(function () { try { var cb = inn.querySelector(".cls"); if (cb) cb.style.display = "none"; } catch (e0) {} }, 0);
           inn.innerHTML = '<div style="font-size:18px;font-weight:900;">📩 せんせいの あいことば</div>' +
             '<div style="font-size:13px;color:#806c5a;margin:4px 0 8px;">せんせいから もらった ひらがなを いれてね</div>' +
             '<input id="fyAkIn" type="text" autocomplete="off" placeholder="ひらがな 5もじ" style="width:100%;box-sizing:border-box;font-size:26px;font-weight:900;text-align:center;padding:12px;border:3px solid #ffcc9a;border-radius:16px;letter-spacing:4px;">' +
@@ -3954,48 +3952,15 @@ window.FYAK = FYAK;
       localStorage.setItem("fy_lv5_openall_" + idx, "1");
     } catch (e) {}
   }
-  /* 🏫 教室用に する あいだ、きょくの ごうかく きろく（✅／⭐）を いったん しまって、まっさらに する。
-     教室用を やめたら、しまって おいた きろくを もとに もどす（なんかいリセットしても、ほんものの きろくは さいしょの 1回だけ しまう） */
-  function demoSongWipe(idx) {
-    try {
-      if (localStorage.getItem("fy_demo_bak_pass_" + idx) === null) {
-        localStorage.setItem("fy_demo_bak_pass_" + idx, localStorage.getItem("fy_pass_" + idx) || "{}");
-        localStorage.setItem("fy_demo_bak_play_" + idx, localStorage.getItem("fy_play_" + idx) || "{}");
-      }
-      localStorage.setItem("fy_pass_" + idx, "{}");
-      localStorage.setItem("fy_play_" + idx, "{}");
-    } catch (e) {}
-  }
-  function demoSongRestore(idx) {
-    try {
-      var p = localStorage.getItem("fy_demo_bak_pass_" + idx), pl = localStorage.getItem("fy_demo_bak_play_" + idx);
-      if (p !== null) localStorage.setItem("fy_pass_" + idx, p); else localStorage.removeItem("fy_pass_" + idx);
-      if (pl !== null) localStorage.setItem("fy_play_" + idx, pl); else localStorage.removeItem("fy_play_" + idx);
-      localStorage.removeItem("fy_demo_bak_pass_" + idx);
-      localStorage.removeItem("fy_demo_bak_play_" + idx);
-    } catch (e) {}
-  }
   window.fyDemoSet = function (v) {
     if (v) {
-      if (!confirm("この 機械を「きょうしつ用（見本）」に します。\nいまの プレイヤーの レベルを ぜんぶ ひらきます。\nきょくの ごうかく きろくは いったん しまって、まっさらに します（やめたら もとに もどります）。\n（生徒の スマホでは おさないで ください）")) return;
+      if (!confirm("この 機械を「きょうしつ用（見本）」に します。\nいまの プレイヤーの レベルを ぜんぶ ひらきます。\n（生徒の スマホでは おさないで ください）")) return;
       try { localStorage.setItem("fy_demo", "1"); } catch (e) {}
       setup(activeProfileIndex);
-      demoSongWipe(activeProfileIndex);
-      /* ここで いっしょに ドレミの いろも きめる（あとで もう一回 せんせいページを ひらかなくて いいように） */
-      try {
-        var idx = activeProfileIndex;
-        var toColor = confirm("ドレミを 色おんぷに しますか？\nOK＝色おんぷ　キャンセル＝くろおんぷ");
-        Storage.set("fy_color_" + idx + "_treble", toColor ? "on" : "off");
-        Storage.set("fy_color_" + idx + "_bass", toColor ? "on" : "off");
-      } catch (e2) {}
-    } else {
-      try { localStorage.removeItem("fy_demo"); } catch (e) {}
-      demoSongRestore(activeProfileIndex);
-      alert("きょうしつ用を やめました。\n（ひらいた レベルは そのまま。きょくの ごうかく きろくは もとに もどりました）");
-    }
+    } else { try { localStorage.removeItem("fy_demo"); } catch (e) {} alert("きょうしつ用を やめました。\n（ひらいた レベルは そのまま です）"); }
     location.reload();
   };
-  window.fyDemoReset = function () { if (!confirm("きょうしつ用の きろくを、ぜんぶ ひらいた はじめの 状態に もどします。\n（きょくの ごうかく きろくも、まっさらに なります）")) return; setup(activeProfileIndex); demoSongWipe(activeProfileIndex); location.reload(); };
+  window.fyDemoReset = function () { if (!confirm("きょうしつ用の きろくを、ぜんぶ ひらいた はじめの 状態に もどします。")) return; setup(activeProfileIndex); location.reload(); };
   /* 🎨 教室用で 見せる ときの、ドレミ カードの いろ（小さい 生徒さん向けの 色おんぷ ⇄ ふだんの くろおんぷ） */
   window.fyDemoColorSet = function (on) {
     var idx = activeProfileIndex;
@@ -4009,11 +3974,8 @@ window.FYAK = FYAK;
   function tag() {
     try {
       var t = document.getElementById("fyDemoTag");
-      var ov = document.getElementById("fyDemoDim");
-      if (!window.fyDemoOn()) { if (t) t.remove(); if (ov) ov.remove(); return; }
+      if (!window.fyDemoOn()) { if (t) t.remove(); return; }
       if (!t) { t = document.createElement("div"); t.id = "fyDemoTag"; t.textContent = "🏫 きょうしつ用（みほん）"; t.style.cssText = "position:fixed;left:50%;bottom:3px;transform:translateX(-50%);z-index:9400;background:#78909c;color:#fff;font-size:11px;font-weight:900;border-radius:10px;padding:2px 10px;pointer-events:none;opacity:.92;white-space:nowrap;"; document.body.appendChild(t); }
-      /* 画面ぜんたいを すこし 暗くして、わくを つける（本物と まちがえない ため。おしても そのまま 送れる） */
-      if (!ov) { ov = document.createElement("div"); ov.id = "fyDemoDim"; ov.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:9300;pointer-events:none;background:rgba(0,0,0,.10);box-shadow:inset 0 0 0 6px rgba(69,90,100,.88);"; document.body.appendChild(ov); }
     } catch (e) {}
   }
   setTimeout(tag, 800);
