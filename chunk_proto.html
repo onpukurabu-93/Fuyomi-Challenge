@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1117c</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1117d</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -122,7 +122,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
       <div style="font-size:12px;margin-top:4px;">ピアノの 音を マイクで きいて こたえます。<br>ピアノの ちかくに おいてね。シャープ（くろい けんばん）は むしします。<br>どの オクターブでも だいじょうぶ。</div>
     </div>
   </div>
-  <div class="note" style="margin-top:14px;"><a href="#" id="tAll" style="color:#806c5a;">せんせい用：ぜんぶ ひらく</a>　<a href="#" id="tLeg" style="color:#806c5a;">せんせい用：レジェンド表彰テスト</a>　<a href="#" id="tMae" style="color:#806c5a;">せんせい用：マエストロ表彰テスト</a><br><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a><br><a href="#" id="tDiag" style="color:#806c5a;">せんせい用：音声ファイルの かくにん</a><div id="diag" style="display:none;margin-top:6px;font-size:11px;line-height:1.7;text-align:left;background:#fff;border-radius:10px;padding:8px 10px;"></div></div>
+  <div class="note" style="margin-top:14px;"><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a></div>
   <div class="note" id="howTx">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <div id="evScr"><div class="in" id="evIn"></div></div>
@@ -2219,8 +2219,6 @@ function renderScore(bars, beatsPerBar, opt) {
     if (b) { e.preventDefault(); try { if (pianoOn) { pianoStop(); localStorage.setItem("fy_piano_pref", "0"); } } catch (e9) {} press(b.getAttribute("data-k")); }
   });
   document.getElementById("again").addEventListener("click", start);
-  document.getElementById("tDiag").addEventListener("click", function (e) { e.preventDefault(); var d = document.getElementById("diag"); renderDiag(); d.style.display = d.style.display === "none" ? "block" : "none"; });
-  document.getElementById("tAll").addEventListener("click", function (e) { e.preventDefault(); setMax(5); try { localStorage.setItem("fy_lv5_openall_" + PID, "1"); } catch (e2) {} renderLv(); });
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
   document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } try { localStorage.removeItem("fy_lv5_openall_" + PID); } catch (e3) {} level = 1; start(); });
 
@@ -2373,9 +2371,7 @@ function renderScore(bars, beatsPerBar, opt) {
       alert(t > EVENT.end ? "イベントは おわったよ。つぎの イベントを まっててね！" : "イベントは " + md(EVENT.pStart) + " から はじまるよ！");
     });
   })();
-  document.getElementById("tLeg").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("legend", true); });
-  document.getElementById("tMae").addEventListener("click", function (e) { e.preventDefault(); tryUnlock(); grantAward("maestro", true); });
-  window.__chunk = { songs: function () { return SONGS; }, micName: micName, renderScore: renderScore, nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: dispNo(nextSongOf(cur)), label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
+  window.__chunk ={ songs: function () { return SONGS; }, micName: micName, renderScore: renderScore, nextOf: function (id) { var cur = null; SONGS.forEach(function (x) { if (x.id === id) cur = x; }); return cur ? { no: dispNo(nextSongOf(cur)), label: nextLabel(cur).replace(/<[^>]+>/g, " ") } : null; }, pickNextSong: pickNextSong, playMelody: function () { playMelody(song); }, setSong: function (id) { SONGS.forEach(function (x) { if (x.id === id) song = x; }); }, songCleared: songCleared, songCount: songCount, grantAward: grantAward, begin: function () { token++; ov_hide(); }, getRec: getRec, playLog: function () { return window.__playLog.slice(); }, getMax: getMax, needOf: needOf, setLevel: function (l) { level = l; start(); }, total: function () { return TOTAL; }, press: press, midiOf: midiOf, state: function () { return { idx: idx, firstOk: firstOk, done: done, queue: queue.slice(), names: queue.map(nameOf) }; }, start: start };
   /* ---- はじめて この ページに はいった ときだけ：ずんだもんの あんない（ボタンを おしてから こえを ならす） ---- */
   (function () {
     var IK = "fy_legend_intro_" + PID;
