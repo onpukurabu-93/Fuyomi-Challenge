@@ -1372,7 +1372,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1118f";
+var FY_INDEX_VER = "1118g";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1924,11 +1924,13 @@ function createLevelButtons() {
     list.appendChild(bn);
   }
   const colorMode = (selectedClef === "treble" || selectedClef === "bass") && fyColorOn(activeProfileIndex, selectedClef);
+  /* 🏫 教室用（見本）の あいだは、「色おんぷは レベル1だけ」の せいげんを かけない（見本なので、色おんぷの まま レベル5まで 見せたい） */
+  const fyDemoColorBypass = !!(window.fyDemoOn && window.fyDemoOn());
   /* 📍 いまここ：ひらいている レベルのうち、まだ ごうかくしていない いちばん したの レベルを ひからせる */
   let fyHereLv = 0;
   try {
     for (let lv = 1; lv <= 5; lv++) {
-      const lk = (lv > 1 && !isDebugUnlocked && !hasLevelCleared(activeProfileIndex, selectedClef, lv - 1)) || (lv > 1 && colorMode);
+      const lk = (lv > 1 && !isDebugUnlocked && !hasLevelCleared(activeProfileIndex, selectedClef, lv - 1)) || (lv > 1 && colorMode && !fyDemoColorBypass);
       if (lk) break;
       if (!hasLevelCleared(activeProfileIndex, selectedClef, lv)) { fyHereLv = lv; break; }
     }
@@ -1938,7 +1940,7 @@ function createLevelButtons() {
     const button = document.createElement("button");
     button.className = "level-button";
     let isLocked = false;
-    const colorLock = level > 1 && colorMode;
+    const colorLock = level > 1 && colorMode && !fyDemoColorBypass;
     if (level > 1 && !isDebugUnlocked) {
       if (!hasLevelCleared(activeProfileIndex, selectedClef, level - 1)) isLocked = true;
     }
@@ -2646,6 +2648,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261118f"></script>
+<script src="app-extras.js?v=20261118g"></script>
 </body>
 </html>
