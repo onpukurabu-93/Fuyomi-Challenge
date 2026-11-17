@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1116d</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1116e</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -779,7 +779,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       }
       el0.style.cssText = "margin:6px 0;padding:5px;background:#fff;border-radius:14px;display:flex;gap:5px;";
       el0.innerHTML =
-        (function () { var mb = meijinBest(), goal = (Math.floor(Math.max(mb, 0) / 100) + 1) * 100; return row("🏅", mb ? "名人 " + mb + "かい✓" : "ふよみ名人", false, (mb ? "つぎ " + goal + "：" : "") + "あと " + Math.max(0, goal - run) + "かい"); })() +
+        (function () { var mb = meijinBest(), goal = (Math.floor(Math.max(mb, 0) / 100) + 1) * 100; return row("🏅", mb ? "名人 " + mb + "かい✓" : "ふよみ名人", false, run + " / " + goal); })() +
         row("👑", "レジェンド", has("legend5"), "✅ " + pn + " / " + N) +
         row("🎹", "マエストロ", has("maestro"), "⭐ " + pl + " / " + N);
     } catch (e) {}
@@ -1587,7 +1587,7 @@ function renderScore(bars, beatsPerBar, opt) {
     curScoreSong = sg;
     var sc = document.getElementById("songScr");
     sc.innerHTML = '<div style="font-size:17px;font-weight:900;margin:6px 0 ' + (COMPOSERS[sg.c] ? '0' : '6px') + ';">' + grpIcon(sg) + ' ' + dispNo(sg) + '．' + sg.title + '</div>' + (COMPOSERS[sg.c] ? '<div style="font-size:13px;color:#8d7b68;margin:0 0 6px;">' + COMPOSERS[sg.c] + '</div>' : '') +
-      '<div id="scSpdBar" style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 8px;">' +
+      '<div id="scSpdBar" style="position:sticky;top:56px;z-index:6;background:#fdf8ed;display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 8px;padding:6px 0;box-shadow:0 2px 6px rgba(0,0,0,.06);">' +
         '<button id="scSlow" style="font-size:22px;border:none;background:#8d6e63;color:#fff;border-radius:16px;padding:6px 14px;font-weight:900;touch-action:manipulation;">🐢 −</button>' +
         '<span id="scDots" style="font-size:20px;letter-spacing:5px;color:#ff9800;min-width:112px;text-align:center;"></span>' +
         '<button id="scFast" style="font-size:22px;border:none;background:#8d6e63;color:#fff;border-radius:16px;padding:6px 14px;font-weight:900;touch-action:manipulation;">+ 🐇</button></div>' +
