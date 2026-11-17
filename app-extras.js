@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1117e";
+window.FY_EXTRAS_VER = "1117f";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1938,6 +1938,16 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     notice: function (i) { return "fy_tp_notice_" + i; }     /* 「先週は…」の おしらせ（見せるまで のこる） */
   };
 
+  /* 🎁 ポイントが 入った りゆうの きろく（さいしん 30件。ポイント交換ページの「履歴」で みられる） */
+  window.fyTpEarnLog = function (idx, pts, note) {
+    try {
+      if (!pts) return;
+      var log = Storage.get("fy_tp_earn_" + idx, []); if (!Array.isArray(log)) log = [];
+      log.push({ t: Date.now(), pts: pts, note: note || "" });
+      if (log.length > 30) log = log.slice(log.length - 30);
+      Storage.set("fy_tp_earn_" + idx, log);
+    } catch (e) {}
+  };
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function dstr(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function parseD(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -1988,6 +1998,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
     Storage.set(K.tp(idx), getTP(idx) + total);
     Storage.set(K.paid(idx), cur);
+    if (total > 0) window.fyTpEarnLog(idx, total, "🔥 れんしゅうの ハンコ（週 " + lastDays + "日）");
     if (total > 0 || lastDays > 0) {
       var old = Storage.get(K.notice(idx), null);
       Storage.set(K.notice(idx), { days: lastDays, pts: total + (old && old.pts ? old.pts : 0) });
@@ -2272,11 +2283,39 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }, true);
   function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
+  /* 📜 ポイントの 履歴（入った ぶん＋つかった ぶんを、ひづけじゅんに ならべる） */
+  function exHistory() {
+    var idx = activeProfileIndex;
+    var earn = Storage.get("fy_tp_earn_" + idx, []); if (!Array.isArray(earn)) earn = [];
+    var spend = exLog(idx);
+    var items = [];
+    earn.forEach(function (e) { items.push({ t: e.t, pts: e.pts, note: e.note, kind: "+" }); });
+    spend.forEach(function (e) { items.push({ t: e.sentAt || e.t, pts: e.amt, note: "🎁 ポイント こうかん" + (e.seq ? "（" + e.seq + "かいめ）" : ""), kind: "-" }); });
+    items.sort(function (a, b) { return b.t - a.t; });
+    var html = '<div style="font-size:18px;font-weight:900;">📜 ポイントの 履歴</div>';
+    if (!items.length) {
+      html += '<div style="font-size:13px;color:#806c5a;margin-top:10px;">まだ 履歴は ないよ。</div>';
+    } else {
+      html += '<div style="text-align:left;margin-top:8px;">';
+      items.forEach(function (e) {
+        var dt = new Date(e.t), ds = dt.getFullYear() + "/" + (dt.getMonth() + 1) + "/" + dt.getDate();
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid #eee2cc;">' +
+          '<div><div style="font-size:13px;font-weight:800;">' + esc2(e.note) + '</div><div style="font-size:11px;color:#a89a86;">' + ds + '</div></div>' +
+          '<div style="font-size:16px;font-weight:900;color:' + (e.kind === "+" ? "#2e7d32" : "#c62828") + ';white-space:nowrap;">' + e.kind + e.pts + 'p</div></div>';
+      });
+      html += '</div>';
+    }
+    html += '<button id="fyExHistBack" style="' + BTN + 'background:#ff9800;color:#fff;font-weight:900;margin-top:12px;">◀ もどる</button>';
+    exShell(html);
+    document.getElementById("fyExHistBack").addEventListener("click", function () { exMain(); });
+  }
+
   function exMain(amt) {
     var idx = activeProfileIndex, tp = getTP(idx);
     var max = Math.floor(tp / EX_UNIT) * EX_UNIT;
     var html = '<div style="font-size:18px;font-weight:900;">🎁 ポイントを こうかん</div>' +
-      '<div style="font-size:14px;margin-top:6px;">いま <span style="font-size:24px;font-weight:900;color:#e65100;">' + tp + ' p</span></div>';
+      '<div style="font-size:14px;margin-top:6px;">いま <span style="font-size:24px;font-weight:900;color:#e65100;">' + tp + ' p</span></div>' +
+      '<button id="fyExHistBtn" style="margin-top:6px;border:1px dashed #b0a090;background:#fff;color:#806c5a;font-size:12px;font-weight:700;border-radius:10px;padding:6px 14px;">📜 ポイントの 履歴</button>';
     if (max < EX_UNIT) {
       html += '<div style="font-size:14px;font-weight:800;line-height:1.7;margin:12px 0;">' + EX_UNIT + 'ポイントから こうかん できるよ！<br>あと <b>' + (EX_UNIT - tp) + '</b> ポイント！</div>';
     } else {
@@ -2302,6 +2341,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (q("fyExMinus")) q("fyExMinus").addEventListener("click", function () { exMain(Math.max(EX_UNIT, amt - EX_UNIT)); });
     if (q("fyExPlus")) q("fyExPlus").addEventListener("click", function () { exMain(Math.min(max, amt + EX_UNIT)); });
     if (q("fyExGo")) q("fyExGo").addEventListener("click", function () { exConfirm(amt); });
+    if (q("fyExHistBtn")) q("fyExHistBtn").addEventListener("click", function () { exHistory(); });
     q("fyExClose").addEventListener("click", function () { exClose(); try { initProfiles(); } catch (e) {} });
   }
 
@@ -3324,6 +3364,7 @@ window.FYAK = FYAK;
         if (FYAK.used(idx, code, d)) return { ok: false, msg: "この あいことばは、もう つかったよ。" };
         FYAK.use(idx, code, d); FYAK.good(idx);
         Storage.set("fy_tp_" + idx, Storage.getNumber("fy_tp_" + idx, 0) + p);
+        if (window.fyTpEarnLog) window.fyTpEarnLog(idx, p, "📩 せんせいからの あいことば");
         return { ok: true, msg: "🎁 " + name + " さんに\n+" + p + " ポイント！\n\nいまの ポイント：" + Storage.getNumber("fy_tp_" + idx, 0) + " p" };
       }
     }
@@ -3344,6 +3385,7 @@ window.FYAK = FYAK;
     if (used.indexOf(m[2]) !== -1) return { ok: false, msg: "この プレゼントは、もう うけとったよ。" };
     used.push(m[2]); Storage.set("fy_gift_used_" + idx, used);
     Storage.set("fy_tp_" + idx, Storage.getNumber("fy_tp_" + idx, 0) + pts);
+    if (window.fyTpEarnLog) window.fyTpEarnLog(idx, pts, "🎁 せんせいからの プレゼントコード");
     return { ok: true, msg: profiles[idx] + " さんに\n+" + pts + " ポイント！\n\nいまの ポイント：" + Storage.getNumber("fy_tp_" + idx, 0) + " p" };
   };
 })();
