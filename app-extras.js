@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118g";
+window.FY_EXTRAS_VER = "1118h";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1913,18 +1913,26 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   })();
 
   /* ===== はじまり ===== */
-  toggleModal("registerModal", false);
   initProfiles();
 
-  var startCode = isRegistered(activeProfileIndex) ? codeOfSlot(activeProfileIndex) : "";
-  if (startCode) {
-    tryCode(startCode, false);
-  } else if (isRegistered(activeProfileIndex)) {
-    /* ✏️ の「なまえを とうろく・かえる」だけで とうろくした プレイヤー（あいことばの コードとは むすびついていない）。
-       この あいことば がめんで せきとめず、そのまま アプリを ひらく。 */
-    openApp();
+  var anyoneRegistered = (typeof hasAnyRegistered === "function") && hasAnyRegistered();
+
+  if (!anyoneRegistered) {
+    /* プレイヤーが 1人も とうろく されていない（まったく はじめての きかい、または「全データの完全初期化」の あと）。
+       この ときは index.html が すでに「なまえを とうろく」の がめんを 開いているので、
+       ここで 古い あいことば がめんを 出したり、その とうろく がめんを 閉じたり しない。 */
+    box.style.display = "none";
   } else {
-    showCode("あいことばを いれてね", false);
+    toggleModal("registerModal", false);
+    var startCode = isRegistered(activeProfileIndex) ? codeOfSlot(activeProfileIndex) : "";
+    if (startCode) {
+      tryCode(startCode, false);
+    } else {
+      /* ✏️ の「なまえを とうろく・かえる」で とうろくした プレイヤー（あいことばの コードとは むすびついていない）。
+         いま えらんでいる プレイヤーが とうろく されていなくても、ほかの プレイヤーが 1人でも とうろく されていれば、
+         この きかいは すでに（かんたん とうろくで）セットアップ ずみ。古い あいことば がめんで せきとめず、そのまま アプリを ひらく。 */
+      openApp();
+    }
   }
 })();
 
