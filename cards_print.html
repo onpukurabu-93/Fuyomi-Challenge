@@ -214,8 +214,8 @@ function render() {
     var fs2 = Math.min(t.df, 0.46 / Math.max(m, 1));
     cardF.appendChild(overlay("date", t.nx, t.date - t.dof, fs2, "#2b3a6a", esc(date), t.cw));
   }
-  if (t.award && awardEl.value) { var oa = overlay("award", t.award.x, t.award.y + fitFs(t.award, awardEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.award, awardEl.value), "#ffffff", esc(awardEl.value), t.cw); oa.style.fontWeight = "900"; oa.style.webkitTextStroke = "0.035em #ffffff"; cardF.appendChild(oa); }
-  if (t.ev && evText()) { var oe = overlay("ev", t.ev.x, t.ev.y + fitFs(t.ev, evText()) * (t.cw / t.ch) * 0.55, fitFs(t.ev, evText()), "#1f7a72", esc(evText()), t.cw); oe.style.fontWeight = "900"; oe.style.webkitTextStroke = "0.03em #1f7a72"; cardF.appendChild(oe); }
+  if (t.award && awardEl.value) { var oa = overlay("award", t.award.x, t.award.y + fitFs(t.award, awardEl.value) * (t.cw / t.ch) * 0.55, fitFs(t.award, awardEl.value), "#ffffff", esc(awardEl.value), t.cw); oa.style.fontWeight = "900"; oa.style.webkitTextStroke = "0.016em #ffffff"; cardF.appendChild(oa); }
+  if (t.ev && evText()) { var oe = overlay("ev", t.ev.x, t.ev.y + fitFs(t.ev, evText()) * (t.cw / t.ch) * 0.55, fitFs(t.ev, evText()), "#1f7a72", esc(evText()), t.cw); oe.style.fontWeight = "900"; oe.style.webkitTextStroke = "0.016em #1f7a72"; cardF.appendChild(oe); }
   if (t.cloud) {
     var digits = String(cnt()).length;
     var cw = t.cloud.w;
@@ -312,8 +312,8 @@ function buildHagaki() {
       ctx.font = "800 " + (fs2 * cw) + "px " + FONT;
       ctx.fillText(date, x0 + t.nx * cw, y0 + (t.date - t.dof) * ch);
     }
-    if (c.front && t.award && awardEl.value) { ctx.save(); ctx.fillStyle = "#ffffff"; ctx.font = "900 " + (fitFs(t.award, awardEl.value) * cw) + "px " + FONT; ctx.lineJoin = "round"; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = fitFs(t.award, awardEl.value) * cw * 0.045; ctx.strokeText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.fillText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
-    if (c.front && t.ev && evText()) { ctx.save(); ctx.fillStyle = "#1f7a72"; ctx.font = "900 " + (fitFs(t.ev, evText()) * cw) + "px " + FONT; ctx.lineJoin = "round"; ctx.strokeStyle = "#1f7a72"; ctx.lineWidth = fitFs(t.ev, evText()) * cw * 0.04; ctx.strokeText(evText(), x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, evText()) * (cw / ch) * 0.55) * ch); ctx.fillText(evText(), x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, evText()) * (cw / ch) * 0.55) * ch); ctx.restore(); }
+    if (c.front && t.award && awardEl.value) { ctx.save(); ctx.fillStyle = "#ffffff"; ctx.font = "900 " + (fitFs(t.award, awardEl.value) * cw) + "px " + FONT; ctx.lineJoin = "round"; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = fitFs(t.award, awardEl.value) * cw * 0.02; ctx.strokeText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.fillText(awardEl.value, x0 + t.award.x * cw, y0 + (t.award.y + fitFs(t.award, awardEl.value) * (cw / ch) * 0.55) * ch); ctx.restore(); }
+    if (c.front && t.ev && evText()) { ctx.save(); ctx.fillStyle = "#1f7a72"; ctx.font = "900 " + (fitFs(t.ev, evText()) * cw) + "px " + FONT; ctx.lineJoin = "round"; ctx.strokeStyle = "#1f7a72"; ctx.lineWidth = fitFs(t.ev, evText()) * cw * 0.02; ctx.strokeText(evText(), x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, evText()) * (cw / ch) * 0.55) * ch); ctx.fillText(evText(), x0 + t.ev.x * cw, y0 + (t.ev.y + fitFs(t.ev, evText()) * (cw / ch) * 0.55) * ch); ctx.restore(); }
     if (t.cloud) {
       var digits = String(cnt()).length;
       var fsn = Math.min(t.cloud.max || 0.30, t.cloud.w * 0.88 / (digits * 0.62));
