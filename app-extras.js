@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118d";
+window.FY_EXTRAS_VER = "1118e";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3667,9 +3667,10 @@ window.FYAK = FYAK;
         sheet(function (inn) {
           inn.innerHTML = '<div style="font-size:17px;font-weight:900;margin-bottom:4px;">⚙️ 大人の方へ</div>';
           function go(fn) { return function () { closeSheet(); try { toggleModal("managementModal", true); resetMgSection(); fn(); } catch (e) { clickOld([].filter.call(document.querySelectorAll("#selectScreen > .select-button.challenge"), function (b) { return b.textContent.indexOf("保護者") !== -1; })[0]); } }; }
+          /* 「➕ プレイヤーを増やす」は、生徒が じぶんで 押すことも あるので、ここ（大人の方へ）からは なくしました。
+             いまは トップ画面の「✏️ なまえを とうろく・かえる」と、「👤 だれが つかう？」の 中から すすめます。 */
           var items = [["👪 保護者ページ", go(function () { showParentAuth(); })],
-           ["🎹 先生ページ", go(function () { showTeacherAuth(); })],
-           ["➕ プレイヤーを増やす", function () { closeSheet(); window.__fyBackToAdult = Date.now(); try { openRegistration(false); } catch (e) {} }]];
+           ["🎹 先生ページ", go(function () { showTeacherAuth(); })]];
           if (!wk) items.push(["🌱 わかばマークをつける（光と声の案内）", function () { closeSheet(); try { fyWakabaSet(true); } catch (e) {} schedule(); }]);
           items.forEach(function (x) { var b = document.createElement("button"); b.className = "bt"; b.textContent = x[0]; b.addEventListener("click", x[1]); inn.appendChild(b); });
           var cr = document.createElement("details"); cr.style.cssText = "margin-top:12px;font-size:12px;color:#806c5a;text-align:left;";
@@ -3687,7 +3688,7 @@ window.FYAK = FYAK;
             b.addEventListener("click", function () { closeSheet(); if (i === idx) return; try { var sel = $("profileSelect"); if (sel) { sel.value = String(i); confirmProfileSelect(); } } catch (e) {} schedule(); });
             inn.appendChild(b);
           });
-          var more = 0; profiles.forEach(function (p) { if (p) more++; });
+          var more = 0; for (var mi = 0; mi < 3; mi++) { try { if (isRegistered(mi)) more++; } catch (e) { more++; } }
           if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:13px;background:#f3ede2;box-shadow:none;padding:10px;"; ad.textContent = "➕ プレイヤーを ふやす"; ad.addEventListener("click", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }); inn.appendChild(ad); }
         });
       });
