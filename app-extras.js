@@ -1,8 +1,9 @@
+
 /* LINEで おくる ボタン（コードが でる がめん ぜんぶで つかう） */
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118h";
+window.FY_EXTRAS_VER = "1118i";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1298,8 +1299,23 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
       var regBtn = document.querySelector(".reg-open-btn");
       if (regBtn) {
-        regBtn.textContent = "➕ プレイヤーを ふやす";
-        regBtn.style.cssText = "background:transparent;border:none;color:#b0a090;font-size:11px;font-weight:600;cursor:pointer;width:100%;margin-bottom:4px;padding:2px;text-decoration:underline;";
+        if (registeredCount() >= 3) {
+          regBtn.style.display = "none";
+        } else {
+          regBtn.style.display = "";
+          regBtn.textContent = "➕ プレイヤーを ふやす（あいことばが いるよ）";
+          regBtn.style.cssText = "background:transparent;border:none;color:#b0a090;font-size:11px;font-weight:600;cursor:pointer;width:100%;margin-bottom:4px;padding:2px;text-decoration:underline;";
+          /* 2026-11-17 から：あたらしい プレイヤーを ふやすのは あいことばが 必要。
+             もとの onclick="openRegistration(false)"（なまえの へんこう用）を 上書きして、あいことばの がめんを 出す。 */
+          regBtn.onclick = null;
+          if (!regBtn.dataset.fyGateBound) {
+            regBtn.dataset.fyGateBound = "1";
+            regBtn.addEventListener("click", function (e) {
+              e.preventDefault();
+              if (window.fyGateAddPlayerCode) window.fyGateAddPlayerCode();
+            });
+          }
+        }
       }
     } catch (e) {}
   }
@@ -1913,26 +1929,20 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   })();
 
   /* ===== はじまり ===== */
+  toggleModal("registerModal", false);
   initProfiles();
 
-  var anyoneRegistered = (typeof hasAnyRegistered === "function") && hasAnyRegistered();
-
-  if (!anyoneRegistered) {
-    /* プレイヤーが 1人も とうろく されていない（まったく はじめての きかい、または「全データの完全初期化」の あと）。
-       この ときは index.html が すでに「なまえを とうろく」の がめんを 開いているので、
-       ここで 古い あいことば がめんを 出したり、その とうろく がめんを 閉じたり しない。 */
-    box.style.display = "none";
+  /* 2026-11-17 から：とうろく には あいことばが 必要（サブスクの かくにん の ため）。
+     いま えらんでいる わくが とうろく されていなければ、ほかの わくが とうろく されていても、
+     ここでは かならず あいことば がめんを 出す（あいことばを いれないと あたらしい プレイヤーを つくれない）。 */
+  var startCode = isRegistered(activeProfileIndex) ? codeOfSlot(activeProfileIndex) : "";
+  if (startCode) {
+    tryCode(startCode, false);
   } else {
-    toggleModal("registerModal", false);
-    var startCode = isRegistered(activeProfileIndex) ? codeOfSlot(activeProfileIndex) : "";
-    if (startCode) {
-      tryCode(startCode, false);
-    } else {
-      /* ✏️ の「なまえを とうろく・かえる」で とうろくした プレイヤー（あいことばの コードとは むすびついていない）。
-         いま えらんでいる プレイヤーが とうろく されていなくても、ほかの プレイヤーが 1人でも とうろく されていれば、
-         この きかいは すでに（かんたん とうろくで）セットアップ ずみ。古い あいことば がめんで せきとめず、そのまま アプリを ひらく。 */
-      openApp();
-    }
+    /* ・いま えらんでいる わくが とうろく されていない（まっさらな きかい、または その わくだけ 未とうろく）
+       ・または、とうろく されているけど この たんまつに あいことばの ひもづけが ない（べつの たんまつで とうろくした など）
+       どちらも、あいことばを いれて もらう。 */
+    showCode("あいことばを いれてね", false);
   }
 })();
 
@@ -3710,7 +3720,7 @@ window.FYAK = FYAK;
             inn.appendChild(b);
           });
           var more = 0; for (var mi = 0; mi < 3; mi++) { try { if (isRegistered(mi)) more++; } catch (e) { more++; } }
-          if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:13px;background:#f3ede2;box-shadow:none;padding:10px;"; ad.textContent = "➕ プレイヤーを ふやす"; ad.addEventListener("click", function () { closeSheet(); try { openRegistration(false); } catch (e) {} }); inn.appendChild(ad); }
+          if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:13px;background:#f3ede2;box-shadow:none;padding:10px;"; ad.textContent = "➕ プレイヤーを ふやす（あいことばが いるよ）"; ad.addEventListener("click", function () { closeSheet(); try { if (window.fyGateAddPlayerCode) window.fyGateAddPlayerCode(); } catch (e) {} }); inn.appendChild(ad); }
         });
       });
       $("fyNLHk").addEventListener("click", function () {
