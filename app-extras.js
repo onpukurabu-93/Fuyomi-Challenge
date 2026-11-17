@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1116e";
+window.FY_EXTRAS_VER = "1117a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2364,13 +2364,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   try {
     var t3 = document.getElementById("teacherTab3");
     if (t3) {
+      var pb = document.createElement("div");
+      pb.innerHTML =
+        '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🎁 ポイントを 手動で ふやす</div>' +
+        '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">ポイントを 10 ふやす</button>';
+      pb.id = "fyPtManual"; t3.insertBefore(pb, t3.firstChild);
       var tb = document.createElement("div");
       tb.innerHTML =
         '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🧪 トレーニングポイントの テスト</div>' +
         '<button id="fyTestWeek" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 先週 4日ぶんの ハンコを つくる（つぎに トップを ひらくと おしらせ）</button>' +
-        '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 ポイントを 10 ふやす</button>' +
         '<button id="fyTestReset" class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:6px;">🧪 いまのプレイヤーの ハンコと ポイントを リセット</button>';
-      tb.id = "fyPtTest"; t3.insertBefore(tb, t3.firstChild);
+      tb.id = "fyPtTest"; t3.insertBefore(tb, pb.nextSibling);
       document.getElementById("fyTestWeek").addEventListener("click", function () {
         var idx = activeProfileIndex;
         var lastWs = addDays(weekStartOf(new Date()), -7);
