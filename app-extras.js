@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118f";
+window.FY_EXTRAS_VER = "1118g";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3639,12 +3639,21 @@ window.FYAK = FYAK;
             var akOff = function () { akIn.classList.remove("fyNudge"); akIn.classList.remove("fyRel"); akIn.removeEventListener("pointerdown", akOff); };
             akIn.addEventListener("pointerdown", akOff);
           } catch (e) {}
-          /* 5もじ 入るまでは「いれる」を 灰色に して 押せなく する */
+          /* 5もじ 入るまでは「いれる」を 灰色に して 押せなく する。5もじ 入ったら、ピカピカ 光らせて つぎに おす ところを わかりやすく する */
           inn.querySelector("#fyAkIn").addEventListener("input", function () {
             var goBtn = inn.querySelector("#fyAkGo"), ok = this.value.trim().length >= 5;
             goBtn.disabled = !ok;
             goBtn.style.background = ok ? "#ff7043" : "#ccc";
             goBtn.style.opacity = ok ? "1" : ".6";
+            try {
+              if (ok) {
+                if (window.fyGlowCss) window.fyGlowCss();
+                goBtn.classList.add("fyNudge");
+                if (getComputedStyle(goBtn).position === "static") goBtn.classList.add("fyRel");
+              } else {
+                goBtn.classList.remove("fyNudge"); goBtn.classList.remove("fyRel");
+              }
+            } catch (e) {}
           });
           var go = function () {
             var v = $("fyAkIn").value, msg = $("fyAkMsg"), F = window.FYAK;
@@ -3662,7 +3671,7 @@ window.FYAK = FYAK;
             /* ながい コード（きろくを もどす とき）は、いままでの しくみで */
             try { var r = window.fyLinkRestore(v.trim()); say(r.ok ? "🔁 きろくが もどりました" : (r.msg || "コードが ちがうみたい"), !!r.ok); if (r.ok) schedule(); } catch (e) { say("あいことばは、ひらがな 5もじ だよ", false); }
           };
-          inn.querySelector("#fyAkGo").addEventListener("click", go);
+          inn.querySelector("#fyAkGo").addEventListener("click", function () { try { var gb = inn.querySelector("#fyAkGo"); gb.classList.remove("fyNudge"); gb.classList.remove("fyRel"); } catch (e) {} go(); });
         });
       });
       /* 🌱 わかば：おすと たしざん → とけたら はずせる */
