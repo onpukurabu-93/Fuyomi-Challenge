@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1118b</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1118c</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -122,7 +122,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
       <div style="font-size:12px;margin-top:4px;">ピアノの 音を マイクで きいて こたえます。<br>ピアノの ちかくに おいてね。シャープ（くろい けんばん）は むしします。<br>どの オクターブでも だいじょうぶ。</div>
     </div>
   </div>
-  <div class="note" style="margin-top:14px;"><a href="#" id="tReset" style="color:#806c5a;">せんせい用：もとに もどす</a></div>
   <div class="note" id="howTx">ひだりの おとから じゅんばんに こたえるよ。<br>こたえると、ぜんぶが ひとつ ひだりに うごくよ。</div>
 </div>
 <div id="evScr"><div class="in" id="evIn"></div></div>
@@ -2234,7 +2233,6 @@ function renderScore(bars, beatsPerBar, opt) {
   });
   document.getElementById("again").addEventListener("click", start);
   document.getElementById("backBtn").addEventListener("click", function () { location.href = "index.html"; });
-  document.getElementById("tReset").addEventListener("click", function (e) { e.preventDefault(); setMax(1); for (var l = 1; l <= 5; l++) { try { localStorage.removeItem(recKey(l)); } catch (e2) {} } try { localStorage.removeItem("fy_lv5_openall_" + PID); } catch (e3) {} level = 1; start(); });
 
   /* ===== レジェンド・マエストロの 表彰（ぜんぶの きょくで ごうかく） ===== */
   var AWARD_N = SONGS.length;
