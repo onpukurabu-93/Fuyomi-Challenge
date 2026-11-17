@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1117e</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1117h</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -1230,10 +1230,12 @@ function renderScore(bars, beatsPerBar, opt) {
     var ordPos = {}, pc = 0; gs.forEach(function (g) { g.list.forEach(function (i) { ordPos[SONGS[i].c] = pc++; }); });
     var openN = passCount() + 2;
     function songOpen(sg) { return openAll || ps[sg.c] || pl[sg.c] || (ordPos[sg.c] !== undefined && ordPos[sg.c] < openN); }
+    /* 「いまの きょく」は、せんせいの「ぜんぶ ひらく」に かかわらず、ふだん 生徒が 見るのと おなじ かずだけ だす */
+    function nowOpenReal(sg) { return ps[sg.c] || pl[sg.c] || (ordPos[sg.c] !== undefined && ordPos[sg.c] < openN); }
     if (groupOpen === null) groupOpen = -1;   /* グループは とじて おく（いまの きょくは うえに だす） */
     /* 🎵 いまの きょく：ひらいて いて、まだ ⭐（えんそうの ごうかく）が ついて いない きょく */
     var nowList = [];
-    gs.forEach(function (g) { g.list.forEach(function (i) { var sgN = SONGS[i]; if (songOpen(sgN) && !pl[sgN.c] && nowList.length < 4) nowList.push(i); }); });
+    gs.forEach(function (g) { g.list.forEach(function (i) { var sgN = SONGS[i]; if (nowOpenReal(sgN) && !pl[sgN.c] && nowList.length < 4) nowList.push(i); }); });
     if (nowList.length) {
       h += '<div style="font-size:14px;font-weight:900;color:#5b4636;margin:8px 0 2px;">🎵 いまの きょく</div>';
       nowList.forEach(function (i) { var sgN = SONGS[i]; h += '<button class="btn" data-i="' + i + '" style="background:#7e57c2;margin:6px 0 0;padding:14px 14px;font-size:18px;text-align:left;">' + (ps[sgN.c] ? '✅ ' : '') + sgN.title + '</button>'; });
