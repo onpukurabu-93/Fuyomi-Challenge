@@ -76,7 +76,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1116e</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1117a</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -168,6 +168,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (!isNaN(_i)) PID = String(_i);
     var _p = JSON.parse(localStorage.getItem("onpu_profiles") || "[]");
     if (_p && _p[_i]) PNAME = String(_p[_i]);
+  } catch (e) {}
+  /* 🎨 がめんの いろ（トップ画面で えらんだ 背景色を、ここにも あわせる） */
+  try {
+    var _FY_BG = { pink: "#ffe3ec", orange: "#ffe9d2", yellow: "#fff6d8", green: "#e4f3e3", blue: "#e2f0fb", navy: "#e3e6ec" };
+    var _bk = localStorage.getItem("fy_bgcolor_" + PID);
+    if (_bk && _FY_BG[_bk]) document.body.style.background = _FY_BG[_bk];
   } catch (e) {}
   /* ★ イベントの せってい（つぎの イベントからは、ここだけ 書きかえる） */
   var EVENT_DEFAULT = { id: "2027-01", title: "1月の ふよみイベント", pStart: "2026-12-20", pEnd: "2026-12-31", start: "2027-01-01", end: "2027-01-31" };
