@@ -334,6 +334,7 @@ input, textarea { -webkit-user-select:text; user-select:text; }
       <div id="streakBadge" class="streak-badge">🔥 0日れんぞく！</div>
       <div id="legendRecord" class="legend-record hidden"></div>
       <div id="stampMiniBox" class="stamp-mini-box"></div>
+      <div id="fyBgPickBox"></div>
     </div>
 
     <!-- 🏆 ランキングボタン -->
@@ -1149,6 +1150,53 @@ function initProfiles() {
 
   renderStampMini(activeProfileIndex);
   updateLockVisuals();
+  fyBgApply(activeProfileIndex);
+  fyBgRenderPicker(activeProfileIndex);
+}
+
+/* ===== 🎨 がめんの いろ（6色。背景色だけ。きょうだいは おなじ色を えらべない） ===== */
+const FY_BG_COLORS = [
+  { key: "pink",   emoji: "🌸", label: "ピンク",   bg: "#ffe3ec" },
+  { key: "orange", emoji: "🧡", label: "オレンジ", bg: "#ffe9d2" },
+  { key: "yellow",  emoji: "💛", label: "イエロー", bg: "#fff6d8" },
+  { key: "green",  emoji: "🌿", label: "グリーン", bg: "#e4f3e3" },
+  { key: "blue",   emoji: "💙", label: "ブルー",   bg: "#e2f0fb" },
+  { key: "navy",   emoji: "🖤", label: "ブラック", bg: "#e3e6ec" }
+];
+function fyBgKey(idx) { return "fy_bgcolor_" + idx; }
+function fyBgGet(idx) { try { return localStorage.getItem(fyBgKey(idx)) || ""; } catch (e) { return ""; } }
+function fyBgColorOf(key) { for (var i = 0; i < FY_BG_COLORS.length; i++) if (FY_BG_COLORS[i].key === key) return FY_BG_COLORS[i]; return null; }
+function fyBgUsedElsewhere(idx) {
+  var used = {};
+  for (var i = 0; i < profiles.length; i++) {
+    if (i === idx || !isRegistered(i)) continue;
+    var k = fyBgGet(i); if (k) used[k] = true;
+  }
+  return used;
+}
+function fyBgApply(idx) {
+  var k = fyBgGet(idx), c = k && fyBgColorOf(k);
+  var el = document.getElementById("appContainer");
+  if (el) el.style.background = c ? c.bg : "#fdf8ed";
+}
+function fyBgPick(idx, key) {
+  var used = fyBgUsedElsewhere(idx);
+  if (used[key]) { alert("この いろは、きょうだいが もう つかって いるよ。べつの いろを えらんでね。"); return; }
+  try { localStorage.setItem(fyBgKey(idx), key); } catch (e) {}
+  fyBgApply(idx);
+  fyBgRenderPicker(idx);
+}
+function fyBgRenderPicker(idx) {
+  var box = document.getElementById("fyBgPickBox"); if (!box) return;
+  if (!isRegistered(idx)) { box.innerHTML = ""; return; }
+  var used = fyBgUsedElsewhere(idx), cur = fyBgGet(idx);
+  var html = '<div style="font-size:11px;color:#806c5a;margin:8px 0 3px;">🎨 がめんの いろ</div><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">';
+  FY_BG_COLORS.forEach(function (c) {
+    var taken = used[c.key] && c.key !== cur, sel = (c.key === cur);
+    html += '<button onclick="fyBgPick(' + idx + ',\'' + c.key + '\')" ' + (taken ? 'disabled' : '') + ' style="width:38px;height:38px;border-radius:50%;border:' + (sel ? '3px solid #ff7043' : '2px solid #e0d0ba') + ';background:' + c.bg + ';font-size:16px;line-height:34px;' + (taken ? 'opacity:.35;' : 'cursor:pointer;') + '">' + c.emoji + '</button>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
 }
 
 /* ✏️ 名前の登録（初回・追加・変更。PINなし） */
@@ -1321,7 +1369,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1116e";
+var FY_INDEX_VER = "1117b";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2595,6 +2643,6 @@ if (!hasAnyRegistered()) {
   openRegistration(true);
 }
 </script>
-<script src="app-extras.js?v=20261116e"></script>
+<script src="app-extras.js?v=20261117b"></script>
 </body>
 </html>
