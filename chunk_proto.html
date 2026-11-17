@@ -72,11 +72,11 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 </head>
 <body>
 <div id="app">
-  <a id="fyBack" href="index.html" style="position:fixed;left:10px;top:10px;z-index:10002;display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:900;font-size:16px;box-shadow:0 4px 0 #c97800;">◀ もどる</a>
+  <a id="fyBack" href="index.html" style="position:fixed;left:10px;top:10px;z-index:6;display:inline-block;padding:9px 16px;background:#ff9800;color:#fff;border-radius:16px;text-decoration:none;font-weight:900;font-size:16px;box-shadow:0 4px 0 #c97800;">◀ もどる</a>
   <script>document.getElementById("fyBack").addEventListener("click", function (e) { try { var sb = document.getElementById("scBack"); if (sb) { e.preventDefault(); sb.click(); } } catch (e2) {} });</script>
   <style>#app.inSong #fyChal,#app.inSong #lv,#app.inSong #evBtn,#app.inSong #who{display:none !important}</style>
   <h1 style="margin:6px 0 2px 118px;font-size:17px;text-align:left;line-height:34px;">🎼 レジェンドへの みち</h1>
-<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1118a</div>
+<div id="fyChunkVer" style="text-align:center;font-size:10px;color:#b0a090;margin:-6px 0 4px;">版 1118b</div>
 <script>if (typeof FY_SHOW_VER !== "undefined" && !FY_SHOW_VER) document.getElementById("fyChunkVer").style.display = "none";</script>
 
   <div class="sub" id="who" style="display:none;"></div>
@@ -1193,12 +1193,7 @@ function renderScore(bars, beatsPerBar, opt) {
     var pbd = document.createElement("div");
     pbd.style.cssText = "position:fixed;left:12px;right:12px;top:12px;z-index:9999;background:#fff3cd;border:3px solid #f5c242;border-radius:14px;padding:14px;font-weight:900;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:16px;color:#5b4636;";
     pbd.innerHTML = passBanner + '<div style="font-size:12px;font-weight:700;margin-top:6px;color:#806c5a;">レベル5の がくふの がめんで みられるよ（タップで とじる）</div>';
-    /* 「もどる」ボタンが この メッセージに かぶらない ように、メッセージが 出ている あいだは かくす */
-    try { document.getElementById("fyBack").style.visibility = "hidden"; } catch (eB3) {}
-    pbd.addEventListener("click", function () {
-      pbd.remove();
-      try { document.getElementById("fyBack").style.visibility = ""; } catch (eB4) {}
-    });
+    pbd.addEventListener("click", function () { pbd.remove(); });
     document.body.appendChild(pbd); passBanner = "";
   }
 
