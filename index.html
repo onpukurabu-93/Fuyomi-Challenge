@@ -1206,8 +1206,20 @@ function fyBgRenderPicker(idx) {
 let registerFirstTime = false;
 
 function openRegistration(firstTime) {
-  registerFirstTime = !!firstTime;
+  /* ✏️「なまえを とうろく・かえる」は、2026-11-17 から「なまえの へんこう」だけの がめんに なりました。
+     あたらしい プレイヤーを ふやすのは、あいことばを いれる がめん（window.fyGateAddPlayerCode）だけで できます。
+     もう とうろく されている わくが 1つも ないときは、ここでは なにも できないので、あいことばを いれてもらう。 */
+  registerFirstTime = false;
   profiles = Storage.get("onpu_profiles", DEFAULT_PROFILES.slice());
+
+  let html = "";
+  for (let i = 0; i < 3; i++) {
+    if (isRegistered(i)) html += `<option value="${i}">わく${i + 1}（${profiles[i]}）</option>`;
+  }
+  if (!html) {
+    alert("まだ とうろく された プレイヤーが いないよ。\nあいことばを いれて とうろくしてね。");
+    return;
+  }
 
   const catSel = document.getElementById("regCategorySelect");
   catSel.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
@@ -1215,22 +1227,10 @@ function openRegistration(firstTime) {
 
   const slotWrap = document.getElementById("regSlotWrap");
   const slotSel = document.getElementById("regSlotSelect");
-  if (registerFirstTime) {
-    slotWrap.classList.add("hidden");
-    document.getElementById("regCancelBtn").classList.add("hidden");
-  } else {
-    slotWrap.classList.remove("hidden");
-    document.getElementById("regCancelBtn").classList.remove("hidden");
-    let firstFree = -1;
-    let html = "";
-    for (let i = 0; i < 3; i++) {
-      const reg = isRegistered(i);
-      if (!reg && firstFree === -1) firstFree = i;
-      html += `<option value="${i}">わく${i + 1}（${reg ? profiles[i] : "あき"}）</option>`;
-    }
-    slotSel.innerHTML = html;
-    slotSel.value = String(firstFree === -1 ? activeProfileIndex : firstFree);
-  }
+  slotWrap.classList.remove("hidden");
+  document.getElementById("regCancelBtn").classList.remove("hidden");
+  slotSel.innerHTML = html;
+  slotSel.value = String(isRegistered(activeProfileIndex) ? activeProfileIndex : html.match(/value="(\d)"/)[1]);
 
   document.getElementById("regNameInput").value = "";
   toggleModal("registerModal", true);
@@ -1372,7 +1372,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1118h";
+var FY_INDEX_VER = "1118i";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2643,11 +2643,10 @@ function startConfetti(count = 30) {
 /* 初期立ち上げ */
 showSelectScreen();
 
-/* 初めて開いたとき（名前が1人も登録されていないとき）は、名前の登録画面を出す */
-if (!hasAnyRegistered()) {
-  openRegistration(true);
-}
+/* 初めて開いたとき（名前が1人も登録されていないとき）に、どうするかは app-extras.js の
+   あいことば がめんが きめる（2026-11-17 から：とうろくには あいことばが 必要な ため、
+   ここでは なまえの とうろく がめんを 出さない）。 */
 </script>
-<script src="app-extras.js?v=20261118h"></script>
+<script src="app-extras.js?v=20261118i"></script>
 </body>
 </html>
