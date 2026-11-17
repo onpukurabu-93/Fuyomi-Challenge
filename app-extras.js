@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1117a";
+window.FY_EXTRAS_VER = "1117b";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2367,7 +2367,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var pb = document.createElement("div");
       pb.innerHTML =
         '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🎁 ポイントを 手動で ふやす</div>' +
-        '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">ポイントを 10 ふやす</button>';
+        '<button id="fyTestPlus" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">ポイントを 1 ふやす</button>';
       pb.id = "fyPtManual"; t3.insertBefore(pb, t3.firstChild);
       var tb = document.createElement("div");
       tb.innerHTML =
@@ -2388,9 +2388,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       });
       document.getElementById("fyTestPlus").addEventListener("click", function () {
         var idx = activeProfileIndex;
-        Storage.set(K.tp(idx), getTP(idx) + 10);
+        Storage.set(K.tp(idx), getTP(idx) + 1);
         try { initProfiles(); } catch (e) {}
-        alert("ポイントを 10 ふやしました。（いま " + getTP(idx) + " p）");
+        alert("ポイントを 1 ふやしました。（いま " + getTP(idx) + " p）");
       });
       document.getElementById("fyTestReset").addEventListener("click", function () {
         var idx = activeProfileIndex;
