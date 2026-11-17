@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118j";
+window.FY_EXTRAS_VER = "1118k";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -131,6 +131,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     '</div>' +
     '<div id="gateNickForm" style="display:none;">' +
     '<input id="gateNick" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="8" placeholder="きょうしつネーム" style="' + inputStyle + '">' +
+    '<div style="font-size:12px;color:#806c5a;margin:10px 0 4px;text-align:left;">がくねん・くぶん</div>' +
+    '<select id="gateCategory" style="' + inputStyle + '"></select>' +
     '<button id="gateNickBtn" style="' + btnStyle + 'background:#ff7043;">つぎへ</button>' +
     '</div>' +
     '<div id="gateConfirmForm" style="display:none;">' +
@@ -147,7 +149,14 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var confirmForm = document.getElementById("gateConfirmForm");
   var codeInput = document.getElementById("gateInput");
   var nickInput = document.getElementById("gateNick");
+  var categorySelect = document.getElementById("gateCategory");
   var cancelBtn = document.getElementById("gateCancel");
+  try {
+    if (categorySelect && typeof CATEGORIES !== "undefined") {
+      categorySelect.innerHTML = CATEGORIES.map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join("");
+      categorySelect.value = "年少";
+    }
+  } catch (e) {}
 
   function setMsg(text, isErr) {
     msgEl.textContent = text;
@@ -206,6 +215,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         } else {
           pending = { code: c, name: "" };
           nickInput.value = "";
+          try { if (categorySelect) categorySelect.value = "年少"; } catch (e) {}
           setMsg("せんせいと きめた「きょうしつネーム」を そのまま いれてね。\nあとで かえられないよ", false);
           show("nick");
         }
@@ -247,7 +257,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       }
     }
     pending.name = s;
-    document.getElementById("gateConfirmName").textContent = s;
+    try { pending.category = categorySelect ? categorySelect.value : "年少"; } catch (e) { pending.category = "年少"; }
+    document.getElementById("gateConfirmName").textContent = s + "（" + pending.category + "）";
     setMsg("この なまえで いい？\nあとで かえられないよ", false);
     show("confirm");
   });
@@ -272,7 +283,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     while (profiles.length <= slot) profiles.push("");
     profiles[slot] = pending.name;
     Storage.set("onpu_profiles", profiles);
-    Storage.set("onpu_category_" + slot, "年少");
+    Storage.set("onpu_category_" + slot, pending.category || "年少");
     Storage.set("onpu_pin_" + slot, "0000");
     Storage.set("onpu_registered_" + slot, true);
     var map = getMap();
