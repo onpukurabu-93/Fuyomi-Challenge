@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1117f";
+window.FY_EXTRAS_VER = "1117g";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -3042,9 +3042,8 @@ window.resetLegendForTest = function () {
         '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="pass" checked style="width:18px;height:18px;"> ✅ ふよみテスト ごうかく</label>' +
         '<label style="display:block;font-size:14px;font-weight:800;padding:4px 0;"><input type="radio" name="fuKind" value="play" style="width:18px;height:18px;"> ⭐ えんそう ごうかく（先生が うたえる えんそう）</label>' +
         '<div style="font-size:11px;color:#806c5a;margin:6px 0 2px;">ごうかくした きょくに チェック</div>' +
-        '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;margin-bottom:6px;" id="fuPassBtn2">ごうかくコードを つくる</button>' +
+        '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;margin-bottom:6px;position:sticky;top:0;z-index:4;box-shadow:0 2px 6px rgba(0,0,0,.12);" id="fuPassBtn">ごうかくコードを つくる</button>' +
         '<div id="fuSongs"></div>' +
-        '<button class="modal-btn" style="background:#2e7d32;font-size:14px;padding:10px;" id="fuPassBtn">ごうかくコードを つくる</button>' +
         '<div id="fuPassOut"></div></details>' +
         '<details id="fuRestoreBox" style="margin-top:10px;border-top:2px solid #c8e6c9;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">③ 復元コードを だす（機種変更の とき）</summary>' +
         '<div style="text-align:left;font-size:11px;color:#806c5a;">マスターの たっせい日（とっていなければ 空らん）</div>' +
@@ -3145,7 +3144,6 @@ window.resetLegendForTest = function () {
       var dt = $("fuDate"); if (dt) { var d0 = new Date(); dt.value = d0.getFullYear() + "-" + ("0" + (d0.getMonth() + 1)).slice(-2) + "-" + ("0" + d0.getDate()).slice(-2); }
       function nameVal() { return $("fuName").value.trim().normalize("NFKC"); }
       function needName(out) { var n = nameVal(); if (!n) { out.innerHTML = '<div style="padding:8px;">① の なまえを いれてね</div>'; return null; } return n; }
-      try { $("fuPassBtn2").addEventListener("click", function () { $("fuPassBtn").click(); try { $("fuPassOut").scrollIntoView({ block: "center" }); } catch (e) {} }); } catch (e) {}
       fyTeacherExtras();
       $("fuPassBtn").addEventListener("click", function () {
         var out = $("fuPassOut"); out.innerHTML = "";
@@ -3166,6 +3164,7 @@ window.resetLegendForTest = function () {
         });
         body += "アプリの『📩 あいことば』に いれてね（" + FYAK.until() + " まで）";
         card(body, out);
+        try { out.scrollIntoView({ block: "center" }); } catch (e) {}
       });
       $("fuRestBtn").addEventListener("click", function () {
         var out = $("fuRestOut"); out.innerHTML = "";
@@ -3619,8 +3618,24 @@ window.FYAK = FYAK;
           inn.innerHTML = '<div style="font-size:18px;font-weight:900;">📩 せんせいの あいことば</div>' +
             '<div style="font-size:13px;color:#806c5a;margin:4px 0 8px;">せんせいから もらった ひらがなを いれてね</div>' +
             '<input id="fyAkIn" type="text" autocomplete="off" placeholder="ひらがな 5もじ" style="width:100%;box-sizing:border-box;font-size:26px;font-weight:900;text-align:center;padding:12px;border:3px solid #ffcc9a;border-radius:16px;letter-spacing:4px;">' +
-            '<button class="bt" id="fyAkGo" style="background:#ff7043;color:#fff;font-size:19px;">いれる</button>' +
+            '<button class="bt" id="fyAkGo" disabled style="background:#ccc;color:#fff;font-size:19px;opacity:.6;">いれる</button>' +
             '<div id="fyAkMsg" style="font-size:16px;font-weight:900;line-height:1.7;min-height:26px;margin-top:10px;white-space:pre-line;"></div>';
+          /* まず 入力らんを タップしてもらう ための、光る あんない */
+          try {
+            var akIn = inn.querySelector("#fyAkIn");
+            if (window.fyGlowCss) window.fyGlowCss();
+            akIn.classList.add("fyNudge");
+            if (getComputedStyle(akIn).position === "static") akIn.classList.add("fyRel");
+            var akOff = function () { akIn.classList.remove("fyNudge"); akIn.classList.remove("fyRel"); akIn.removeEventListener("pointerdown", akOff); };
+            akIn.addEventListener("pointerdown", akOff);
+          } catch (e) {}
+          /* 5もじ 入るまでは「いれる」を 灰色に して 押せなく する */
+          inn.querySelector("#fyAkIn").addEventListener("input", function () {
+            var goBtn = inn.querySelector("#fyAkGo"), ok = this.value.trim().length >= 5;
+            goBtn.disabled = !ok;
+            goBtn.style.background = ok ? "#ff7043" : "#ccc";
+            goBtn.style.opacity = ok ? "1" : ".6";
+          });
           var go = function () {
             var v = $("fyAkIn").value, msg = $("fyAkMsg"), F = window.FYAK;
             function say(t, ok) { msg.style.color = ok ? "#2e7d32" : "#d84a3a"; msg.textContent = t; }
