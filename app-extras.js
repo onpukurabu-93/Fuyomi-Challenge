@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1119a";
+window.FY_EXTRAS_VER = "1119c";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2904,6 +2904,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
   } catch (e) {}
 
+  /* 先生の 台帳用 スプレッドシート（URLを かえたい ときは、ここだけ 書きなおす） */
+  var FY_LEDGER_SHEET_URL = "https://docs.google.com/spreadsheets/d/1-hYFEfmWMxeJOYiORlS8a0pCl6NY1Pg9AICNiPoQuLw/edit?usp=drivesdk";
+
   /* ===== まとめて 集計（先生ページ）：LINEの メッセージを いっぱい 貼る → ひょう ＋ 賞の あん ＋ スプレッドシート用コピー ===== */
   window.fyBulkRun = function () {
     var out0 = document.getElementById("fbOut");
@@ -2957,7 +2960,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       top("🚀 レベルが いちばん のびた", "up", "つ") + top("🎯 正解率が いちばん のびた", "ga", "ポイント") + top("✅ 全部一発が いちばん おおい", "perf", "回") + top("💮 練習日数が いちばん おおい", "days", "日") +
       '<textarea id="fbTsv" readonly style="width:100%;height:60px;font-size:10px;box-sizing:border-box;margin-top:6px;-webkit-user-select:text;user-select:text;">' + esc(tsv.join("\n")) + '</textarea>' +
       '<button class="modal-btn" style="background:#2e7d32;font-size:13px;padding:9px;" onclick="fyBulkCopy(this)">📋 スプレッドシート用に コピー</button>' +
-      '<div style="font-size:11px;color:#806c5a;">Googleスプレッドシートの A1 に 貼ると、1人 1行で 入ります。</div>';
+      '<a href="' + FY_LEDGER_SHEET_URL + '" target="_blank" rel="noopener" style="display:block;text-decoration:none;text-align:center;border-radius:10px;padding:9px;font-size:13px;font-weight:700;background:#1565c0;color:#fff;margin-top:4px;">📊 台帳の スプレッドシートを ひらく</a>' +
+      '<div style="font-size:11px;color:#806c5a;">コピーしたあと、上のボタンでシートを開いて、A1に貼ると、1人 1行で 入ります。</div>';
   }
   window.fyBulkCopy = function (btn) {
     var ta = document.getElementById("fbTsv"), ok = false;
