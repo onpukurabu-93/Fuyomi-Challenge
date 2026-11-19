@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1118k";
+window.FY_EXTRAS_VER = "1119a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1007,7 +1007,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try {
       var log = Storage.get("fy_log_" + idx, []);
       if (!Array.isArray(log)) log = [];
-      log.push({ t: Date.now(), c: selectedClef, l: selectedLevel, n: N, a: acc });
+      var fyDuration = 0;
+      try { fyDuration = Math.round((Date.now() - trainingStartTime) / 1000); } catch (e2) { fyDuration = 0; }
+      log.push({ t: Date.now(), c: selectedClef, l: selectedLevel, n: N, a: acc, d: fyDuration });
       if (log.length > 300) log = log.slice(log.length - 300);
       Storage.set("fy_log_" + idx, log);
     } catch (e) {}
@@ -1484,13 +1486,38 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     return x.getTime();
   }
   function weekStats(log, ws) {
-    var days = {}, cnt = 0, sum = 0;
+    var days = {}, cnt = 0, sum = 0, dsum = 0, dcnt = 0;
     log.forEach(function (e) {
       if (weekStart(new Date(e.t)) !== ws) return;
       days[localDateStr(new Date(e.t))] = 1;
       cnt++; sum += e.a;
+      if (typeof e.d === "number" && e.d > 0) { dsum += e.d; dcnt++; }
     });
-    return { days: Object.keys(days).length, cnt: cnt, avg: cnt ? Math.round(sum / cnt) : null };
+    return { days: Object.keys(days).length, cnt: cnt, avg: cnt ? Math.round(sum / cnt) : null, avgTime: dcnt ? Math.round(dsum / dcnt) : null };
+  }
+
+  /* 保護者向け：褒めポイントの自動ピックアップ（今あるデータだけから判定、最大2件） */
+  function fyPraisePoints(idx, tw, lw) {
+    var msgs = [];
+    try {
+      var log = Storage.get("fy_log_" + idx, []);
+      if (Array.isArray(log)) {
+        var ws = weekStart(new Date());
+        var perfectThisWeek = log.some(function (e) { return weekStart(new Date(e.t)) === ws && e.a === 100 && e.n === 20; });
+        if (perfectThisWeek) msgs.push("💯 今週、20問ぜんぶ一発正解しました！すごい！");
+      }
+    } catch (e) {}
+    try {
+      var streak = calculateStreak(idx);
+      if (streak >= 5) msgs.push("🔥 " + streak + "日連続で練習しています！");
+    } catch (e) {}
+    try {
+      if (runNow(idx) >= 2 && runNow(idx) === runBest(idx)) msgs.push("🏆 20問オール正解が" + runNow(idx) + "回連続中（自己ベスト）！");
+    } catch (e) {}
+    if (tw.days >= 5) msgs.push("📅 今週は" + tw.days + "日も練習しました！");
+    if (tw.avg !== null && lw.avg !== null && tw.avg > lw.avg) msgs.push("📈 正答率が先週より上がっています！");
+    if (tw.avgTime !== null && lw.avgTime !== null && tw.avgTime < lw.avgTime) msgs.push("⚡ 読むスピードが先週より速くなっています！");
+    return msgs.slice(0, 2);
   }
 
   window.renderParentCompareTable = function () {
@@ -1526,10 +1553,20 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         var arrow = "";
         if (lw.avg !== null) arrow = tw.avg > lw.avg ? " ↑" : (tw.avg < lw.avg ? " ↓" : " →");
         twText = "練習した日 " + tw.days + "日／トレーニング " + tw.cnt + "回／平均 " + tw.avg + "%" + (lw.avg !== null ? "（先週 " + lw.avg + "%" + arrow + "）" : "（先週は記録なし）");
+        if (tw.avgTime !== null) {
+          var timeNote = "";
+          if (lw.avgTime !== null) timeNote = tw.avgTime < lw.avgTime ? "（先週より速くなっています）" : (tw.avgTime > lw.avgTime ? "（先週より少しゆっくりめ）" : "（先週と同じくらい）");
+          else timeNote = "（今週から記録開始）";
+          twText += "<br>平均タイム " + tw.avgTime + "秒" + timeNote;
+        }
       }
+      var praise = fyPraisePoints(idx, tw, lw);
 
       html += '<div style="border:1px solid #eadcc8;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff;text-align:left;">';
       html += '<div style="font-size:15px;font-weight:900;color:#5b4636;margin-bottom:6px;">' + esc(n) + ' さん</div>';
+      if (praise.length) {
+        html += '<div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;font-weight:700;color:#8a5a00;">💬 ここ、褒めてあげてください<br>' + praise.join('<br>') + '</div>';
+      }
       var BL = '<div style="color:#1565c0;margin-bottom:4px;">', GR = '<div style="color:#9a9a9a;margin-bottom:4px;">';
       html += '<div style="font-size:12px;line-height:1.8;">' +
         BL + '<b>📘 今の挑戦</b><br>' +
@@ -1537,7 +1574,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           esc(progressText(idx, "bass", "ヘ音記号")) + '<br>' +
           esc(progressText(idx, "all", "全カード")) + '</div>' +
         GR + '<b>📈 最近の一発正解率</b><br>' + esc(lastText) + '</div>' +
-        GR + '<b>🗓 今週の頑張り（月〜日）</b><br>' + esc(twText) + '</div>' +
+        GR + '<b>🗓 今週の頑張り（月〜日）</b><br>' + twText + '</div>' +
         BL + '<b>💯 20問 全部一発正解</b> ' + perfTotal(idx) + '回（連続 現在' + runNow(idx) + '回／最高' + runBest(idx) + '回）</div>' +
         BL + '<b>🏅 トレーニングポイント</b> ' + ((typeof window.fyParentTP === "function") ? window.fyParentTP(idx) : "") + '</div>' +
         BL + '<b>🎖 マスター</b>：' + (achs || 'まだありません') + '</div>' +
@@ -2878,7 +2915,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   };
   function fyBulkRun2() {
     var out = document.getElementById("fbOut");
-    var raw = String(document.getElementById("fbIn").value || "").normalize("NFKC").replace(/%2E/gi, ".");
+    var inEl = document.getElementById("fbIn");
+    var raw = String(inEl.value || "").normalize("NFKC").replace(/%2E/gi, ".");
+    inEl.value = "";   /* 集計したら、つぎに すぐ 貼れるように からにする */
     var toks = raw.match(/FYE1\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/g) || [];
     var cfg = window.fyEventCfg || {}, bad = 0, other = 0, by = {};
     toks.forEach(function (tk) {
@@ -2935,7 +2974,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<div style="font-size:13px;font-weight:bold;color:#5b4636;margin-bottom:4px;text-align:left;">📊 イベントの きろくを まとめて 集計</div>' +
         '<div style="text-align:left;font-size:11px;color:#806c5a;margin-bottom:4px;">LINEで 届いた メッセージを、いくつでも 続けて 貼ってください。</div>' +
         '<textarea id="fbIn" class="modal-input" style="height:100px;font-size:12px;" placeholder="ここに ぜんぶ 貼る"></textarea>' +
-        '<button class="modal-btn" style="background:#43a047;font-size:13px;padding:9px;" onclick="fyBulkRun()">集計 する</button>' +
+        '<div style="display:flex;gap:6px;">' +
+        '<button class="modal-btn" style="background:#43a047;font-size:13px;padding:9px;flex:1;" onclick="fyBulkRun()">集計 する</button>' +
+        '<button class="modal-btn" style="background:#bdbdbd;font-size:13px;padding:9px;flex:0 0 70px;" onclick="document.getElementById(\'fbIn\').value=\'\'">🗑 クリア</button>' +
+        '</div>' +
         '<div id="fbOut" style="margin:6px 0 4px;"></div>';
       var anchor2 = document.getElementById("fyAnyCheck");
       if (anchor2 && anchor2.nextSibling) t4.insertBefore(bk, anchor2.nextSibling); else t4.insertBefore(bk, t4.firstChild);
