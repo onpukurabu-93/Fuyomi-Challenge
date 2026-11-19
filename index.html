@@ -1372,7 +1372,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1119a";
+var FY_INDEX_VER = "1119c";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1380,7 +1380,13 @@ function fyShowVersion() {
     var ok = (ex === FY_INDEX_VER);
     el.style.display = "block";
     el.style.color = ok ? "#b0a090" : "#d32f2f"; el.style.fontWeight = ok ? "400" : "800";
-    el.textContent = ok ? ("版 " + FY_INDEX_VER) : ("⚠ ファイルが そろっていません　index " + FY_INDEX_VER + " / app-extras " + ex);
+    if (ok) {
+      el.textContent = "版 " + FY_INDEX_VER;
+    } else {
+      el.innerHTML = "⚠ ファイルが そろっていません　index " + FY_INDEX_VER + " / app-extras " + ex +
+        "<br>→ LINEの アプリを いちど かんぜんに とじてから、もう一度 ひらいてみてください" +
+        "（アプリ切り替え画面で 上に スワイプして とじる）";
+    }
   } catch (e) {}
 }
 window.addEventListener("load", function () { setTimeout(fyShowVersion, 400); });
@@ -2648,6 +2654,6 @@ showSelectScreen();
    あいことば がめんが きめる（2026-11-17 から：とうろくには あいことばが 必要な ため、
    ここでは なまえの とうろく がめんを 出さない）。 */
 </script>
-<script src="app-extras.js?v=20261119a"></script>
+<script src="app-extras.js?v=20261119c"></script>
 </body>
 </html>
