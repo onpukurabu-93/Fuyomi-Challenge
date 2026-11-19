@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1119c";
+window.FY_EXTRAS_VER = "1119d";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2671,6 +2671,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try { var a = JSON.parse(localStorage.getItem("fy_log_" + idx) || "[]"); return Array.isArray(a) ? a.filter(function (e) { return e && typeof e.t === "number" && e.c !== "do"; }) : []; } catch (e) { return []; }
   }
   function evAvg(a) { return a.length ? Math.round(a.reduce(function (s, e) { return s + e.a; }, 0) / a.length) : -1; }
+  function evAvgTime(a) {
+    var v = a.filter(function (e) { return typeof e.d === "number" && e.d > 0; }).map(function (e) { return e.d; });
+    return v.length ? Math.round(v.reduce(function (s, x) { return s + x; }, 0) / v.length) : -1;
+  }
   function clearedCount(idx) {
     var n = 0;
     try { ["treble", "bass", "all"].forEach(function (c) { for (var l = 1; l <= 5; l++) if (hasLevelCleared(idx, c, l)) n++; }); } catch (e) {}
@@ -2708,7 +2712,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var nw = Object.keys(seenNew).filter(function (k) { return !seenBefore[k]; }).length;
       lv0 = Math.max(0, lv1 - nw);
     }
-    return { rb: evAvg(before), rd: evAvg(during), nd: during.length, perf: perf, lv0: lv0, lv1: lv1 };
+    return { rb: evAvg(before), rd: evAvg(during), nd: during.length, perf: perf, lv0: lv0, lv1: lv1, tb: evAvgTime(before), ta: evAvgTime(during) };
   }
   window.fyEvAwardName = function (g) { try { return String(evAwardOf(g).name || "").replace(/^[^\u3040-\u30ff\u4e00-\u9faf]+/, ""); } catch (e) { return ""; } };
   function evAwardOf(g) {
@@ -2718,6 +2722,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
     if (ga !== null && ga >= 5) c.push({ s: ga / 10, name: "🎯 せいかいりつ のびのび賞", d: "一発せいかいりつ " + g.rb + "% → " + g.rd + "%" });
     if (g.perf >= 1) c.push({ s: g.perf / 3, name: "💯 ぜんぶ せいかい賞", d: "20問 ぜんぶ 一発せいかい " + g.perf + "回" });
+    var td = (g.tb >= 0 && g.ta >= 0) ? g.tb - g.ta : null;   /* プラスが はやくなった */
+    if (td !== null && td >= 5) c.push({ s: td / 10, name: "⚡ タイムの のびのび賞", d: "1回の タイム " + g.tb + "秒 → " + g.ta + "秒" });
     var best = null;
     c.forEach(function (x) { if (!best || x.s > best.s) best = x; });
     return best || { name: "💮 れんしゅう がんばった賞", d: "さいごまで れんしゅう がんばったね" };
@@ -2725,11 +2731,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   window.fyEvGrowthHtml = function (g, who, pre) {
     var aw = evAwardOf(g), up = g.lv0 >= 0 ? g.lv1 - g.lv0 : null;
     var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
+    var td = (g.tb >= 0 && g.ta >= 0) ? g.tb - g.ta : null;
     var box = "background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px 8px;margin-top:6px;font-size:13px;line-height:1.7;text-align:left;";
     return '<div style="' + box + '"><b>📈 のびた きろく</b><br>' +
       '🎯 一発せいかいりつ：' + (g.rb >= 0 ? g.rb + "%" : "—") + " → " + (g.rd >= 0 ? g.rd + "%" : "—") + (ga !== null ? "（" + (ga >= 0 ? "+" : "") + ga + "）" : "") + '<br>' +
       '💯 20問 ぜんぶ 一発せいかい：<b>' + g.perf + '</b> 回<br>' +
-      '🚀 ごうかくした レベル：' + g.lv0 + " → " + g.lv1 + (up !== null ? "（+" + up + "）" : "") + '</div>' +
+      '🚀 ごうかくした レベル：' + g.lv0 + " → " + g.lv1 + (up !== null ? "（+" + up + "）" : "") + '<br>' +
+      '⚡ 1回の タイム：' + (g.tb >= 0 ? g.tb + "秒" : "—") + " → " + (g.ta >= 0 ? g.ta + "秒" : "—") + (td !== null ? "（" + (td >= 0 ? "-" : "+") + Math.abs(td) + "）" : "") + '</div>' +
       (pre ? '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:14px;">🏅 賞は イベントが はじまってから 決まるよ！<br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + md(EVENT.start) + 'から がんばろうね</span></div>' : '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:16px;">🏅 ' + (who ? who + "さんの 賞" : "賞は せんせいが きめて<br>おしらせするよ！") + (who ? '<br><span style="font-size:20px;">' + aw.name + '</span><br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + aw.d + '</span>' : '') + '</div>');
   };
   evSnap();
@@ -2744,7 +2752,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     for (var l = 1; l <= 4; l++) { var r = getEv(idx, l); f.push((r.bestPerfect ? Math.round(r.bestPerfect) : 0) + "," + evRate(r)); }
     f.push(String(evPassCount(idx)));
     f.push(String(evPlayCount(idx)));
-    var g = evGrowth(idx); f.push([g.rb, g.rd, g.nd, g.perf, g.lv0, g.lv1].join(","));
+    var g = evGrowth(idx); f.push([g.rb, g.rd, g.nd, g.perf, g.lv0, g.lv1, g.tb, g.ta].join(","));
     var payload = f.join("|");
     return { code: "FYE1." + b64e(payload) + "." + sign2(payload), stamp: stamp };
   }
@@ -2872,8 +2880,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }, esc(f[1])); })() : "") +
-      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent((function () { try { if (typeof EVENT !== "undefined" && EVENT && EVENT.id === f[2] && EVENT.title) return EVENT.title; } catch (eT) {} var mm = String(f[2]).match(/^\d{4}-(\d{1,2})$/); return mm ? (+mm[1]) + "月の ふよみイベント" : f[2]; })()) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
+      (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }, esc(f[1])); })() : "") +
+      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent((function () { try { if (typeof EVENT !== "undefined" && EVENT && EVENT.id === f[2] && EVENT.title) return EVENT.title; } catch (eT) {} var mm = String(f[2]).match(/^\d{4}-(\d{1,2})$/); return mm ? (+mm[1]) + "月の ふよみイベント" : f[2]; })()) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
   };
 
   try {
@@ -2931,22 +2939,23 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (f[0] !== "FYE1" || f.length < 9) { bad++; return; }
       if (cfg.id && f[2] !== cfg.id) { other++; return; }
       var o = { name: f[1], stamp: f[3], days: parseInt(f[4], 10) || 0, pass: f.length >= 10 ? (parseInt(f[9], 10) || 0) : "", play: f.length >= 11 ? (parseInt(f[10], 10) || 0) : "", g: null };
-      if (f.length === 12) { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); o.g = { rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5] }; }
+      if (f.length === 12) { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); o.g = { rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }; }
       if (!by[o.name] || by[o.name].stamp < o.stamp) by[o.name] = o;
     });
     var names = Object.keys(by).sort();
     if (!names.length) { out.innerHTML = '<div style="color:#c62828;font-weight:800;font-size:13px;">❌ 本物の コードが 見つかりません' + (bad ? '（しるしが あわない コード ' + bad + '件）' : '') + '</div>'; return; }
     var cell = "border:1px solid #eadcc8;padding:2px 3px;text-align:center;font-size:11px;white-space:nowrap;";
-    var rows = [], tsv = ["なまえ\t正解率(前)\t正解率(後)\t正解率の伸び\t全部一発の回数\tレベル(前)\tレベル(後)\tレベルの伸び\t練習日数\tふよみテスト合格\t演奏合格\t賞の案\t記録した日時"];
-    var best = { up: [-1, []], ga: [4, []], perf: [0, []], days: [0, []] };
+    var rows = [], tsv = ["なまえ\t正解率(前)\t正解率(後)\t正解率の伸び\t全部一発の回数\tレベル(前)\tレベル(後)\tレベルの伸び\tタイム(前)\tタイム(後)\tタイムの伸び\t練習日数\tふよみテスト合格\t演奏合格\t賞の案\t記録した日時"];
+    var best = { up: [-1, []], ga: [4, []], perf: [0, []], days: [0, []], td: [4, []] };
     function chk(k, v, n) { if (v > best[k][0]) best[k] = [v, [n]]; else if (v === best[k][0] && v > 0) best[k][1].push(n); }
     names.forEach(function (n) {
       var o = by[n], g = o.g, aw = g && window.fyEvAwardOf ? window.fyEvAwardOf(g) : null;
       var ga = g && g.rb >= 0 && g.rd >= 0 ? g.rd - g.rb : "", up = g && g.lv0 >= 0 ? g.lv1 - g.lv0 : "";
-      if (g) { if (up !== "") chk("up", up, n); if (ga !== "") chk("ga", ga, n); chk("perf", g.perf, n); }
+      var td = g && g.tb >= 0 && g.ta >= 0 ? g.tb - g.ta : "";
+      if (g) { if (up !== "") chk("up", up, n); if (ga !== "") chk("ga", ga, n); chk("perf", g.perf, n); if (td !== "") chk("td", td, n); }
       chk("days", o.days, n);
       var t = o.stamp, when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
-      var v = g ? [g.rb >= 0 ? g.rb : "", g.rd >= 0 ? g.rd : "", ga, g.perf, g.lv0 >= 0 ? g.lv0 : "", g.lv1, up] : ["", "", "", "", "", "", ""];
+      var v = g ? [g.rb >= 0 ? g.rb : "", g.rd >= 0 ? g.rd : "", ga, g.perf, g.lv0 >= 0 ? g.lv0 : "", g.lv1, up, g.tb >= 0 ? g.tb : "", g.ta >= 0 ? g.ta : "", td] : ["", "", "", "", "", "", "", "", "", ""];
       rows.push('<tr><td style="' + cell + 'font-weight:800;">' + esc(n) + '</td>' + v.map(function (x, i) { return '<td style="' + cell + '">' + (x === "" ? "—" : (i < 2 ? x + "%" : x)) + '</td>'; }).join("") +
         '<td style="' + cell + '">' + o.days + '</td><td style="' + cell + 'text-align:left;">' + (aw ? esc(aw.name) : "（古いコード）") + '</td></tr>');
       tsv.push([n].concat(v, [o.days, o.pass, o.play, aw ? aw.name.replace(/^\S+\s/, "") : "", when]).join("\t"));
@@ -2955,9 +2964,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var th = cell + "background:#f6ecd8;";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:13px;">✅ ' + names.length + '人ぶん（本物）' + (bad ? ' ／ ❌ しるしが あわない ' + bad + '件' : '') + (other ? ' ／ ちがうイベントの コード ' + other + '件は のぞきました' : '') + '</div>' +
       '<div style="font-size:11px;color:#806c5a;">おなじ なまえが 何回も あるときは、いちばん あたらしい ものを つかっています</div>' +
-      '<div style="overflow-x:auto;margin:4px 0;"><table style="border-collapse:collapse;"><tr><th style="' + th + '">なまえ</th><th style="' + th + '">正解率 前</th><th style="' + th + '">正解率 後</th><th style="' + th + '">のび</th><th style="' + th + '">全部一発</th><th style="' + th + '">Lv 前</th><th style="' + th + '">Lv 後</th><th style="' + th + '">のび</th><th style="' + th + '">練習日</th><th style="' + th + '">賞の案</th></tr>' + rows.join("") + '</table></div>' +
+      '<div style="overflow-x:auto;margin:4px 0;"><table style="border-collapse:collapse;"><tr><th style="' + th + '">なまえ</th><th style="' + th + '">正解率 前</th><th style="' + th + '">正解率 後</th><th style="' + th + '">のび</th><th style="' + th + '">全部一発</th><th style="' + th + '">Lv 前</th><th style="' + th + '">Lv 後</th><th style="' + th + '">のび</th><th style="' + th + '">タイム前</th><th style="' + th + '">タイム後</th><th style="' + th + '">のび</th><th style="' + th + '">練習日</th><th style="' + th + '">賞の案</th></tr>' + rows.join("") + '</table></div>' +
       '<div style="font-weight:800;font-size:12px;margin-top:6px;">🏅 それぞれの 一番</div>' +
-      top("🚀 レベルが いちばん のびた", "up", "つ") + top("🎯 正解率が いちばん のびた", "ga", "ポイント") + top("✅ 全部一発が いちばん おおい", "perf", "回") + top("💮 練習日数が いちばん おおい", "days", "日") +
+      top("🚀 レベルが いちばん のびた", "up", "つ") + top("🎯 正解率が いちばん のびた", "ga", "ポイント") + top("✅ 全部一発が いちばん おおい", "perf", "回") + top("⚡ タイムが いちばん 速くなった", "td", "秒") + top("💮 練習日数が いちばん おおい", "days", "日") +
       '<textarea id="fbTsv" readonly style="width:100%;height:60px;font-size:10px;box-sizing:border-box;margin-top:6px;-webkit-user-select:text;user-select:text;">' + esc(tsv.join("\n")) + '</textarea>' +
       '<button class="modal-btn" style="background:#2e7d32;font-size:13px;padding:9px;" onclick="fyBulkCopy(this)">📋 スプレッドシート用に コピー</button>' +
       '<a href="' + FY_LEDGER_SHEET_URL + '" target="_blank" rel="noopener" style="display:block;text-decoration:none;text-align:center;border-radius:10px;padding:9px;font-size:13px;font-weight:700;background:#1565c0;color:#fff;margin-top:4px;">📊 台帳の スプレッドシートを ひらく</a>' +
