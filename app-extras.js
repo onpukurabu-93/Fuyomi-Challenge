@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1121e";
+window.FY_EXTRAS_VER = "1121f";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -225,6 +225,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           show("nick");
         }
       } else {
+        /* 2026-11-21：codes.txt に なければ、イベントの 賞カードを わたす コード（FYC1）かも しれないので
+           さきに ためす。だいもじ・小文字が きちんと のこる よう、normせずの もとの 文字を つかう。 */
+        var rawCode = String(code || "").trim();
+        if (fromUser && /^FYC1\./.test(rawCode) && window.fyEvCardRedeem) {
+          var cardRes = window.fyEvCardRedeem(activeProfileIndex, rawCode);
+          if (cardRes) {
+            if (cardRes.ok) { codeInput.value = ""; try { if (window.fyNewLookRender) window.fyNewLookRender(); } catch (eR2) {} }
+            showCode(cardRes.msg, !cardRes.ok);
+            return;
+          }
+        }
         /* 2026-11-21：codes.txt に なければ、せんせいから の プレゼントコード（FYAK）かも しれないので、
            つぎに それを ためす。「合言葉は ぜんぶ ここ」の ボタン 1つに まとめる ため。 */
         var F = window.FYAK;
@@ -920,7 +931,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     ["master", "ふよみマスター", "card_master_front.png"],
     ["legend", "ふよみ名人", "card_meijin_front.png"],
     ["legend5", "ふよみレジェンド", "card_legend_front.png"],
-    ["maestro", "ふよみマエストロ", "card_maestro_front.png"]
+    ["maestro", "ふよみマエストロ", "card_maestro_front.png"],
+    ["event", "イベントの 賞カード", "card_event_front.png"]
   ];
   function bestAch(idx, type) {
     if (type !== "legend") return findAch(idx, type);
@@ -934,21 +946,44 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var nm = String(rec.name || profiles[idx] || ""), dt = "";
     try { var d0 = String(rec.date || rec.d || "").match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if (d0) dt = (+d0[1]) + "年" + (+d0[2]) + "月" + (+d0[3]) + "日"; else if (rec.t || rec.at) { var dd = new Date(rec.t || rec.at); dt = dd.getFullYear() + "年" + (dd.getMonth() + 1) + "月" + dd.getDate() + "日"; } else dt = dmd(rec); } catch (e) { dt = dmd(rec); }
     var fs = Math.min(6, 46 / Math.max(nm.length, 1)), fs2 = Math.min(4, 46 / Math.max(dt.length, 1)), b = "position:absolute;left:57.1%;transform:translate(-50%,-100%);white-space:nowrap;font-weight:800;line-height:1;color:#2b3a6a;";
-    return '<div style="' + b + 'top:72%;font-size:' + fs + 'cqw;">' + esc(nm) + '</div><div style="' + b + 'top:81.3%;font-size:' + fs2 + 'cqw;">' + esc(dt) + '</div>';
+    var extra = "";
+    if (rec.type === "event") {
+      /* 2026-11-21：イベントカードは、絵の 赤い リボンに「〇〇賞」、その上に イベント名を のせる（印刷カードと おなじ 場所）。 */
+      if (rec.ev) extra += '<div style="position:absolute;left:50%;top:45.5%;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;font-weight:800;line-height:1;color:#2b6b5e;font-size:' + Math.min(5, 40 / Math.max(String(rec.ev).length, 1)) + 'cqw;">' + esc(rec.ev) + '</div>';
+      if (rec.award) extra += '<div style="position:absolute;left:50%;top:53.3%;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;font-weight:900;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);font-size:' + Math.min(7.5, 52 / Math.max(String(rec.award).length, 1)) + 'cqw;">' + esc(rec.award) + '</div>';
+    }
+    return '<div style="' + b + 'top:72%;font-size:' + fs + 'cqw;">' + esc(nm) + '</div><div style="' + b + 'top:81.3%;font-size:' + fs2 + 'cqw;">' + esc(dt) + '</div>' + extra;
   }
   window.showCardBook = function () {
     try { document.getElementById("fyOvClose").style.display = ""; } catch (e) {}
     var idx = activeProfileIndex, have = 0, list = [];
     CARDBOOK.forEach(function (c) {
-      if (c[0] !== "legend") { list.push({ c: c, rec: findAch(idx, c[0]) }); return; }
-      /* 名人：100かい・200かい… と、とった ぶんだけ 1まいずつ */
-      var ms = getAch(idx).filter(function (a) { return a && a.type === "legend"; }).sort(function (x, y) { return (x.n || 0) - (y.n || 0); });
-      if (!ms.length) list.push({ c: c, rec: null }); else ms.forEach(function (m) { list.push({ c: c, rec: m }); });
+      if (c[0] === "legend") {
+        /* 名人：100かい・200かい… と、とった ぶんだけ 1まいずつ */
+        var ms = getAch(idx).filter(function (a) { return a && a.type === "legend"; }).sort(function (x, y) { return (x.n || 0) - (y.n || 0); });
+        if (!ms.length) list.push({ c: c, rec: null }); else ms.forEach(function (m) { list.push({ c: c, rec: m }); });
+        return;
+      }
+      if (c[0] === "event") {
+        /* 2026-11-21：イベントの 賞カードは、年ごとに もらえるので、もらった ぶんだけ 1まいずつ */
+        var es = getAch(idx).filter(function (a) { return a && a.type === "event"; }).sort(function (x, y) { return (x.t || 0) - (y.t || 0); });
+        if (!es.length) list.push({ c: c, rec: null }); else es.forEach(function (m) { list.push({ c: c, rec: m }); });
+        return;
+      }
+      list.push({ c: c, rec: findAch(idx, c[0]) });
+    });
+    /* 2026-11-21：もっている カードを さきに（とった じゅんに）、まだの カードは あとに まとめる（先生の 指示）。 */
+    list.sort(function (a, b) {
+      var ao = !!a.rec, bo = !!b.rec;
+      if (ao !== bo) return ao ? -1 : 1;
+      if (ao && bo) return (b.rec.t || 0) - (a.rec.t || 0);
+      return 0;
     });
     var cells = list.map(function (it, i) {
       var c = it.c, rec = it.rec, img = c[2], label = c[1], num = "";
       if (rec) have++;
       if (c[0] === "legend" && rec) { num = (rec.n || 100) + "かい"; if (rec.n >= 1000) img = "card_legend1000_front.png"; }
+      if (c[0] === "event" && rec && rec.award) label = rec.award;
       it.img = img;
       var st = rec ? "" : "filter:grayscale(1) brightness(.55);opacity:.55;";
       return '<div data-cb="' + i + '" style="text-align:center;' + (rec ? "cursor:pointer;" : "") + '">' +
@@ -967,7 +1002,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         if (!rec) return;
         /* カードを おおきく みるだけ（LINEの ボタンは ださない。おくるのは「きろくと コード」から） */
         openOverlay('<div style="position:relative;container-type:inline-size;width:72%;max-width:250px;margin:0 auto;">' + cardOv(rec, activeProfileIndex) + '<img src="' + it.img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);">' + (window.fyDemoBadgeHtml ? window.fyDemoBadgeHtml() : "") + '</div>' +
-          '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc(it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
+          '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc(it.c[0] === "event" && rec.award ? rec.award : it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
           '<div style="font-size:19px;font-weight:900;margin-top:6px;">' + esc(rec.name || profiles[activeProfileIndex] || "") + ' さん　' + dmd(rec) + '</div>' +
           '<div style="font-size:12px;color:#806c5a;margin-top:2px;">コード：' + ((window.fyDemoOn && window.fyDemoOn()) ? "みほん" : esc(rec.code)) + '</div>' +
           '<button id="fyCbBack" style="margin-top:12px;border:none;background:#ff9800;color:#fff;font-size:16px;font-weight:900;border-radius:16px;padding:9px 18px;">◀ もどる</button>');
@@ -1797,6 +1832,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var nick = btn.getAttribute("data-n"), inp = btn.parentNode.querySelector("input"), real = String(inp && inp.value || "").trim();
     try { var cn = JSON.parse(localStorage.getItem("fy_cardnames") || "{}") || {}; if (real) cn[nick] = real; else delete cn[nick]; localStorage.setItem("fy_cardnames", JSON.stringify(cn)); } catch (e) {}
     location.href = "cards_print.html?" + btn.getAttribute("data-q") + "&name=" + encodeURIComponent(real || nick);
+  };
+  /* 2026-11-21：印刷カードとは べつに、アプリの カード一覧に 賞カードを 追加する コード（FYC1）を 発行する。
+     生徒が「あいことば」の 入力らんに これを 入れると、カードが 1まい ふえる。 */
+  window.fyEvCardCodeRow = function (nick, award, evTitle) {
+    if (!window.fyEvCardCode) return "";
+    if (!award) award = "💮 れんしゅう がんばった賞";
+    var code = window.fyEvCardCode(nick, award, evTitle);
+    var lineTxt = "【ふよみイベント】" + nick + " さんへ\n" + award + "を とったよ！おめでとう🎉\n\nこのコードを「あいことば」の らんに いれてね\n" + code;
+    return '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #cfd8dc;"><span style="font-size:12px;color:#806c5a;">🎴 アプリに 賞カードを ふやす コード（生徒の「あいことば」らんに 入れてもらう）</span><br>' +
+      '<textarea readonly style="width:100%;height:46px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + esc(code) + '</textarea>' +
+      (window.fyLineCheck ? window.fyLineCheck(lineTxt) : '') + '</div>';
   };
   /* 先生ページを とじたら、貼った 文と 結果を 消す */
   setInterval(function () {
@@ -2762,17 +2808,70 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var aw = evAwardOf(g), up = g.lv0 >= 0 ? g.lv1 - g.lv0 : null;
     var ga = (g.rb >= 0 && g.rd >= 0) ? g.rd - g.rb : null;
     var td = (g.tb >= 0 && g.ta >= 0) ? g.tb - g.ta : null;
-    var box = "background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px 8px;margin-top:6px;font-size:13px;line-height:1.7;text-align:left;";
-    return '<div style="' + box + '"><b>📈 のびた きろく</b><br>' +
-      '🎯 一発せいかいりつ：' + (g.rb >= 0 ? g.rb + "%" : "—") + " → " + (g.rd >= 0 ? g.rd + "%" : "—") + (ga !== null ? "（" + (ga >= 0 ? "+" : "") + ga + "）" : "") + '<br>' +
-      '💯 20問 ぜんぶ 一発せいかい：<b>' + g.perf + '</b> 回<br>' +
-      '🚀 ごうかくした レベル：' + g.lv0 + " → " + g.lv1 + (up !== null ? "（+" + up + "）" : "") + '<br>' +
-      '⚡ 1回の タイム：' + (g.tb >= 0 ? g.tb + "秒" : "—") + " → " + (g.ta >= 0 ? g.ta + "秒" : "—") + (td !== null ? "（" + (td >= 0 ? "-" : "+") + Math.abs(td) + "）" : "") + '</div>' +
+    /* 2026-11-21：どこを がんばれば いいか 生徒に すぐ わかるように、1つずつ 大きく・ゆったり 見せる形に。 */
+    var box = "background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:4px 12px;margin-top:8px;text-align:left;";
+    var row = function (icon, label, line, diffTxt, up2) {
+      return '<div style="padding:10px 0;border-bottom:1px solid #f5ede0;">' +
+        '<div style="font-size:14px;font-weight:800;color:#8a7360;margin-bottom:3px;">' + icon + ' ' + label + '</div>' +
+        '<div style="font-size:21px;font-weight:900;color:#5b4636;">' + line +
+        (diffTxt ? ' <span style="font-size:15px;font-weight:900;color:' + (up2 ? "#2e7d32" : "#999") + ';">(' + diffTxt + ')</span>' : '') +
+        '</div></div>';
+    };
+    var lastRow = function (icon, label, line, diffTxt, up2) {
+      return '<div style="padding:10px 0;">' +
+        '<div style="font-size:14px;font-weight:800;color:#8a7360;margin-bottom:3px;">' + icon + ' ' + label + '</div>' +
+        '<div style="font-size:21px;font-weight:900;color:#5b4636;">' + line +
+        (diffTxt ? ' <span style="font-size:15px;font-weight:900;color:' + (up2 ? "#2e7d32" : "#999") + ';">(' + diffTxt + ')</span>' : '') +
+        '</div></div>';
+    };
+    return '<div style="font-size:13px;font-weight:800;color:#ff7043;margin-top:10px;">💡 がんばる ポイントは この 4つ！</div>' +
+      '<div style="' + box + '">' +
+      row("🎯", "一発せいかいりつ", (g.rb >= 0 ? g.rb + "%" : "—") + " → " + (g.rd >= 0 ? g.rd + "%" : "—"), ga !== null ? ((ga >= 0 ? "+" : "") + ga) : "", ga !== null && ga > 0) +
+      row("💯", "20問 ぜんぶ 一発せいかい", g.perf + " 回", "", g.perf > 0) +
+      row("🚀", "ごうかくした レベル", g.lv0 + " → " + g.lv1, up !== null ? ("+" + up) : "", up !== null && up > 0) +
+      lastRow("⚡", "1回の タイム", (g.tb >= 0 ? g.tb + "秒" : "—") + " → " + (g.ta >= 0 ? g.ta + "秒" : "—"), td !== null ? ((td >= 0 ? "-" : "+") + Math.abs(td)) : "", td !== null && td > 0) +
+      '</div>' +
       (pre ? '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:14px;">🏅 賞は イベントが はじまってから 決まるよ！<br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + md(EVENT.start) + 'から がんばろうね</span></div>' : '<div style="background:#fff3c4;border:2px solid #ffb300;border-radius:12px;padding:8px;margin-top:6px;text-align:center;font-weight:900;font-size:16px;">🏅 ' + (who ? who + "さんの 賞" : "賞は せんせいが きめて<br>おしらせするよ！") + (who ? '<br><span style="font-size:20px;">' + aw.name + '</span><br><span style="font-size:12px;font-weight:700;color:#806c5a;">' + aw.d + '</span>' : '') + '</div>');
   };
   evSnap();
   window.fyEventCfg = EVENT;
   window.fyEvAwardOf = evAwardOf;
+  /* 2026-11-21：イベントの 賞カードを、先生が 発行した コードで 生徒の カード一覧に 追加する しくみ。
+     FYE1（きろくコード）とは べつの、FYC1 という コード形式。 */
+  function b64d2(b) { var t = String(b).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return decodeURIComponent(escape(atob(t))); }
+  window.fyEvCardCode = function (name, award, evTitle, dateStr) {
+    var f = ["FYC1", String(name || ""), String(award || ""), String(evTitle || ""), String(dateStr || todayS())];
+    var payload = f.join("|");
+    return "FYC1." + b64e(payload) + "." + sign2(payload);
+  };
+  window.fyEvCardRedeem = function (idx, code) {
+    var parts = String(code).split(".");
+    if (parts.length !== 3 || parts[0] !== "FYC1") return null;
+    var payload;
+    try { payload = b64d2(parts[1]); } catch (eD) { return { ok: false, msg: "あいことばが ちがうよ。もういちど いれてね" }; }
+    if (sign2(payload) !== parts[2]) return { ok: false, msg: "あいことばが ちがうよ。もういちど いれてね" };
+    var f = payload.split("|");
+    if (f[0] !== "FYC1" || f.length < 5) return { ok: false, msg: "あいことばが ちがうよ。もういちど いれてね" };
+    var a = Storage.get("fy_ach_" + idx, []); if (!Array.isArray(a)) a = [];
+    /* おなじ イベントの カードは 2まい ふえない ように（コードを 作りなおしても）、コードでは なく イベント名で くらべる */
+    if (a.some(function (r) { return r && r.type === "event" && r.ev === f[3]; })) return { ok: true, msg: "🎉 もう うけとって いるよ！カードを 見てみてね" };
+    a.push({ type: "event", t: Date.now(), d: todayS(), name: profiles[idx] || f[1], award: f[2], ev: f[3], code: code });
+    Storage.set("fy_ach_" + idx, a);
+    return { ok: true, msg: "🎉「" + f[2] + "」の カードが ふえたよ！カードを 見てみてね" };
+  };
+  /* 2026-11-21：れんしゅう〜イベント期間（pStart〜end）の 外では、
+     「イベントを やってる」と かんちがい しないように ラベルを かえる（先生の 指示）。 */
+  function inEventWindow() { var t = todayS(); return t >= EVENT.pStart && t <= EVENT.end; }
+  function resultsEnd() { return addDays2(EVENT.end, 11); }   /* イベント終了（1/20）の 11日後 ＝ 1/31まで「けっか しゅうけいちゅう」 */
+  function inResultsWindow() { var t = todayS(); return t > EVENT.end && t <= resultsEnd(); }
+  window.fyEvInWindow = inEventWindow;
+  window.fyEvBtnLabel = function () {
+    if (inEventWindow()) return remindOn() ? "🏆 イベントの きろく ⏰ おくってね" : "🏆 イベントの きろく";
+    if (inResultsWindow()) return "🏆 1月のイベント（けっか しゅうけいちゅう）";
+    return "🏆 " + EVENT.title + "（じゅんびちゅう）";
+  };
+  /* けっか しゅうけいちゅうは まだ「気にして見てね」状態、それ以外の 期間外は うすく（先生の 指示） */
+  window.fyEvBtnDim = function () { return !inEventWindow() && !inResultsWindow(); };
   function addDays2(ds, n) { var d = new Date(ds + "T00:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); }
   function daysLeft() { return Math.round((new Date(EVENT.end + "T00:00:00").getTime() - new Date(todayS() + "T00:00:00").getTime()) / 86400000); }
   function remindOn() { var n = daysLeft(); return n >= 0 && n <= 6; }
@@ -2790,15 +2889,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   function showEventScreen(opts) {
     var lim = !!(opts && opts.limited && opts.until);
-    var idx = activeProfileIndex, rows = "", anyT = false;
-    var cell = "border:1px solid #eadcc8;padding:3px 4px;text-align:center;";
-    for (var l = 1; l <= 4; l++) {
-      var r = getEv(idx, l), rate = evRate(r);
-      if (r.bestPerfect || rate) anyT = true;
-      rows += '<tr><td style="' + cell + '">レベル' + l + " <span style='font-size:11px'>(" + LV[l - 1] + '音)</span></td><td style="' + cell + '">' + (r.bestPerfect ? "<b>" + fmt(r.bestPerfect) + "</b>" : "—") + '</td><td style="' + cell + '">' + (rate > 0 ? "<b>" + rate + "%</b>" : "—") + "</td></tr>";
-    }
-    rows += '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">✅ ふよみテスト ごうかく <b>' + evPassCount(idx) + '</b> きょく</td></tr>' +
-      '<tr><td style="' + cell + '">レベル5 <span style=\'font-size:11px\'>(きょく)</span></td><td colspan="2" style="' + cell + '">⭐ えんそう ごうかく <b>' + evPlayCount(idx) + '</b> きょく</td></tr>';
+    var idx = activeProfileIndex;
+    /* 2026-11-21：ここに あった「レジェンドへの みち」の きろく表は けした。
+       賞の 判定には つかって いないのに 出ていて、まぎらわしい ため（先生の 指示）。 */
     var c = makeEventCode(idx), t = c.stamp;
     var when = t.slice(0, 4) + "/" + (+t.slice(4, 6)) + "/" + (+t.slice(6, 8)) + " " + t.slice(8, 10) + ":" + t.slice(10, 12);
     var scr = document.getElementById("fyEvScr");
@@ -2809,6 +2902,46 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       document.body.appendChild(scr);
     }
     var th = "border:1px solid #eadcc8;padding:3px 4px;text-align:center;background:#f6ecd8;";
+    /* 2026-11-21：イベント終了（1/21）〜1/31は「けっか しゅうけいちゅう」。
+       結果は せんせいが べつで れんらくするので、ここでは 待っててねの表示だけ（先生の 指示）。 */
+    if (!lim && inResultsWindow()) {
+      scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:10px 12px 14px;">' +
+        '<div style="position:sticky;top:0;z-index:5;background:#fdf8ed;padding:6px 0 6px;"><button id="fyEvClose" style="border:none;border-radius:16px;padding:8px 14px;font-size:15px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2);">◀ もどる</button></div>' +
+        '<div style="font-size:18px;font-weight:900;text-align:center;padding:0;">🏆 ' + EVENT.title + '</div>' +
+        '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
+        '<div style="background:#fff;border:2px solid #ffb300;border-radius:16px;padding:18px 14px;margin-top:10px;text-align:center;">' +
+        '<div style="font-size:34px;">📊</div>' +
+        '<div style="font-size:17px;font-weight:900;margin-top:6px;">けっか しゅうけいちゅう</div>' +
+        '<div style="font-size:14px;line-height:1.8;margin-top:8px;color:#5b4636;">けっかが 出たら<br>せんせいから れんらくするよ。<br>たのしみに まっててね</div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#a39686;margin-top:12px;text-align:center;">保護者の方へ：解約については「⚙ おとな」のページをご覧ください</div>' +
+        '</div>';
+      scr.style.display = "block";
+      scr.scrollTop = 0;
+      var clo1 = document.getElementById("fyEvClose");
+      if (clo1) clo1.addEventListener("click", function () { scr.style.display = "none"; });
+      return;
+    }
+    /* 2026-11-21：れんしゅう〜イベント期間の 外は「じゅんびちゅう」だけ見せて、
+       0や「—」だらけの きろく画面は 出さない（先生の 指示：かんちがいを ふせぐため）。 */
+    if (!lim && !inEventWindow() && !inResultsWindow()) {
+      scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:10px 12px 14px;">' +
+        '<div style="position:sticky;top:0;z-index:5;background:#fdf8ed;padding:6px 0 6px;"><button id="fyEvClose" style="border:none;border-radius:16px;padding:8px 14px;font-size:15px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2);">◀ もどる</button></div>' +
+        '<div style="font-size:18px;font-weight:900;text-align:center;padding:0;">🏆 ' + EVENT.title + '</div>' +
+        '<div style="text-align:center;margin:2px 0 6px;font-size:13px;">👤 ' + esc2(profiles[idx] || "") + ' さん</div>' +
+        '<div style="background:#fff;border:2px solid #ffcc9a;border-radius:16px;padding:18px 14px;margin-top:10px;text-align:center;">' +
+        '<div style="font-size:34px;">🗓️</div>' +
+        '<div style="font-size:17px;font-weight:900;margin-top:6px;">いま じゅんびちゅう</div>' +
+        '<div style="font-size:14px;line-height:1.8;margin-top:8px;color:#5b4636;">' + md(EVENT.pStart) + 'から れんしゅう スタート！<br>たのしみに まっててね</div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#a39686;margin-top:12px;text-align:center;">保護者の方へ：解約については「⚙ おとな」のページをご覧ください</div>' +
+        '</div>';
+      scr.style.display = "block";
+      scr.scrollTop = 0;
+      var clo0 = document.getElementById("fyEvClose");
+      if (clo0) clo0.addEventListener("click", function () { scr.style.display = "none"; });
+      return;
+    }
     scr.innerHTML = '<div style="max-width:420px;margin:0 auto;padding:10px 12px 14px;">' +
       (lim ? '' : '<div style="position:sticky;top:0;z-index:5;background:#fdf8ed;padding:6px 0 6px;"><button id="fyEvClose" style="border:none;border-radius:16px;padding:8px 14px;font-size:15px;font-weight:900;background:#ff9800;color:#fff;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2);">◀ もどる</button></div>') +
       '<div style="font-size:18px;font-weight:900;text-align:center;padding:0;">🏆 ' + EVENT.title + '</div>' +
@@ -2817,9 +2950,6 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         (remindOn() ? '<div style="background:#ffebee;border:2px solid #e53935;border-radius:12px;padding:8px;margin-bottom:6px;text-align:center;font-weight:900;font-size:14px;line-height:1.6;">⏰ ' + (daysLeft() === 0 ? "きょうが さいごの 日！" : md(EVENT.end) + "までに（あと " + daysLeft() + "日）") + '<br>せんせいに コードを おくってね！</div>' : '')) +
       '<div style="background:#fff;border:1px solid #f0e6d2;border-radius:12px;padding:6px;text-align:center;font-size:14px;">💮 れんしゅう日数（' + md(EVENT.pStart) + '〜' + md(EVENT.pEnd) + '）<br><span style="font-size:24px;font-weight:900;color:#ff5722;">' + practiceDays(idx) + '</span> 日</div>' +
       window.fyEvGrowthHtml(evGrowth(idx), "", todayS() < EVENT.start) +
-      '<div style="margin-top:8px;font-size:13px;font-weight:800;">⏱ ' + md(EVENT.start) + '〜' + md(EVENT.end) + ' の きろく（レジェンドへの みち）</div>' +
-      '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:4px 0;"><tr><th style="' + th + '"></th><th style="' + th + '">ノーミスの ベスト</th><th style="' + th + '">のびた</th></tr>' + rows + '</table>' +
-      (!isMaster(idx) && !anyT ? '<div style="font-size:12px;color:#806c5a;">ふよみマスターに なると、レジェンドへの みちの タイムも のせられるよ！</div>' : '') +
       '<div style="font-size:12px;color:#806c5a;margin-top:2px;">きろくした日：' + when + '</div>' +
       (window.fyNewLookOn && window.fyNewLookOn() ? '' : (
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
@@ -2858,7 +2988,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       b.addEventListener("click", function () { showEventScreen(); });
     }
     b.style.display = isRegistered(activeProfileIndex) ? "" : "none";
-    b.textContent = remindOn() ? "🏆 イベントの きろく ⏰ おくってね" : "🏆 イベントの きろく";
+    b.textContent = window.fyEvBtnLabel();
+    b.style.cssText = (window.fyEvBtnDim() ? "background:#e6dff0;color:#b0a3c8;" : "background:#ffb300;color:#5b4636;") + (b.style.display === "none" ? "display:none;" : "");
   }
   var prev2 = window.initProfiles;
   window.initProfiles = function () {
@@ -2908,11 +3039,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
     if (f.length >= 10) rows += "<tr><td>レベル5</td><td colspan='2'>✅ ふよみテスト合格 <b>" + (parseInt(f[9], 10) || 0) + "</b> 曲</td></tr>";
     if (f.length >= 11) rows += "<tr><td>レベル5</td><td colspan='2'>⭐ 演奏合格 <b>" + (parseInt(f[10], 10) || 0) + "</b> 曲</td></tr>";
+    /* 2026-11-21：イベント名・賞の名前を さきに もとめて、印刷の リンクと デジタルカードの コードの りょうほうに つかう */
+    var evTitleStr = (function () { try { if (typeof EVENT !== "undefined" && EVENT && EVENT.id === f[2] && EVENT.title) return EVENT.title; } catch (eT) {} var mm = String(f[2]).match(/^\d{4}-(\d{1,2})$/); return mm ? (+mm[1]) + "月の ふよみイベント" : f[2]; })();
+    var awardName = f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }); })() : "";
     out.innerHTML = '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の コードです</div>' +
       '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc(f[1]) + '</b>　イベント：' + esc(f[2]) + '<br>きろくした日：' + when + '<br>れんしゅう日数：<b>' + (parseInt(f[4], 10) || 0) + '</b> 日</div>' +
       '<table class="compare-table"><thead><tr><th></th><th>ノーミスの ベスト</th><th>のびた</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); return window.fyEvGrowthHtml({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }, esc(f[1])); })() : "") +
-      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent((function () { try { if (typeof EVENT !== "undefined" && EVENT && EVENT.id === f[2] && EVENT.title) return EVENT.title; } catch (eT) {} var mm = String(f[2]).match(/^\d{4}-(\d{1,2})$/); return mm ? (+mm[1]) + "月の ふよみイベント" : f[2]; })()) + (f.length === 12 ? (function () { var q = f[11].split(",").map(function (x) { return parseInt(x, 10); }); var an = window.fyEvAwardName({ rb: q[0], rd: q[1], nd: q[2], perf: q[3], lv0: q[4], lv1: q[5], tb: isNaN(q[6]) ? -1 : q[6], ta: isNaN(q[7]) ? -1 : q[7] }); return an ? '&award=' + encodeURIComponent(an) : ''; })() : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>';
+      '<div style="text-align:left;font-size:13px;">' + window.fyPrintRow(f[1], 'type=event&date=' + new Date().toISOString().slice(0, 10) + '&ev=' + encodeURIComponent(evTitleStr) + (awardName ? '&award=' + encodeURIComponent(awardName) : '')) + '<span style="font-size:12px;color:#806c5a;">賞の 名前は 自動で 入ります（印刷の ページで 変えられます）</span></div>' +
+      (window.fyEvCardCodeRow ? window.fyEvCardCodeRow(f[1], awardName, evTitleStr) : '');
   };
 
   try {
@@ -3678,7 +3813,7 @@ window.FYAK = FYAK;
           '<button class="st s1' + (here === 1 ? " here" : "") + '" id="fyNLDo"><div class="ic">🎵</div><div>6つの「ド」</div>' + (doOk ? '<span class="r">💮</span>' : '') + '</button>' +
           '<button class="st ' + (doOk ? "s2" : "lk") + (here === 2 ? " here" : "") + '" id="fyNLCard"><div class="ic">🎼</div><div>おんぷカード' + (doOk ? '<small>ト音 ' + (tr >= 5 ? "💮" : tr + 1) + ' ・ ヘ音 ' + (ba >= 5 ? "💮" : ba + 1) + '</small>' : '') + '</div>' + (doOk ? '' : '<span class="r">🔒</span>') + '</button>' +
           '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
-          (evOn ? '<button class="st s4" id="fyNLEv"><div class="ic">🏆</div><div>イベントの きろく</div></button>' : '') +
+          (evOn ? '<button class="st ' + (window.fyEvBtnDim && window.fyEvBtnDim() ? "lk" : "s4") + '" id="fyNLEv"><div class="ic">🏆</div><div>' + esc((window.fyEvBtnLabel ? window.fyEvBtnLabel() : "🏆 イベントの きろく").replace(/^🏆\s*/, "")) + '</div></button>' : '') +
         '</div>' +
         '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨</span>' : '') + '</button>' +
         '<div class="bar">' +
