@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1121f";
+window.FY_EXTRAS_VER = "1122a";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -453,6 +453,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var rec = makeRec(idx, type, n || 0);
     rec.us = 1;
     rec.pt = givePt(idx, type === "legend" ? "legend_" + (n || 0) : "award_" + type, PT[type] || 0);
+    if (rec.pt && window.fyTpEarnLog) window.fyTpEarnLog(idx, rec.pt, "🏅 " + titleOf(rec));
     var a = getAch(idx);
     a.push(rec);
     Storage.set("fy_ach_" + idx, a);
@@ -721,6 +722,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (Array.isArray(l) && l.length) o.s[kd] = l;
     });
     o.h = getHankoList(idx).map(function (d) { return d.replace(/-/g, ""); });
+    /* 2026-11-22：カード（達成カード・イベントの 賞カード）も、きしゅへんの ときに うつせる ように（先生の 指示） */
+    var achBk = getAch(idx);
+    if (Array.isArray(achBk) && achBk.length) o.a = achBk;
     var payload = "FYC1|" + JSON.stringify(o);
     return "FYC1." + b64enc(payload) + "." + signOf(payload);
   }
@@ -792,6 +796,25 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       if (!have[ds]) { list.push(ds); have[ds] = 1; added++; }
     });
     if (added) { list.sort(); if (list.length > 60) list = list.slice(list.length - 60); Storage.set("fy_hanko_" + idx, list); done.push("ハンコ " + added + "日ぶん"); }
+    /* 2026-11-22：カードの 復元。おなじ カードが 2まいに ならない ように、カードの しゅるいで くらべる
+       （名人は 100かい・200かい…ごとに べつの カード、イベントは イベントめいごとに べつの カード）。 */
+    if (Array.isArray(o.a) && o.a.length) {
+      var achKey = function (r) {
+        if (!r) return null;
+        if (r.type === "legend") return "legend:" + (r.n || 0);
+        if (r.type === "event") return "event:" + (r.ev || "");
+        return r.type;
+      };
+      var curA = getAch(idx), haveA = {};
+      curA.forEach(function (r) { haveA[achKey(r)] = true; });
+      var addedCards = 0;
+      o.a.forEach(function (r) {
+        var k = achKey(r);
+        if (!k || haveA[k]) return;
+        haveA[k] = true; curA.push(r); addedCards++;
+      });
+      if (addedCards) { Storage.set("fy_ach_" + idx, curA); done.push("カード " + addedCards + "まい"); }
+    }
     try { initProfiles(); } catch (e) {}
     if (!done.length) return { ok: true, msg: "この端末には、すでに同じか、それ以上の記録があります。新しく書き込む記録は、ありませんでした。" };
     var uniq = done.filter(function (x, i) { return done.indexOf(x) === i; });
@@ -801,11 +824,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var idx = activeProfileIndex, code = makeChunkBackup(idx);
     openOverlay(
       '<div style="font-size:18px;font-weight:900;margin-bottom:6px;">📤 きろくを うつす コード</div>' +
-      '<div style="font-size:12.5px;line-height:1.6;color:#806c5a;margin-bottom:8px;">あたらしい たんまつに かえる ときに つかいます。<br>「レジェンドへの みち」の きろくと、ハンコの 日を うつせます。<br>プレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</div>' +
+      '<div style="font-size:12.5px;line-height:1.7;color:#806c5a;margin-bottom:8px;text-align:left;">あたらしい たんまつに かえる ときに つかいます。<br>' +
+      '✅ うつせる：れんしゅうの きろく（レジェンドへの みち）・きょくの きろく・イベントの きろく・ふよみテストと えんそうの ごうかく・ハンコの 日・<b>カード</b><br>' +
+      '❌ うつせない：ポイントや こうかんの きろく、こまかい れんしゅうの ログ<br>' +
+      '<span style="color:#2b3a6a;">プレイヤー：<b>' + esc(profiles[idx] || "") + '</b> さん</span></div>' +
       '<textarea id="fyBkCode" readonly style="width:100%;height:110px;font-size:10px;padding:6px;border:2px solid #eadcc8;border-radius:10px;box-sizing:border-box;word-break:break-all;-webkit-user-select:text;user-select:text;">' + code + '</textarea>' +
       '<button id="fyBkCopy" style="width:100%;margin-top:6px;padding:10px;font-size:15px;font-weight:800;border:none;border-radius:10px;background:#5c6bc0;color:#fff;">コードを コピー</button>' +
-      window.fyLineBtn(window.fyRestoreText('【ふよみ】' + (profiles[idx] || '') + ' さんの きろくの うつしコード\n' + code, code), 'LINEで じぶんに おくる') +
-      '<div style="font-size:12px;line-height:1.6;color:#806c5a;margin:8px 0;">コピーして、じぶんに LINE などで おくっておくと、あたらしい たんまつで「🔁 記録の復元」に はれます。</div>'
+      window.fyLineBtn(window.fyRestoreText('【ふよみ】' + (profiles[idx] || '') + ' さんの きろくの うつしコード\n' + code, code), '📨 せんせいに おくる') +
+      '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-top:4px;">おすと LINEが ひらくよ。<b>ひこうきの マーク</b>を おして おくってね</div>' +
+      '<div style="font-size:12px;line-height:1.6;color:#806c5a;margin:8px 0;">せんせいに おくって おくと、あたらしい たんまつで こまった ときに LINEの れきしを 見れば コードが 見つかるよ。あたらしい たんまつでは「🔁 記録の復元」に はってね。</div>'
     );
     document.getElementById("fyBkCopy").addEventListener("click", function () {
       var ta = document.getElementById("fyBkCode"), ok = false;
@@ -2113,7 +2140,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
   function weekStartOf(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 
-  function pointsFor(days) { return days >= 7 ? 5 : days >= 5 ? 3 : days >= 3 ? 2 : days >= 1 ? 1 : 0; }
+  function pointsFor(days) { return days >= 7 ? 6 : days >= 6 ? 4 : days >= 5 ? 3 : days >= 3 ? 2 : days >= 1 ? 1 : 0; }
 
   function getStamps(idx) {
     var s = Storage.get(K.stamps(idx), []);
@@ -2165,13 +2192,12 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
 
   function hintText(d) {
-    if (d >= 7) return "ぜんぶ そろったよ！ 5ポイント ゲット！";
-    var need, pts;
-    if (d < 1) { need = 1 - d; pts = 1; }
-    else if (d < 3) { need = 3 - d; pts = 2; }
-    else if (d < 5) { need = 5 - d; pts = 3; }
-    else { need = 7 - d; pts = 5; }
-    return "あと " + need + "日で " + pts + "ポイント！";
+    var tiers = [[1, 2, 1], [3, 4, 2], [5, 5, 3], [6, 6, 4], [7, 7, 6]];
+    return tiers.map(function (t) {
+      var got = d >= t[0];
+      var label = t[0] === t[1] ? ("⭐" + t[0] + "つ" + (t[0] === 7 ? "（ぜんぶ）" : "")) : ("⭐" + t[0] + "〜" + t[1] + "つ");
+      return '<div style="' + (got ? "color:#2e7d32;" : "color:#5b4636;") + '">' + (got ? "✅ " : "　") + label + "で " + t[2] + "ポイント</div>";
+    }).join("");
   }
 
   /* ---- 声 ---- */
@@ -3674,17 +3700,17 @@ window.FYAK = FYAK;
     "#selectScreen.fyNL{padding:0 !important;background:#eaf6ff;background-image:radial-gradient(#cfe8fb 2.2px,transparent 2.6px);background-size:26px 26px;border-radius:0;min-height:100vh;min-height:100dvh;position:relative;overflow:hidden}" +
     "#selectScreen.fyNL > *:not(#fyTop):not(#fyVerBar){display:none !important}" +
     "#fyTop{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;color:#5a4636;position:relative}" +
-    "#fyTop .sky{flex:none;height:104px;background:linear-gradient(180deg,#bfe9ff,#e4f6ff);position:relative;border-radius:0 0 50% 50%/0 0 26px 26px;overflow:hidden}" +
+    "#fyTop .sky{flex:none;height:140px;background:linear-gradient(180deg,#bfe9ff,#e4f6ff);position:relative;border-radius:0 0 50% 50%/0 0 26px 26px;overflow:hidden}" +
     "#fyTop .cl{position:absolute;background:#fff;border-radius:40px;height:22px}#fyTop .cl::before{content:'';position:absolute;background:#fff;border-radius:50%;width:26px;height:26px;left:12px;top:-13px}" +
-    "#fyTop .pal{position:absolute;left:18px;top:24px;width:58px;height:58px;border-radius:50%;background:#ffd45c;box-shadow:inset -5px -6px 0 #ffc02e,0 4px 0 rgba(0,0,0,.08)}" +
+    "#fyTop .pal{position:absolute;left:18px;top:42px;width:58px;height:58px;border-radius:50%;background:#ffd45c;box-shadow:inset -5px -6px 0 #ffc02e,0 4px 0 rgba(0,0,0,.08)}" +
     "#fyTop .pal::before{content:'';position:absolute;right:3px;top:-22px;width:8px;height:50px;background:#ffc02e;border-radius:6px}" +
     "#fyTop .pal::after{content:'';position:absolute;right:-15px;top:-24px;width:24px;height:16px;background:#ffc02e;border-radius:4px 14px 14px 14px;transform:rotate(18deg)}" +
     "#fyTop .pal i{position:absolute;top:21px;width:7px;height:10px;background:#5a4636;border-radius:50%}#fyTop .pal i.a{left:15px}#fyTop .pal i.b{left:33px}" +
     "#fyTop .pal u{position:absolute;left:21px;top:34px;width:15px;height:8px;border:3px solid #5a4636;border-top:none;border-radius:0 0 12px 12px}" +
-    "#fyTop .hello{position:absolute;left:92px;top:26px;max-width:190px;background:#fff;border:none;border-radius:20px;padding:7px 14px 8px;font-weight:900;font-size:20px;color:#5a4636;box-shadow:0 4px 0 rgba(90,70,54,.10);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}" +
+    "#fyTop .hello{position:absolute;left:92px;top:44px;max-width:190px;background:#fff;border:none;border-radius:20px;padding:7px 14px 8px;font-weight:900;font-size:20px;color:#5a4636;box-shadow:0 4px 0 rgba(90,70,54,.10);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}" +
     "#fyTop .hello small{font-size:12px}" +
-    "#fyTop .wk{position:absolute;left:94px;top:72px;font-size:12px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:3px 10px;color:#2e7d32;font-family:inherit;touch-action:manipulation}" +
-    "#fyTop .pt{position:absolute;right:14px;top:40px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:64px;height:64px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 5px 0 rgba(160,60,90,.35);transform:rotate(8deg);font-family:inherit;padding:0;touch-action:manipulation}" +
+    "#fyTop .wk{position:absolute;left:94px;top:92px;font-size:12px;font-weight:800;background:#e3f3dc;border:2px solid #86c57f;border-radius:14px;padding:3px 10px;color:#2e7d32;font-family:inherit;touch-action:manipulation}" +
+    "#fyTop .pt{position:absolute;right:14px;top:58px;z-index:3;background:#ff8fab;color:#fff;border-radius:50%;width:64px;height:64px;text-align:center;font-weight:900;border:4px solid #fff;box-shadow:0 5px 0 rgba(160,60,90,.35);transform:rotate(8deg);font-family:inherit;padding:0;touch-action:manipulation}" +
     "@keyframes fyNLp{0%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 0 rgba(255,143,171,.9)}100%{box-shadow:0 5px 0 rgba(160,60,90,.35),0 0 0 14px rgba(255,143,171,0)}}#fyTop .pt.can{animation:none}" +
     "#fyTop .pt b{font-size:21px;display:block;line-height:1;margin-top:11px}#fyTop .pt span{font-size:9px}" +
     "#fyTop .hk{flex:none;margin:6px 14px 0;background:#fff;border-radius:22px;padding:6px 12px 7px;border:3px dashed #a9d8f5;display:flex;justify-content:space-between;cursor:pointer}" +
@@ -3696,7 +3722,7 @@ window.FYAK = FYAK;
     "#fyTop .st .ic{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}" +
     "#fyTop .st small{display:block;font-size:12px;margin-top:2px;font-weight:800}" +
     "#fyTop .s1{background:#8ed99a}#fyTop .s2{background:#7cc4ff}#fyTop .s3{background:#b79be8}#fyTop .s4{background:#ffb300}" +
-    "#fyTop .lk{background:#e6dff0;color:#b0a3c8}#fyTop .lk .ic{opacity:.6}#fyTop .st .r{margin-left:auto;font-size:24px}" +
+    "#fyTop .lk{background:#e6dff0;color:#b0a3c8}#fyTop .lk .ic{opacity:.6}#fyTop .st .r{margin-left:auto;font-size:46px}" +
     "@keyframes fyNLh{0%{box-shadow:0 0 0 6px #ffb300,0 0 0 6px rgba(255,179,0,.95);transform:scale(1)}50%{transform:scale(1.025)}100%{box-shadow:0 0 0 6px #ffb300,0 0 0 26px rgba(255,179,0,0);transform:scale(1)}}" +
     "#fyTop .here{animation:fyNLh 1.1s ease-out infinite;position:relative;z-index:2}" +
     "#fyTop .ow{flex:none;margin:9px 14px 0;height:44px;border-radius:22px;border:3px solid #fff;background:#5c6bc0;color:#fff;font-size:17px;font-weight:900;font-family:inherit;box-shadow:0 4px 0 rgba(40,50,120,.3);position:relative;touch-action:manipulation}" +
@@ -3819,7 +3845,6 @@ window.FYAK = FYAK;
         '<div class="bar">' +
           '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
-          '<button id="fyNLEx"><b style="background:#b8ecc0">🎁</b>こうかん' + (exUns ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLAk"><b style="background:#ffd3b0">📩</b>あいことば</button>' +
           '<button id="fyNLAd"><b style="background:#e3e3e3">⚙️</b>おとな</button>' +
         '</div><div class="gr"><div class="cr">音声：VOICEVOX:ずんだもん</div></div>';
@@ -3836,7 +3861,6 @@ window.FYAK = FYAK;
       if ($("fyNLEv")) $("fyNLEv").addEventListener("click", function () { clickOld("#fyEvBtn"); });
       $("fyNLRec").addEventListener("click", function () { try { window.showCardCodes(); } catch (e) {} });
       $("fyNLBook").addEventListener("click", function () { try { window.showCardBook(); } catch (e) {} });
-      $("fyNLEx").addEventListener("click", function () { clickOld("#fyExBtn"); });
       $("fyNLPt").addEventListener("click", function () { clickOld("#fyExBtn"); });
       $("fyNLOw").addEventListener("click", function () {
         var o = okList(idx), pend = o.pend.slice(), today = ymd(new Date());
