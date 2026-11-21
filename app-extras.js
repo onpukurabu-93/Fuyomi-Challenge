@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1121b";
+window.FY_EXTRAS_VER = "1121c";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -114,25 +114,30 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  /* ===== あいことば・なまえの画面 ===== */
-  var inputStyle = "width:100%;padding:12px;font-size:18px;border:2px solid #eadcc8;border-radius:12px;text-align:center;background:#fff;color:#5b4636;box-sizing:border-box;-webkit-user-select:text;user-select:text;";
-  var btnStyle = "width:100%;margin-top:10px;padding:14px;font-size:18px;font-weight:800;border:none;border-radius:14px;color:#fff;";
+  /* ===== あいことば・なまえの画面 =====
+     2026-11-21：「📩 あいことば」ボタン（プレゼントコードの シート）と 見た目を そろえた。
+     どちらも「下から出てくる、同じ 見た目の カード」に することで、
+     「先生からの あいことばは いつも ここで入れる」と おぼえやすくする ため。 */
+  var inputStyle = "width:100%;box-sizing:border-box;font-size:26px;font-weight:900;text-align:center;padding:12px;border:3px solid #ffcc9a;border-radius:16px;letter-spacing:4px;color:#5b4636;background:#fff;-webkit-user-select:text;user-select:text;";
+  var nameInputStyle = "width:100%;padding:12px;font-size:18px;border:2px solid #ffcc9a;border-radius:12px;text-align:center;background:#fff;color:#5b4636;box-sizing:border-box;-webkit-user-select:text;user-select:text;";
+  var btnStyle = "width:100%;margin-top:10px;padding:14px;font-size:19px;font-weight:900;border:none;border-radius:16px;color:#fff;";
 
   var box = document.createElement("div");
-  box.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;background:#fdf8ed;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+  box.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:10000;background:rgba(60,40,20,.45);display:flex;align-items:flex-end;justify-content:center;padding:0;box-sizing:border-box;";
   box.innerHTML =
-    '<div style="width:100%;max-width:340px;text-align:center;color:#5b4636;">' +
-    '<div style="font-size:26px;font-weight:800;margin-bottom:8px;">🎹 ふよみチャレンジ</div>' +
-    '<div id="gateMsg" style="font-size:14px;color:#806c5a;min-height:42px;margin-bottom:10px;line-height:1.5;white-space:pre-line;">かくにん中…</div>' +
+    '<div style="background:#fffaf0;border-radius:22px 22px 0 0;padding:16px 16px 22px;width:100%;max-width:480px;max-height:86vh;overflow:auto;text-align:center;color:#5b4636;box-sizing:border-box;">' +
+    '<div style="font-size:18px;font-weight:900;margin-bottom:4px;">📩 あいことば</div>' +
+    '<div id="gateMsg" style="font-size:13px;color:#806c5a;min-height:30px;margin-bottom:8px;line-height:1.6;white-space:pre-line;">かくにん中…</div>' +
     '<div id="gateCodeForm" style="display:none;">' +
+    '<div style="font-size:13px;color:#806c5a;margin:0 0 8px;">せんせいから もらった あいことばを いれてね</div>' +
     '<input id="gateInput" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="あいことば" style="' + inputStyle + '">' +
-    '<button id="gateBtn" style="' + btnStyle + 'background:#ff7043;">はじめる</button>' +
+    '<button id="gateBtn" style="' + btnStyle + 'background:#ff7043;">いれる</button>' +
     '<button id="gateCancel" style="' + btnStyle + 'background:#bdbdbd;font-size:15px;padding:10px;display:none;">やめる</button>' +
     '</div>' +
     '<div id="gateNickForm" style="display:none;">' +
-    '<input id="gateNick" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="8" placeholder="きょうしつネーム" style="' + inputStyle + '">' +
+    '<input id="gateNick" type="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="8" placeholder="きょうしつネーム" style="' + nameInputStyle + '">' +
     '<div style="font-size:12px;color:#806c5a;margin:10px 0 4px;text-align:left;">がくねん・くぶん</div>' +
-    '<select id="gateCategory" style="' + inputStyle + '"></select>' +
+    '<select id="gateCategory" style="' + nameInputStyle + '"></select>' +
     '<button id="gateNickBtn" style="' + btnStyle + 'background:#ff7043;">つぎへ</button>' +
     '</div>' +
     '<div id="gateConfirmForm" style="display:none;">' +
