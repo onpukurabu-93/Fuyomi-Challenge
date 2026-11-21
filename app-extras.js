@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1119d";
+window.FY_EXTRAS_VER = "1121b";
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -1316,8 +1316,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           regBtn.style.display = "none";
         } else {
           regBtn.style.display = "";
-          regBtn.textContent = "➕ プレイヤーを ふやす（あいことばが いるよ）";
-          regBtn.style.cssText = "background:transparent;border:none;color:#b0a090;font-size:11px;font-weight:600;cursor:pointer;width:100%;margin-bottom:4px;padding:2px;text-decoration:underline;";
+          regBtn.textContent = (registeredCount() === 0) ? "🔑 合言葉を いれて はじめる" : "🔑 合言葉を いれて プレイヤーを ふやす";
+          regBtn.style.cssText = "background:#ff7043;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px;padding:12px;";
           /* 2026-11-17 から：あたらしい プレイヤーを ふやすのは あいことばが 必要。
              もとの onclick="openRegistration(false)"（なまえの へんこう用）を 上書きして、あいことばの がめんを 出す。 */
           regBtn.onclick = null;
@@ -2618,8 +2618,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   /* ---- イベントの きろく（トップ画面。だれでも見られる） ---- */
   var EVENT = { id: "2027-01", title: "1月の ふよみイベント",
-                pStart: "2026-12-20", pEnd: "2026-12-31",
-                start: "2027-01-01", end: "2027-01-31" };
+                pStart: "2026-12-21", pEnd: "2026-12-31",
+                start: "2027-01-01", end: "2027-01-20" };
   /* event_config.js（せんせいが かえる ファイル）があれば、そちらの 日づけを つかう（chunk_proto.html と おなじ ファイル） */
   try {
     var xh = new XMLHttpRequest();
@@ -2794,7 +2794,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       (window.fyNewLookOn && window.fyNewLookOn() ? '' : (
       '<div style="font-size:12px;font-weight:800;margin-top:6px;">せんせいに おくる コード</div>' +
       '<textarea id="fyEvCode" readonly style="width:100%;height:56px;font-size:10px;word-break:break-all;border:2px solid #eadcc8;border-radius:10px;padding:6px;box-sizing:border-box;-webkit-user-select:text;user-select:text;">' + c.code + '</textarea>' +
-      window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code)
+      window.fyLineCheck('【ふよみイベント】' + (profiles[idx] || '') + ' さんの きろくコード\n' + c.code) +
+      '<div style="font-size:12px;color:#806c5a;line-height:1.6;margin-top:4px;">おすと LINEが ひらくよ。<b>ひこうきの マーク</b>を おして おくってね</div>'
       )) +
       '<div style="font-size:10px;color:#a39686;margin-top:8px;text-align:center;">保護者の方へ：解約については「⚙ おとな」のページをご覧ください</div>' +
       '</div>';
@@ -3617,7 +3618,7 @@ window.FYAK = FYAK;
       if (!s.classList.contains("fyNL")) s.classList.add("fyNL");
       var t = $("fyTop"); if (!t) { t = document.createElement("div"); t.id = "fyTop"; s.insertBefore(t, s.firstChild); }
       var idx = activeProfileIndex, name = (profiles && profiles[idx]) || "", many = 0;
-      try { profiles.forEach(function (p) { if (p) many++; }); } catch (e) {}
+      try { for (var mi2 = 0; mi2 < 3; mi2++) { if (isRegistered(mi2)) many++; } } catch (e) {}
       var pts = Storage.getNumber("fy_tp_" + idx, 0);
       var wk = false; try { wk = fyWakabaOn(); } catch (e) {}
       var doBest = null; try { doBest = getDoTestBest(idx); } catch (e) {}
@@ -3716,6 +3717,10 @@ window.FYAK = FYAK;
         schedule();
       });
       $("fyNLAk").addEventListener("click", function () {
+        /* 2026-11-21：まだ とうろく して いない ときは、この ボタンで さいしょの 合言葉（とうろく）を
+           いれて もらう。とうろく ずみなら、いつもの せんせいからの プレゼントコードの がめん。
+           「合言葉は、いつも この ボタン」と おぼえて もらう ため、ボタンの ばしょ・みための みは かえない。 */
+        if (!isRegistered(idx)) { try { if (window.fyGateAddPlayerCode) window.fyGateAddPlayerCode(); } catch (e) {} return; }
         sheet(function (inn) {
           /* 「いれる」を おしたら かってに すすむので、下の「◀ もどる」は この がめんだけ かくす */
           setTimeout(function () { try { var cb = inn.querySelector(".cls"); if (cb) cb.style.display = "none"; } catch (e0) {} }, 0);
@@ -3796,7 +3801,7 @@ window.FYAK = FYAK;
             inn.appendChild(b);
           });
           var more = 0; for (var mi = 0; mi < 3; mi++) { try { if (isRegistered(mi)) more++; } catch (e) { more++; } }
-          if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:13px;background:#f3ede2;box-shadow:none;padding:10px;"; ad.textContent = "➕ プレイヤーを ふやす（あいことばが いるよ）"; ad.addEventListener("click", function () { closeSheet(); try { if (window.fyGateAddPlayerCode) window.fyGateAddPlayerCode(); } catch (e) {} }); inn.appendChild(ad); }
+          if (more < 3) { var ad = document.createElement("button"); ad.className = "bt"; ad.style.cssText = "font-size:15px;font-weight:800;background:#ff7043;color:#fff;box-shadow:none;padding:12px;"; ad.textContent = "🔑 合言葉を いれて プレイヤーを ふやす"; ad.addEventListener("click", function () { closeSheet(); try { if (window.fyGateAddPlayerCode) window.fyGateAddPlayerCode(); } catch (e) {} }); inn.appendChild(ad); }
         });
       });
       $("fyNLHk").addEventListener("click", function () {
