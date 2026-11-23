@@ -2,9 +2,9 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1123b";
+window.FY_EXTRAS_VER = "1123c";
 /* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
-(function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1123b")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1123b", "1"); } } catch (e) {} })();
+(function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1123c")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1123c", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -2498,7 +2498,29 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     return r;
   };
 
-  /* ---- 結果画面：ハンコ ---- */
+  /* 2026-11-23：「ピンポーン」の チャイム音（音声ファイルは つかわず、その場で 鳴らす） */
+  function playPinpon() {
+    try {
+      var ctx = getAudioContext();
+      var t0 = ctx.currentTime;
+      var dest = (typeof masterGain !== "undefined" && masterGain) ? masterGain : ctx.destination;
+      function tone(freq, start, dur) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine"; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t0 + start);
+        g.gain.linearRampToValueAtTime(0.35, t0 + start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + start + dur);
+        o.connect(g); g.connect(dest);
+        o.start(t0 + start); o.stop(t0 + start + dur + 0.05);
+      }
+      tone(1318.5, 0, 0.32);
+      tone(987.8, 0.28, 0.42);
+    } catch (e) {}
+  }
+
+  /* ---- 結果画面：ハンコ ----
+     2026-11-23：結果画面には 出さず、ファンファーレ・せりふが おわってから、ピンポーンと 鳴らして
+     ふきだしで しらせる形に 変更。その日 はじめての トレーニングの ときだけ（2回目いこうは 出さない）。 */
   var prevResult = window.showResultScreen;
   window.showResultScreen = function () {
     var r = prevResult.apply(this, arguments);
@@ -2508,24 +2530,33 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       setTimeout(function () { if (rsOk()) fyNudge(document.querySelector("#resultButtonsWrap .accent")); }, 1200);
     } catch (e) {}
     try {
-      var old = document.getElementById("fyHankoResult");
-      if (old) old.remove();
+      var old = document.getElementById("fyHankoResult"); if (old) old.remove();
+      var oldB = document.getElementById("fyHankoBubble"); if (oldB) oldB.remove();
       if (selectedClef === "do") return r;           /* 6つのドは かぞえない */
       var idx = activeProfileIndex;
       var isNew = giveStamp(idx);
+      if (!isNew) return r;   /* その日 2回目いこうの トレーニングでは、もう しらせない */
       var d = daysThisWeek(idx);
-      var wrap = document.getElementById("resultButtonsWrap");
-      if (!wrap) return r;
-      var box = document.createElement("div");
-      box.id = "fyHankoResult";
-      box.style.cssText = "background:#fff;border:1px solid #f0e6d2;border-radius:14px;padding:8px 10px;margin:8px auto 0;width:92%;text-align:center;color:#5b4636;";
-      var stampPart = isNew
-        ? '<div style="position:relative;height:92px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon">⭐</span></div>' +
-          '<div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>'
-        : '<div style="font-size:13px;font-weight:800;">きょうの ハンコは もう もらったよ！</div>';
-      box.innerHTML = stampPart +
-        '<div style="font-size:13px;margin-top:4px;line-height:1.6;">今週は <b>' + d + '日め</b><br>' + hintText(d) + '</div>';
-      wrap.parentNode.insertBefore(box, wrap);
+      var sMs = getSoundDurationMs("sugoiAudio") || 1500;
+      var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
+      var wait = sMs + 200 + fMs + 500;
+      setTimeout(function () {
+        try {
+          if (!rsOk()) return;   /* もう けっか画面に いない ときは 出さない */
+          playPinpon();
+          var old2 = document.getElementById("fyHankoBubble"); if (old2) old2.remove();
+          var bub = document.createElement("div");
+          bub.id = "fyHankoBubble";
+          bub.style.cssText = "position:fixed;left:12px;right:12px;bottom:18px;z-index:10020;background:#fff;color:#5b4636;border-radius:16px;padding:10px 14px 12px;box-shadow:0 4px 14px rgba(0,0,0,.3);text-align:center;";
+          bub.innerHTML =
+            '<div style="position:relative;height:72px;margin:0 auto;display:flex;align-items:center;justify-content:center;"><span class="fy-ring"></span><span class="fy-big-pon" style="font-size:56px;">⭐</span></div>' +
+            '<div style="font-size:14px;font-weight:800;">きょうの ハンコ ゲット！</div>' +
+            '<div style="font-size:13px;margin-top:4px;line-height:1.6;">今週は <b>' + d + '日め</b><br>' + hintText(d) + '</div>';
+          bub.addEventListener("click", function () { bub.remove(); });
+          document.body.appendChild(bub);
+          setTimeout(function () { try { bub.remove(); } catch (e2) {} }, 9000);
+        } catch (e3) {}
+      }, wait);
     } catch (e) {}
     return r;
   };
