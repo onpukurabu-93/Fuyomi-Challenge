@@ -2,7 +2,9 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1122b";
+window.FY_EXTRAS_VER = "1122e";
+/* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
+(function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1122e")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1122e", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -832,8 +834,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var uniq = done.filter(function (x, i) { return done.indexOf(x) === i; });
     return { ok: true, msg: "復元しました。\n・" + uniq.join("\n・") };
   }
-  window.fyShowBackup = function () {
-    var idx = activeProfileIndex, code = makeChunkBackup(idx);
+  window.fyShowBackup = function (forceIdx) {
+    var idx = (typeof forceIdx === "number") ? forceIdx : activeProfileIndex, code = makeChunkBackup(idx);
     openOverlay(
       '<div style="font-size:18px;font-weight:900;margin-bottom:6px;">📤 きろくを うつす コード</div>' +
       '<div style="font-size:12.5px;line-height:1.7;color:#806c5a;margin-bottom:8px;text-align:left;">あたらしい たんまつに かえる ときに つかいます。<br>' +
@@ -1688,14 +1690,35 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '</div>' +
         '<details style="margin-top:8px;padding-top:6px;border-top:1px dashed #eadcc8;font-size:11px;color:#806c5a;line-height:1.6;"><summary style="color:#a39686;font-size:11px;">解約について</summary>📌 解約のご連絡は、毎月<b>25日まで</b>にお願いします。26日以降のご連絡は、翌月の解約になります。<br>' +
         '<b style="color:#c62828;">いまボタンを押すと、' + cx.when + '</b>' +
-        '<div style="margin-top:6px;">下のボタンを押すとLINEが開きます。送信ボタン（✈マーク）を押して送ってください。</div>' +
+        '<div style="margin-top:8px;background:#fff8e1;border:1px solid #ffe0b2;border-radius:10px;padding:8px 9px;text-align:left;">' +
+        '<b style="color:#8a5a00;">解約する前に、かくにんしてください</b><br>' +
+        '1. 解約すると、アプリの中に入れなくなります（今までの実績は見られなくなります）<br>' +
+        '2. 月間ベスト賞など、解約後に決まるデジタルカードは見られません（現物のカードは先生からお渡しできます）<br>' +
+        '3. <button id="fyCancelBk' + idx + '" style="margin:3px 0;padding:6px 10px;font-size:11px;font-weight:800;border:none;border-radius:8px;background:#5c6bc0;color:#fff;">📤 きろくを うつす コードを作る</button>を押して、先生に送ってください。先生が預かっておきます。将来また始めるときはその記録から戻しますが、戻せない記録もあります（くわしくはその画面に書いてあります）' +
+        '</div>' +
+        '<label style="display:flex;align-items:flex-start;gap:6px;margin-top:8px;cursor:pointer;">' +
+        '<input type="checkbox" id="fyCancelChk' + idx + '" style="margin-top:2px;width:16px;height:16px;flex:none;">' +
+        '<span>上の内容を読んで、理解しました</span></label>' +
+        '<div id="fyCancelSend' + idx + '" style="display:none;margin-top:6px;">' +
+        '<div style="margin-top:2px;">下のボタンを押すとLINEが開きます。送信ボタン（✈マーク）を押して送ってください。</div>' +
         (function () { window.fyNoBackNote = 1; var hh = window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）', '✉ 解約のご連絡（LINEを開く）', '#9e9e9e', true); window.fyNoBackNote = 0; return hh; })() +
         '<div style="margin-top:4px;">送信後、先生からの返信をもって解約完了となります。3日経っても返信がない場合は、お手数ですが再度ご連絡ください。</div>' +
+        '</div>' +
         '</details>';
       html += '</div>';
     });
     if (!any) html = '<div style="font-size:12px;color:#806c5a;">まだ誰も登録されていません</div>';
     document.getElementById("parentCompareTable").innerHTML = html;
+    profiles.forEach(function (n, idx) {
+      if (!isRegistered(idx)) return;
+      try {
+        var chk = document.getElementById("fyCancelChk" + idx);
+        var sendWrap = document.getElementById("fyCancelSend" + idx);
+        if (chk && sendWrap) chk.addEventListener("change", function () { sendWrap.style.display = chk.checked ? "" : "none"; });
+        var bkBtn = document.getElementById("fyCancelBk" + idx);
+        if (bkBtn) bkBtn.addEventListener("click", function () { window.fyShowBackup(idx); });
+      } catch (e) {}
+    });
   };
 
   window.showParentAuth = function () {
@@ -4121,8 +4144,10 @@ window.FYAK = FYAK;
 
 /* ===== テスト用（先生の チェック）：「⏩ あと1もんへ」と、ジャンプの つづき ===== */
 (function () {
-  function skipOn() { try { return localStorage.getItem("fy_test_skip") === "1"; } catch (e) { return false; } }
-  window.fySkipSet = function (v) { try { if (v) localStorage.setItem("fy_test_skip", "1"); else localStorage.removeItem("fy_test_skip"); } catch (e) {} };
+  /* 2026-11-22：ずっと残ってしまう localStorage ではなく、その場だけの sessionStorage に変更。
+     これで、画面を閉じたり次に開いたりすると自動的に消えるので、設定を消し忘れても生徒に見えたままになることがない。 */
+  function skipOn() { try { return sessionStorage.getItem("fy_test_skip") === "1"; } catch (e) { return false; } }
+  window.fySkipSet = function (v) { try { if (v) sessionStorage.setItem("fy_test_skip", "1"); else sessionStorage.removeItem("fy_test_skip"); } catch (e) {} };
   var running = false;
   function runSkip() {
     if (running) return; running = true;
