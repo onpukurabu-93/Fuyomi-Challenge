@@ -2,9 +2,9 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1122e";
+window.FY_EXTRAS_VER = "1123b";
 /* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
-(function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1122e")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1122e", "1"); } } catch (e) {} })();
+(function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1123b")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1123b", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
 window.FY_OA_DIRECT = true;
 /* toOA が true → 公式LINEの トークを ちょくせつ ひらく（おくる あいてを えらばなくて よい）。false → ふつうの「あいてを えらぶ」 */
@@ -392,7 +392,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     legend: { icon: "🏅", label: "ふよみ名人", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
     legend5: { icon: "👑", label: "ふよみレジェンド", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
     maestro: { icon: "🎹", label: "ふよみマエストロ", bg: "#2b1b4a", bd: "#b79be0", tx: "#efe6ff", ac: "#d9c4ff", cbg: "#f4eeff", ctx: "#2b1b4a" },
-    legend1000: { icon: "🏅", label: "ふよみ名人", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" }
+    legend1000: { icon: "🏅", label: "ふよみ名人", bg: "#fff3b0", bd: "#b98a1e", tx: "#5a3a00", ac: "#8a5a00", cbg: "#fff", ctx: "#5a3a00" },
+    mbest: { icon: "🌟", label: "月間ベスト賞", bg: "#fff8e1", bd: "#ffb300", tx: "#5a3a00", ac: "#ff6f00", cbg: "#fff", ctx: "#5a3a00" },
+    nomiss: { icon: "🔥", label: "ノーミスれんぞく賞", bg: "#ffe9e0", bd: "#ff7043", tx: "#7a2b0a", ac: "#ff5722", cbg: "#fff", ctx: "#7a2b0a" }
   };
   function infoOf(rec) {
     if (rec.type === "legend" && rec.n >= 1000) return INFO.legend1000;
@@ -401,6 +403,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   function titleOf(rec) {
     if (rec.type === "stamp") return "スタンプカード " + rec.n + " まいめ";
     if (rec.type === "legend") return "ふよみ名人";
+    if (rec.type === "event") return rec.award || "イベントの 賞カード";
     return INFO[rec.type].label;
   }
   function subOf(rec) {
@@ -408,8 +411,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (rec.type === "legend") return "パーフェクト " + rec.n + "回 れんぞく！";
     if (rec.type === "legend5") return "ぜんぶの きょくで ふよみごうかく！";
     if (rec.type === "maestro") return "ぜんぶの きょくで せんせいの ごうかく！";
+    if (rec.type === "mbest") return (rec.award || "") + "の がんばりが、いちばん だったよ！";
+    if (rec.type === "nomiss") return "れんぞく " + (rec.n || 0) + "回で しんきろく！";
     return "おめでとう！";
   }
+  function ymLabel(ym) { var p = String(ym).split("-"); return p.length === 2 ? (+p[0]) + "年" + (+p[1]) + "月" : String(ym); }
 
   function getAch(idx) {
     var a = Storage.get("fy_ach_" + idx, []);
@@ -428,7 +434,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
   /* しゅうごうの きろくを つくる。マスターは1どだけ。れじぇんどは、まいかい */
   /* 🎁 ごほうびの ポイント（先生ページで かえられる）。おなじ ごほうびは 1かいだけ */
-  var PT = { treble: 5, bass: 5, master: 10, legend: 20 };
+  var PT = { treble: 5, bass: 5, master: 10, legend: 20, event: 10, mbest: 3, nomiss: 8 };
   try { var ptc = Storage.get("fy_pt_cfg", {}) || {}; for (var pk in PT) if (typeof ptc[pk] === "number") PT[pk] = ptc[pk]; } catch (e) {}
   function givePt(idx, tag, n) {
     try {
@@ -440,6 +446,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       return n;
     } catch (e) { return 0; }
   }
+  window.fyGivePt = givePt;
+  window.fyPtCfg = PT;
   /* 📨 まだ せんせいに おくっていない きろく（us＝あたらしく とった しるし、sentAt＝おくるボタンを おした とき） */
   function isUnsent(r) { return !!(r && r.us && !r.sentAt); }
   function unsentCount(idx) { return getAch(idx).filter(isUnsent).length; }
@@ -462,16 +470,53 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       else { b.classList.remove("fyLineBlink"); if (d) d.remove(); }
     } catch (e) {}
   };
-  function addAch(idx, type, n) {
-    if (type !== "legend" && findAch(idx, type)) return null;
+  var ACH_REPEAT = { legend: 1, mbest: 1, nomiss: 1 };
+  function addAch(idx, type, n, extra) {
+    if (!ACH_REPEAT[type] && findAch(idx, type)) return null;
     var rec = makeRec(idx, type, n || 0);
+    if (extra) for (var ek in extra) rec[ek] = extra[ek];
     rec.us = 1;
-    rec.pt = givePt(idx, type === "legend" ? "legend_" + (n || 0) : "award_" + type, PT[type] || 0);
+    var tag = (type === "legend" || type === "mbest" || type === "nomiss") ? (type + "_" + (n || 0)) : "award_" + type;
+    rec.pt = givePt(idx, tag, PT[type] || 0);
     if (rec.pt && window.fyTpEarnLog) window.fyTpEarnLog(idx, rec.pt, "🏅 " + titleOf(rec));
     var a = getAch(idx);
     a.push(rec);
     Storage.set("fy_ach_" + idx, a);
     return rec;
+  }
+
+  /* 2026-11-23：🌟 月間ベスト賞（20問ぜんぶ一発正解の月ごとの合計が、それまでの どの月よりも 多かったら もらえる）
+     12/21〜12/31の れんしゅう期間は 対象に 入れない。1月（練習期間の 次の月）が 第1回目＝それまでの 最高が 0なので、
+     1回でも とれば もらえる。月が かわった タイミングで、まえの月の 結果を かくていする（＝よく月に なって わかる）。 */
+  function mbFirstYm() {
+    try {
+      var pe = (window.fyEventCfg && window.fyEventCfg.pEnd) || "2026-12-31";
+      var d = new Date(pe + "T00:00:00"); d.setDate(d.getDate() + 1);
+      var mm = d.getMonth() + 1;
+      return d.getFullYear() + "-" + (mm < 10 ? "0" + mm : mm);
+    } catch (e) { return "2027-01"; }
+  }
+  function mbUpdate(idx, isPerfect20) {
+    try {
+      var first = mbFirstYm();
+      var ym = localDateStr(new Date()).slice(0, 7);
+      if (ym < first) return null;
+      var curYm = Storage.get("fy_mb_ym_" + idx, "");
+      var awarded = null;
+      if (!curYm) { Storage.set("fy_mb_ym_" + idx, ym); Storage.set("fy_mb_cnt_" + idx, 0); curYm = ym; }
+      if (ym !== curYm) {
+        var doneCnt = Storage.getNumber("fy_mb_cnt_" + idx, 0);
+        var best = Storage.getNumber("fy_mb_best_" + idx, 0);
+        if (doneCnt > best) {
+          Storage.set("fy_mb_best_" + idx, doneCnt);
+          awarded = addAch(idx, "mbest", curYm, { ev: "月間ベスト賞", award: ymLabel(curYm) });
+        }
+        Storage.set("fy_mb_ym_" + idx, ym);
+        Storage.set("fy_mb_cnt_" + idx, 0);
+      }
+      if (isPerfect20) Storage.set("fy_mb_cnt_" + idx, Storage.getNumber("fy_mb_cnt_" + idx, 0) + 1);
+      return awarded;
+    } catch (e) { return null; }
   }
 
   function dmd(rec) {
@@ -973,8 +1018,22 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     ["legend", "ふよみ名人", "card_meijin_front.png"],
     ["legend5", "ふよみレジェンド", "card_legend_front.png"],
     ["maestro", "ふよみマエストロ", "card_maestro_front.png"],
-    ["event", "イベントの 賞カード", "card_event_front.png"]
+    ["event", "イベントの 賞カード", "card_event_front.png"],
+    ["mbest", "月間ベスト賞", "card_event_front.png"],
+    ["nomiss", "ノーミスれんぞく賞", "card_event_front.png"]
   ];
+  /* 2026-11-23：まだ もらっていない カードを タップしたときの せつめい */
+  var LOCK_TIP = {
+    treble: "🎼 ト音記号の レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
+    bass: "🎼 ヘ音記号の レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
+    master: "🎓「ぜんぶ」コースの レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
+    legend: "🏅「ぜんぶ」コースの レベル5・20問を ぜんぶ いっぱつで せいかいするのを 100かい れんぞくすると もらえるよ！（200かい、300かい…と なんかいでも もらえるよ）",
+    legend5: "👑 ぜんぶの きょくで、ふよみの テストに ごうかくすると もらえるよ！（せんせいから もらう カードだよ）",
+    maestro: "🎹 ぜんぶの きょくで、せんせいの えんそう チェックに ごうかくすると もらえるよ！（せんせいから もらう カードだよ）",
+    event: "🏆 ふよみチャレンジの イベントに さんかして、しょうを とると もらえるよ！",
+    mbest: "🌟 その月、20問ぜんぶ いっぱつ せいかいした かいすうが、いままでの どの月よりも 多いと もらえるよ！（つぎの月に なったら わかるよ）",
+    nomiss: "🔥 20問ぜんぶ いっぱつ せいかいの れんぞく記録を、2回いじょうで やぶったら もらえるよ！（コース・レベルは なんでもOK）"
+  };
   function bestAch(idx, type) {
     if (type !== "legend") return findAch(idx, type);
     var best = null;
@@ -988,8 +1047,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try { var d0 = String(rec.date || rec.d || "").match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if (d0) dt = (+d0[1]) + "年" + (+d0[2]) + "月" + (+d0[3]) + "日"; else if (rec.t || rec.at) { var dd = new Date(rec.t || rec.at); dt = dd.getFullYear() + "年" + (dd.getMonth() + 1) + "月" + dd.getDate() + "日"; } else dt = dmd(rec); } catch (e) { dt = dmd(rec); }
     var fs = Math.min(6, 46 / Math.max(nm.length, 1)), fs2 = Math.min(4, 46 / Math.max(dt.length, 1)), b = "position:absolute;left:57.1%;transform:translate(-50%,-100%);white-space:nowrap;font-weight:800;line-height:1;color:#2b3a6a;";
     var extra = "";
-    if (rec.type === "event") {
-      /* 2026-11-21：イベントカードは、絵の 赤い リボンに「〇〇賞」、その上に イベント名を のせる（印刷カードと おなじ 場所）。 */
+    if (rec.type === "event" || rec.type === "mbest" || rec.type === "nomiss") {
+      /* 2026-11-21：イベントカードは、絵の 赤い リボンに「〇〇賞」、その上に イベント名を のせる（印刷カードと おなじ 場所）。
+         2026-11-23：月間ベスト賞・ノーミスれんぞく賞も、おなじ カードの絵を つかって この場所に 文字を のせる。 */
       if (rec.ev) extra += '<div style="position:absolute;left:50%;top:45.5%;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;font-weight:800;line-height:1;color:#2b6b5e;font-size:' + Math.min(5, 40 / Math.max(String(rec.ev).length, 1)) + 'cqw;">' + esc(rec.ev) + '</div>';
       if (rec.award) extra += '<div style="position:absolute;left:50%;top:53.3%;transform:translate(-50%,-50%);white-space:nowrap;text-align:center;font-weight:900;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);font-size:' + Math.min(7.5, 52 / Math.max(String(rec.award).length, 1)) + 'cqw;">' + esc(rec.award) + '</div>';
     }
@@ -1005,9 +1065,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         if (!ms.length) list.push({ c: c, rec: null }); else ms.forEach(function (m) { list.push({ c: c, rec: m }); });
         return;
       }
-      if (c[0] === "event") {
-        /* 2026-11-21：イベントの 賞カードは、年ごとに もらえるので、もらった ぶんだけ 1まいずつ */
-        var es = getAch(idx).filter(function (a) { return a && a.type === "event"; }).sort(function (x, y) { return (x.t || 0) - (y.t || 0); });
+      if (c[0] === "event" || c[0] === "mbest" || c[0] === "nomiss") {
+        /* 2026-11-21：イベントの 賞カードは、年ごとに もらえるので、もらった ぶんだけ 1まいずつ。
+           2026-11-23：月間ベスト賞・ノーミスれんぞく賞も、おなじように もらった ぶんだけ 1まいずつ。 */
+        var es = getAch(idx).filter(function (a) { return a && a.type === c[0]; }).sort(function (x, y) { return (x.t || 0) - (y.t || 0); });
         if (!es.length) list.push({ c: c, rec: null }); else es.forEach(function (m) { list.push({ c: c, rec: m }); });
         return;
       }
@@ -1024,10 +1085,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var c = it.c, rec = it.rec, img = c[2], label = c[1], num = "";
       if (rec) have++;
       if (c[0] === "legend" && rec) { num = (rec.n || 100) + "かい"; if (rec.n >= 1000) img = "card_legend1000_front.png"; }
-      if (c[0] === "event" && rec && rec.award) label = rec.award;
+      if ((c[0] === "event" || c[0] === "mbest" || c[0] === "nomiss") && rec && rec.award) label = rec.award;
       it.img = img;
       var st = rec ? "" : "filter:grayscale(1) brightness(.55);opacity:.55;";
-      return '<div data-cb="' + i + '" style="text-align:center;' + (rec ? "cursor:pointer;" : "") + '">' +
+      return '<div data-cb="' + i + '" style="text-align:center;cursor:pointer;">' +
         '<div style="position:relative;container-type:inline-size;font-size:0;">' + cardOv(rec, idx) + '<img src="' + img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
         (num ? '<div style="position:absolute;right:3px;bottom:5px;background:#ffb300;color:#5a3a00;font-size:11px;font-weight:900;border-radius:10px;padding:1px 7px;border:2px solid #fff;">' + num + '</div>' : '') +
         (rec ? "" : '<div style="position:absolute;left:0;right:0;top:42%;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;">🔒 まだ</div>') + '</div>' +
@@ -1040,10 +1101,18 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     Array.prototype.forEach.call(document.querySelectorAll("#fyOvBody [data-cb]"), function (el) {
       el.addEventListener("click", function () {
         var it = list[+el.getAttribute("data-cb")], rec = it.rec;
-        if (!rec) return;
+        if (!rec) {
+          /* 2026-11-23：まだの カードは、もらい方の せつめいを 出す */
+          openOverlay('<div style="position:relative;container-type:inline-size;width:60%;max-width:200px;margin:0 auto;"><img src="' + it.img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);filter:grayscale(1) brightness(.55);opacity:.55;"></div>' +
+            '<div style="font-size:17px;font-weight:900;margin-top:10px;">🔒 ' + esc(it.c[1]) + '</div>' +
+            '<div style="font-size:14px;color:#5b4636;margin-top:8px;line-height:1.7;">' + esc(LOCK_TIP[it.c[0]] || "") + '</div>' +
+            '<button id="fyCbBack" style="margin-top:12px;border:none;background:#ff9800;color:#fff;font-size:16px;font-weight:900;border-radius:16px;padding:9px 18px;">◀ もどる</button>');
+          var bb0 = document.getElementById("fyCbBack"); if (bb0) bb0.addEventListener("click", window.showCardBook);
+          return;
+        }
         /* カードを おおきく みるだけ（LINEの ボタンは ださない。おくるのは「きろくと コード」から） */
         openOverlay('<div style="position:relative;container-type:inline-size;width:72%;max-width:250px;margin:0 auto;">' + cardOv(rec, activeProfileIndex) + '<img src="' + it.img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);">' + (window.fyDemoBadgeHtml ? window.fyDemoBadgeHtml() : "") + '</div>' +
-          '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc(it.c[0] === "event" && rec.award ? rec.award : it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
+          '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc((it.c[0] === "event" || it.c[0] === "mbest" || it.c[0] === "nomiss") && rec.award ? rec.award : it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
           '<div style="font-size:19px;font-weight:900;margin-top:6px;">' + esc(rec.name || profiles[activeProfileIndex] || "") + ' さん　' + dmd(rec) + '</div>' +
           '<div style="font-size:12px;color:#806c5a;margin-top:2px;">コード：' + ((window.fyDemoOn && window.fyDemoOn()) ? "みほん" : esc(rec.code)) + '</div>' +
           '<button id="fyCbBack" style="margin-top:12px;border:none;background:#ff9800;color:#fff;font-size:16px;font-weight:900;border-radius:16px;padding:9px 18px;">◀ もどる</button>');
@@ -1087,18 +1156,26 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var m0 = Storage.getNumber(kM, 0);
     var cT = Storage.getNumber(kT, 0), cB = Storage.getNumber(kB, 0), cA = Storage.getNumber(kA, 0);
     var run0 = Storage.getNumber(kRun, 0);
+    var prevBest0 = runBest(idx);
 
     var run1 = run0;
+    var nomissRec = null;
     if (is20) {
       if (acc === 100) {
         run1 = run0 + 1;
         Storage.set(kTot, Storage.getNumber(kTot, 0) + 1);
-        if (run1 > runBest(idx)) Storage.set(kBest, run1);
+        /* 🔥 ノーミスれんぞく賞：れんぞくの 最高記録を やぶったら もらえる（コース・レベルは なんでもOK。2回以上から） */
+        if (run1 > prevBest0) {
+          Storage.set(kBest, run1);
+          if (run1 >= 2) nomissRec = addAch(idx, "nomiss", run1, { ev: "ノーミスれんぞく賞", award: "れんぞく " + run1 + "回" });
+        }
       } else {
         run1 = 0;
       }
       Storage.set(kRun, run1);
     }
+    /* 🌟 月間ベスト賞：月が かわった タイミングで、まえの月の 結果を かくてい */
+    var mbRec = mbUpdate(idx, is20 && acc === 100);
 
     /* 🏅 ふよみ名人の れんぞく（全カード レベル5 の 20問だけ）：ここで 数える */
     var mPrev = 0, mRun = 0, isMjRun = (is20 && selectedClef === "all" && selectedLevel === 5);
@@ -1184,6 +1261,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
     /* おいわい：マスター（レベル5を 20問 いっぱつで 100%）。はじめての 1かいだけ */
     var cel = [];
+    if (nomissRec) cel.push(nomissRec);
+    if (mbRec) cel.push(mbRec);
     if (acc === 100 && is20 && selectedLevel === 5) {
       var mt = null;
       if (selectedClef === "treble") mt = addAch(idx, "treble", 0);
@@ -2928,7 +3007,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     var a = Storage.get("fy_ach_" + idx, []); if (!Array.isArray(a)) a = [];
     /* おなじ イベントの カードは 2まい ふえない ように（コードを 作りなおしても）、コードでは なく イベント名で くらべる */
     if (a.some(function (r) { return r && r.type === "event" && r.ev === f[3]; })) return { ok: true, msg: "🎉 もう うけとって いるよ！カードを 見てみてね" };
-    a.push({ type: "event", t: Date.now(), d: todayS(), name: profiles[idx] || f[1], award: f[2], ev: f[3], code: code });
+    var evRec = { type: "event", t: Date.now(), d: todayS(), name: profiles[idx] || f[1], award: f[2], ev: f[3], code: code };
+    /* 2026-11-23：イベントの 賞カードにも、ほかの カードと おなじように ポイントを つける */
+    try {
+      var evPt = (window.fyGivePt && window.fyPtCfg) ? window.fyGivePt(idx, "event_" + f[3], window.fyPtCfg.event || 10) : 0;
+      if (evPt) { evRec.pt = evPt; if (window.fyTpEarnLog) window.fyTpEarnLog(idx, evPt, "🏅 " + f[2]); }
+    } catch (ePt) {}
+    a.push(evRec);
     Storage.set("fy_ach_" + idx, a);
     return { ok: true, msg: "🎉「" + f[2] + "」の カードが ふえたよ！カードを 見てみてね" };
   };
@@ -3748,6 +3833,7 @@ window.FYAK = FYAK;
     "#selectScreen.fyNL > *:not(#fyTop):not(#fyVerBar){display:none !important}" +
     "#fyTop{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;color:#5a4636;position:relative}" +
     "#fyTop .sky{flex:none;height:140px;background:linear-gradient(180deg,#bfe9ff,#e4f6ff);position:relative;border-radius:0 0 50% 50%/0 0 26px 26px;overflow:hidden}" +
+    "#fyTop .appTitle{position:absolute;left:8px;top:5px;z-index:2;font-size:11px;font-weight:900;color:#3a7a9a;background:rgba(255,255,255,.8);border-radius:10px;padding:2px 8px;font-family:inherit;}" +
     "#fyTop .cl{position:absolute;background:#fff;border-radius:40px;height:22px}#fyTop .cl::before{content:'';position:absolute;background:#fff;border-radius:50%;width:26px;height:26px;left:12px;top:-13px}" +
     "#fyTop .pal{position:absolute;left:18px;top:42px;width:58px;height:58px;border-radius:50%;background:#ffd45c;box-shadow:inset -5px -6px 0 #ffc02e,0 4px 0 rgba(0,0,0,.08)}" +
     "#fyTop .pal::before{content:'';position:absolute;right:3px;top:-22px;width:8px;height:50px;background:#ffc02e;border-radius:6px}" +
@@ -3878,6 +3964,7 @@ window.FYAK = FYAK;
       var html =
         (verTx ? '<div style="position:absolute;left:0;right:0;top:1px;z-index:4;text-align:center;font-size:10px;font-weight:800;color:' + (/そろって/.test(verTx) ? '#d32f2f;background:#fff' : '#5b88a8') + ';">' + esc(verTx) + '</div>' : '') +
         '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
+          '<div class="appTitle">🎹 ふよみチャレンジ</div>' +
           '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
           '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
           (wk ? '<button class="wk" id="fyNLWk">🌱 わかば</button>' : '') + '</div>' +
