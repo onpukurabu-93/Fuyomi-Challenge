@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1124c";
+window.FY_EXTRAS_VER = "1124f";
 /* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
 (function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1124b")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1124b", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
@@ -45,6 +45,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   var celQueue = [];
   var celebrating = false;
   var queueScheduled = false;
+  /* 2026-11-24：カードが出るときは、おいわいを見せるまで結果画面のボタンを押せなくする（ボタン連打で
+     おいわいが取り消される不具合の対策）。まだ見せていないおいわいは Storage にも控えておき、
+     万一 取り消されても、つぎの画面に来たときに かならず 出す（念のための 保険） */
+  window.__fyCelLock = false;
   var heldVoice = null;            /* マスターの声：おいわい画面が出たときに鳴らす */
   var suppressMasterVoice = false, omedetoPending = false;
 
@@ -401,8 +405,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     mbest: { icon: "🌟", label: "月間ベスト賞", bg: "#fff8e1", bd: "#ffb300", tx: "#5a3a00", ac: "#ff6f00", cbg: "#fff", ctx: "#5a3a00" },
     trrun: { icon: "🎼", label: "ト音記号 れんぞくしょう", bg: "#eaf6ff", bd: "#2a8fd6", tx: "#1a4a7a", ac: "#2a8fd6", cbg: "#fff", ctx: "#1a4a7a" },
     bsrun: { icon: "🎼", label: "ヘ音記号 れんぞくしょう", bg: "#eafaf0", bd: "#2fa862", tx: "#1f5a3a", ac: "#2fa862", cbg: "#fff", ctx: "#1f5a3a" },
-    half: { icon: "🏅", label: "半期の きろく", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
-    halfend: { icon: "📋", label: "半期の きろく（おわり）", bg: "#fff8e1", bd: "#ffb300", tx: "#5a3a00", ac: "#ff6f00", cbg: "#fff", ctx: "#5a3a00" },
+    half: { icon: "🏅", label: "ふよみ メダル", bg: "#16213f", bd: "#c9a23a", tx: "#f4e6b0", ac: "#f4d36b", cbg: "#fff8dc", ctx: "#16213f" },
+    halfend: { icon: "📋", label: "ふよみ メダル（きろくカード）", bg: "#fff8e1", bd: "#ffb300", tx: "#5a3a00", ac: "#ff6f00", cbg: "#fff", ctx: "#5a3a00" },
     lvclear: { icon: "🎵", label: "はじめての ごうかく", bg: "#eafaf0", bd: "#2fa862", tx: "#1f5a3a", ac: "#2fa862", cbg: "#fff", ctx: "#1f5a3a" }
   };
   function infoOf(rec) {
@@ -413,7 +417,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (rec.type === "stamp") return "スタンプカード " + rec.n + " まいめ";
     if (rec.type === "legend") return "ふよみ名人";
     if (rec.type === "event") return rec.award || "イベントの 賞カード";
-    if (rec.type === "half" || rec.type === "halfend" || rec.type === "lvclear") return rec.award || INFO[rec.type].label;
+    /* 2026-11-24：half／halfend は award に 期（ev）を 入れていないので（印刷カードの絵に 文字が 入る想定）、
+       LINEの文面や おいわい画面の タイトルには、期＋メダルを あわせて 出す */
+    if (rec.type === "half" || rec.type === "halfend") return (rec.ev ? rec.ev + "　" : "") + (rec.award || INFO[rec.type].label);
+    if (rec.type === "lvclear") return rec.award || INFO[rec.type].label;
     return INFO[rec.type].label;
   }
   function subOf(rec) {
@@ -424,7 +431,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (rec.type === "mbest") return (rec.award || "") + "の がんばりが、いちばん だったよ！";
     if (rec.type === "trrun" || rec.type === "bsrun") return "れんぞく " + (rec.n || 0) + "回 たっせい！";
     if (rec.type === "half") return "つうさん " + (rec.cnt || 0) + "回 たっせい！";
-    if (rec.type === "halfend") return "れんしゅうした 日：" + (rec.days || 0) + "日";
+    /* 2026-11-24：先生が LINEの 文面だけで 照合できるよう、最終の 通算回数も ここに 入れる（印刷カードには 回数（丸い枠）と ランク（リボン）だけを のせ、日数は ここと カード帳だけに 出す） */
+    if (rec.type === "halfend") return "つうさん " + (rec.cnt || 0) + "回　れんしゅうした 日：" + (rec.days || 0) + "日";
     if (rec.type === "lvclear") return "せいかいりつ 90%いじょうで ごうかく！";
     return "おめでとう！";
   }
@@ -543,18 +551,28 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
      数えるのは「全カード レベル5・20問 ぜんぶ いっぱつ せいかい」の 通算回数（連続でなくてよい）。 */
   var HALF_START_PERIOD = "2026-H2";
   var HALF_STARS = ["🥉", "🥈", "🥇"];
+  /* 2026-11-24：シリーズ名「ふよみ メダル」。🥉＝銅メダル／🥈＝銀メダル／🥇＝金メダル（金メダルをとった子は「ふよみ名人」）。
+     「年度」はやめて、月の はんいで 書く（先生の指示）。 */
+  var HALF_SERIES_NAME = "ふよみ メダル";
+  var HALF_MEDAL_NAMES = ["銅メダル", "銀メダル", "金メダル"];
   function halfId(d) {
     var y = d.getFullYear(), m = d.getMonth() + 1;
     if (m >= 4 && m <= 9) return y + "-H1";
     if (m >= 10) return y + "-H2";
     return (y - 1) + "-H2";
   }
+  /* 2026-11-24：「2026年度 下期」のような 年度表記を やめて、月の はんいで 書く。
+     スタート記念の期（HALF_START_PERIOD）だけは、アプリが はじまった あとの 1〜3月だけを 見せる（先生の指示・例示どおり）。 */
   function halfLabel(id) {
     var p = String(id).split("-"), y = +p[0];
-    return y + "年度 " + (p[1] === "H1" ? "上期" : "下期");
+    if (id === HALF_START_PERIOD) return (y + 1) + "年1月〜3月";
+    if (p[1] === "H1") return y + "年4月〜9月";
+    return y + "年10月〜" + ((y + 1) % 100) + "年3月";
   }
   function halfRanks(id) { return id === HALF_START_PERIOD ? [25, 50, 100] : [50, 100, 200]; }
-  function halfRankName(id, ri) { return ri === 2 ? (halfLabel(id) + "の ふよみ名人") : (HALF_STARS[ri] + " " + halfLabel(id) + "（" + halfRanks(id)[ri] + "回）"); }
+  /* ri の メダルの 名前だけ（期は 入れない。例：「🥇 金メダル ふよみ名人」） */
+  function halfMedalName(ri) { return ri < 0 ? "ランクなし" : (HALF_STARS[ri] + " " + HALF_MEDAL_NAMES[ri] + (ri === 2 ? " ふよみ名人" : "")); }
+  function halfRankName(id, ri) { return halfMedalName(ri); }
   function halfPracticeDays(idx, periodId) {
     try {
       var p = String(periodId).split("-"), y = +p[0], from, to;
@@ -567,13 +585,21 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
   function finalizeHalf(idx, periodId) {
     try {
-      if (getAch(idx).some(function (a) { return a && a.type === "halfend" && a.n === periodId; })) return null;
+      /* 2026-11-24：もう その期の カードを 作っていないか（n ではなく half で みる。
+         n は コードに 最終回数を たたみこむために「期のid_回数」に 変えたため） */
+      if (getAch(idx).some(function (a) { return a && a.type === "halfend" && a.half === periodId; })) return null;
       var cnt = Storage.getNumber("fy_half_cnt_" + idx, 0);
       var ranks = halfRanks(periodId), rankReached = -1;
       for (var ri = ranks.length - 1; ri >= 0; ri--) if (cnt >= ranks[ri]) { rankReached = ri; break; }
+      /* 2026-11-24：その期で メダル（いちばん下の 銅メダル）に とどかなかった 子には、
+         「ランクなし」の カードは 作らない（先生の指示） */
+      if (rankReached === -1) return null;
       var days = halfPracticeDays(idx, periodId);
-      var rankTxt = rankReached === -1 ? "ランクなし" : (HALF_STARS[rankReached] + (rankReached === 2 ? " ふよみ名人" : ""));
-      return addAch(idx, "halfend", periodId, { ev: "半期の きろく（おわり）", award: halfLabel(periodId) + "　" + rankTxt, half: periodId, cnt: cnt, days: days, rank: rankReached });
+      var rankTxt = halfMedalName(rankReached);
+      /* 2026-11-24：コードの計算に 最終回数も たたみこむ（n＝「期のid_回数」）。
+         LINEの文面の回数を 書きかえても コードが あわなくなるようにする（先生の指示）。
+         ev＝期（印刷カードの絵じたいに「ふよみ メダル」の文字が 入る想定なので、ここでは 重ねない）、award＝とった メダル。 */
+      return addAch(idx, "halfend", periodId + "_" + cnt, { ev: halfLabel(periodId), award: rankTxt, half: periodId, cnt: cnt, days: days, rank: rankReached });
     } catch (e) { return null; }
   }
   function halfUpdate(idx, isAll5Perfect) {
@@ -588,22 +614,25 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         Storage.set("fy_half_cnt_" + idx, 0);
         storedId = curId;
       }
-      var rankRec = null, cnt = Storage.getNumber("fy_half_cnt_" + idx, 0);
+      var cnt = Storage.getNumber("fy_half_cnt_" + idx, 0);
       if (isAll5Perfect) {
         cnt = cnt + 1;
         Storage.set("fy_half_cnt_" + idx, cnt);
-        var ranks = halfRanks(curId);
-        for (var ri = 0; ri < ranks.length; ri++) {
-          if (cnt === ranks[ri]) {
-            var n = curId + "_r" + ri;
-            if (!getAch(idx).some(function (a) { return a && a.type === "half" && a.n === n; })) {
-              rankRec = addAch(idx, "half", n, { ev: "半期の きろく", award: halfRankName(curId, ri), half: curId, rank: ri, cnt: cnt, ptAmt: [5, 10, 20][ri] });
-            }
-            break;
+      }
+      /* 2026-11-24：「ちょうど N回」ではなく「N回いじょうで、まだ そのランクの カードを 持っていない」で 出す。
+         うつしコードなどで 回数が いちどに 大きく ふえても、もらい忘れた ランクを この回で まとめて 追いつかせる（ポイントの 二重払いは addAch の しくみで 防がれる）。 */
+      var rankRecs = [];
+      var ranks = halfRanks(curId);
+      for (var ri = 0; ri < ranks.length; ri++) {
+        if (cnt >= ranks[ri]) {
+          var n = curId + "_r" + ri;
+          if (!getAch(idx).some(function (a) { return a && a.type === "half" && a.n === n; })) {
+            var rRec = addAch(idx, "half", n, { ev: HALF_SERIES_NAME, award: halfMedalName(ri), half: curId, rank: ri, cnt: cnt, ptAmt: [5, 10, 20][ri] });
+            if (rRec) rankRecs.push(rRec);
           }
         }
       }
-      return { rankRec: rankRec, endRec: endRec, cnt: cnt, id: curId };
+      return { rankRecs: rankRecs, endRec: endRec, cnt: cnt, id: curId };
     } catch (e) { return {}; }
   }
 
@@ -663,8 +692,18 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       celebrating = false;
       queueScheduled = false;
       celQueue = [];
+      /* おいわいを ちゃんと 見せおわったので、結果画面のボタンの ロックを ここで ときはなつ */
+      var wasLocked = window.__fyCelLock;
+      window.__fyCelLock = false;
+      try { Storage.set("fy_cel_pending_" + activeProfileIndex, []); } catch (eCPc) {}
       /* 結果画面のボタンが、まだ薄いままのときは、ここで色づける */
+      try { unlockResultButtons(); } catch (eU) {}
       try { closeAwardModal(); } catch (e) {}
+      /* ボタンの「光り」も、おいわいが すんでから（まだ出していなければ、ここで出す） */
+      try {
+        var rsOk2 = function () { var rs = document.getElementById("resultScreen"); return rs && !rs.classList.contains("hidden"); };
+        if (wasLocked && rsOk2()) fyNudge(document.querySelector("#resultButtonsWrap .accent"));
+      } catch (eN) {}
       /* おいわいの あとは「つぎに やる ところ」へ：ふよみマスター → トップ（レジェンドへの みちが ひかる）／ト音・ヘ音 → おんぷカード */
       try {
         var go = window.__fyCelGo; window.__fyCelGo = null;
@@ -745,13 +784,37 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (celQueue.length) {
       var recs = celQueue;
       celQueue = [];
+      try { Storage.set("fy_cel_pending_" + activeProfileIndex, []); } catch (eCPn) {}
       showCel(recs, false);
     } else {
       celebrating = false;
       queueScheduled = false;
+      window.__fyCelLock = false;
+      try { unlockResultButtons(); } catch (eUn) {}
       try { closeAwardModal(); } catch (e) {}
     }
   }
+
+  /* 念のための 保険：ボタンを ロックしていても、べつの 操作画面の 切りかえ（navigateTo）で
+     けっか画面から はなれて しまい、まだ 見せていない おいわいが Storage に 残っているときは、
+     つぎの画面に 来た ところで かならず 出す。 */
+  var origNavigateToForCel = window.navigateTo;
+  if (typeof origNavigateToForCel === "function") window.navigateTo = function (screenId) {
+    var r = origNavigateToForCel.apply(this, arguments);
+    try {
+      if (screenId !== "resultScreen") {
+        var idxN = activeProfileIndex;
+        var pend = Storage.get("fy_cel_pending_" + idxN, []);
+        if (Array.isArray(pend) && pend.length) {
+          Storage.set("fy_cel_pending_" + idxN, []);
+          window.__fyCelLock = false;
+          celQueue = [];
+          setTimeout(function () { showCel(pend, false); }, 50);
+        }
+      }
+    } catch (eNav) {}
+    return r;
+  };
 
   /* 自動の表彰式は使わない。ボタンから呼ばれたときだけ、マスターの きろくを見せる */
   window.openAwardModal = function (idx) {
@@ -975,7 +1038,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         if (!r) return null;
         if (r.type === "legend") return "legend:" + (r.n || 0);
         if (r.type === "event") return "event:" + (r.ev || "");
-        return r.type;
+        /* 2026-11-24：halfend は n に 最終回数が 入っている（期のid_回数）ので、
+           期（half）で くらべる（期が おなじなら、回数が ちがっても 同じ1まいの カード）。
+           それ以外（lvclear・half・trrun・bsrun・mbest など）は type だけでは
+           同じ しゅるいの カードが 2まい以上 あるとき 1まいしか もどらないので、
+           n（ないものは type だけ）も あわせて みる。 */
+        if (r.type === "halfend") return "halfend:" + (r.half !== undefined && r.half !== null ? r.half : (r.n || ""));
+        return r.type + ":" + (r.n !== undefined && r.n !== null ? r.n : "");
       };
       var curA = getAch(idx), haveA = {};
       curA.forEach(function (r) { haveA[achKey(r)] = true; });
@@ -1159,8 +1228,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     ["treble", "ト音記号マスター", "card_treble_front.png"],
     ["bass", "ヘ音記号マスター", "card_bass_front.png"],
     ["master", "ふよみマスター", "card_master_front.png"],
-    ["half", "半期の きろく", "card_event_front.png"],
-    ["halfend", "半期の きろく（おわり）", "card_meijin_front.png"],
+    ["half", "ふよみ メダル", "card_event_front.png"],
+    ["halfend", "ふよみ メダル（きろくカード）", "card_medal_front.png", "card_meijin_front.png"],
     ["legend5", "ふよみレジェンド", "card_legend_front.png"],
     ["maestro", "ふよみマエストロ", "card_maestro_front.png"],
     ["event", "イベントの 賞カード", "card_event_front.png"],
@@ -1168,14 +1237,16 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     ["bsrun", "ヘ音記号 れんぞくしょう", "card_event_front.png"],
     ["lvclear", "はじめての ごうかくカード", "card_event_front.png"]
   ];
+  /* 2026-11-24：カードの絵が まだ 置かれて いないとき（例：card_medal_front.png）、今までの 絵に もどす */
+  function cbImgOnerr(c) { return c[3] ? ' onerror="this.onerror=null;this.src=\'' + c[3] + '?v=20261115l\'"' : ""; }
   /* 2026-11-23：まだ もらっていない カードを タップしたときの せつめい
      2026-11-24：「ふよみ名人」は 半期の きろくカードの ゴールドランクに なったので、legend は 廃止。 */
   var LOCK_TIP = {
     treble: "🎼 ト音記号の レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
     bass: "🎼 ヘ音記号の レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
     master: "🎓「ぜんぶ」コースの レベル5で、20問を ぜんぶ いっぱつで せいかいすると もらえるよ！",
-    half: "🏅「ぜんぶ」コースの レベル5・20問を ぜんぶ いっぱつで せいかいした 通算かいすうが、半期ごとの ランク（🥉🥈🥇）に とどくと もらえるよ！🥇が「ふよみ名人」だよ。",
-    halfend: "📋 半期（4〜9月・10〜3月）が おわると、その期の きろくカードが できるよ。",
+    half: "🏅「ぜんぶ」コースの レベル5・20問を ぜんぶ いっぱつで せいかいした 通算かいすうが、期ごとの メダル（🥉銅メダル・🥈銀メダル・🥇金メダル）に とどくと もらえるよ！🥇が「ふよみ名人」だよ。",
+    halfend: "📋 期（4〜9月・10〜3月）が おわると、その期の「ふよみ メダル」の きろくカードが できるよ。",
     legend5: "👑 ぜんぶの きょくで、ふよみの テストに ごうかくすると もらえるよ！（せんせいから もらう カードだよ）",
     maestro: "🎹 ぜんぶの きょくで、せんせいの えんそう チェックに ごうかくすると もらえるよ！（せんせいから もらう カードだよ）",
     event: "🏆 ふよみチャレンジの イベントに さんかして、しょうを とると もらえるよ！",
@@ -1240,7 +1311,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       it.img = img;
       var st = rec ? "" : "filter:grayscale(1) brightness(.55);opacity:.55;";
       return '<div data-cb="' + i + '" style="text-align:center;cursor:pointer;">' +
-        '<div style="position:relative;container-type:inline-size;font-size:0;">' + cardOv(rec, idx) + '<img src="' + img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
+        '<div style="position:relative;container-type:inline-size;font-size:0;">' + cardOv(rec, idx) + '<img src="' + img + '?v=20261115l" alt=""' + cbImgOnerr(c) + ' style="width:100%;display:block;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.25);' + st + '">' +
         (num ? '<div style="position:absolute;right:3px;bottom:5px;background:#ffb300;color:#5a3a00;font-size:11px;font-weight:900;border-radius:10px;padding:1px 7px;border:2px solid #fff;">' + num + '</div>' : '') +
         (rec ? "" : '<div style="position:absolute;left:0;right:0;top:42%;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000;">🔒 まだ</div>') + '</div>' +
         '<div style="font-size:10px;font-weight:800;margin-top:3px;color:#5b4636;">' + label + '</div>' +
@@ -1254,7 +1325,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         var it = list[+el.getAttribute("data-cb")], rec = it.rec;
         if (!rec) {
           /* 2026-11-23：まだの カードは、もらい方の せつめいを 出す */
-          openOverlay('<div style="position:relative;container-type:inline-size;width:60%;max-width:200px;margin:0 auto;"><img src="' + it.img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);filter:grayscale(1) brightness(.55);opacity:.55;"></div>' +
+          openOverlay('<div style="position:relative;container-type:inline-size;width:60%;max-width:200px;margin:0 auto;"><img src="' + it.img + '?v=20261115l" alt=""' + cbImgOnerr(it.c) + ' style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);filter:grayscale(1) brightness(.55);opacity:.55;"></div>' +
             '<div style="font-size:17px;font-weight:900;margin-top:10px;">🔒 ' + esc(it.c[1]) + '</div>' +
             '<div style="font-size:14px;color:#5b4636;margin-top:8px;line-height:1.7;">' + esc(LOCK_TIP[it.c[0]] || "") + '</div>' +
             '<button id="fyCbBack" style="margin-top:12px;border:none;background:#ff9800;color:#fff;font-size:16px;font-weight:900;border-radius:16px;padding:9px 18px;">◀ もどる</button>');
@@ -1262,7 +1333,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           return;
         }
         /* カードを おおきく みるだけ（LINEの ボタンは ださない。おくるのは「きろくと コード」から） */
-        openOverlay('<div style="position:relative;container-type:inline-size;width:72%;max-width:250px;margin:0 auto;">' + cardOv(rec, activeProfileIndex) + '<img src="' + it.img + '?v=20261115l" alt="" style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);">' + (window.fyDemoBadgeHtml ? window.fyDemoBadgeHtml() : "") + '</div>' +
+        openOverlay('<div style="position:relative;container-type:inline-size;width:72%;max-width:250px;margin:0 auto;">' + cardOv(rec, activeProfileIndex) + '<img src="' + it.img + '?v=20261115l" alt=""' + cbImgOnerr(it.c) + ' style="width:100%;display:block;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.3);">' + (window.fyDemoBadgeHtml ? window.fyDemoBadgeHtml() : "") + '</div>' +
           '<div style="font-size:17px;font-weight:900;margin-top:10px;">' + esc((it.c[0] === "event" || it.c[0] === "mbest" || it.c[0] === "trrun" || it.c[0] === "bsrun" || it.c[0] === "half" || it.c[0] === "halfend" || it.c[0] === "lvclear") && rec.award ? rec.award : it.c[1]) + (it.c[0] === "legend" ? "　" + (rec.n || 100) + "かい" : "") + '</div>' +
           '<div style="font-size:19px;font-weight:900;margin-top:6px;">' + esc(rec.name || profiles[activeProfileIndex] || "") + ' さん　' + dmd(rec) + '</div>' +
           '<div style="font-size:12px;color:#806c5a;margin-top:2px;">コード：' + ((window.fyDemoOn && window.fyDemoOn()) ? "みほん" : esc(rec.code)) + '</div>' +
@@ -1326,7 +1397,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
        期の くぎれ（4〜9月／10〜3月）は 毎回 チェックし、数えるのは 全カード レベル5の ときだけ。 */
     var isHalfRound = (is20 && selectedClef === "all" && selectedLevel === 5);
     var halfRes = halfUpdate(idx, isHalfRound && acc === 100);
-    var halfRankRec = halfRes && halfRes.rankRec, halfEndRec = halfRes && halfRes.endRec;
+    var halfRankRecs = (halfRes && halfRes.rankRecs) || [], halfEndRec = halfRes && halfRes.endRec;
 
     /* 2026-11-24：レベル1〜4の「はじめて ごうかく」カード（アプリ内だけ・ポイントなし）。
        この回で はじめて ごうかくに なったかを みるため、origShowResult で 記録が こうしん される 前の 状態を おぼえておく。
@@ -1418,8 +1489,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           var hRanks = halfRanks(halfRes.id), hCnt = halfRes.cnt || 0, hNext = -1;
           for (var hri = 0; hri < hRanks.length; hri++) if (hCnt < hRanks[hri]) { hNext = hri; break; }
           mt2 = (hNext === -1)
-            ? "🏅 " + halfLabel(halfRes.id) + "　ただいま " + hCnt + "回（🥇 たっせい ずみ！）"
-            : "🏅 " + halfLabel(halfRes.id) + "　ただいま " + hCnt + "回　つぎの ランクまで あと " + (hRanks[hNext] - hCnt) + "回";
+            ? "🏅 " + HALF_SERIES_NAME + "　" + halfLabel(halfRes.id) + "　ただいま " + hCnt + "回（🥇 金メダル たっせい ずみ！）"
+            : "🏅 " + HALF_SERIES_NAME + "　" + halfLabel(halfRes.id) + "　ただいま " + hCnt + "回　つぎの ランクまで あと " + (hRanks[hNext] - hCnt) + "回";
         }
         mj.textContent = mt2;
         mj.style.display = mt2 ? "" : "none";
@@ -1471,7 +1542,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     }
 
     /* 🏅 半期の きろく：ランクに とどいた とき（🥇＝ふよみ名人）、期が おわって きろくが かくてい した とき */
-    if (halfRankRec) cel.push(halfRankRec);
+    halfRankRecs.forEach(function (r) { cel.push(r); });
     if (halfEndRec) cel.push(halfEndRec);
 
     /* 🎴 レベル1〜4「はじめて ごうかく」カード：この回で ごうかくに なった ときだけ、1まいきり（クレフごと・レベルごと） */
@@ -1498,6 +1569,11 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     if (cel.length) {
       celQueue = cel;
       queueScheduled = true;
+      window.__fyCelLock = true;
+      /* 結果画面のボタンを、おいわいを見せるまで薄くして押せなくする（100%のときと同じあつかい） */
+      try { setResultButtonsDisabled(true); } catch (eRBd) {}
+      /* 万一、ボタン以外の操作などで おいわいが 取り消されても、つぎの画面で 出しなおせるように 控えておく */
+      try { Storage.set("fy_cel_pending_" + idx, cel); } catch (eCPs) {}
       var sMs = getSoundDurationMs("sugoiAudio") || 1500;
       var fMs = getSoundDurationMs("tasseiFanfareAudio") || 3000;
       var wait = sMs + 200 + fMs + 1200;
@@ -1572,7 +1648,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var cnt = (storedId === curId) ? Storage.getNumber("fy_half_cnt_" + idx, 0) : 0;
       var ranks = halfRanks(curId), next = -1;
       for (var ri = 0; ri < ranks.length; ri++) if (cnt < ranks[ri]) { next = ri; break; }
-      bar.textContent = "🏅 " + halfLabel(curId) + "　ただいま " + cnt + "回" + (next === -1 ? "（🥇 たっせい ずみ！）" : "　つぎの ランクまで あと " + (ranks[next] - cnt) + "回");
+      bar.textContent = "🏅 " + HALF_SERIES_NAME + "　" + halfLabel(curId) + "　ただいま " + cnt + "回" + (next === -1 ? "（🥇 金メダル たっせい ずみ！）" : "　つぎの ランクまで あと " + (ranks[next] - cnt) + "回");
       bar.style.display = "";
     }
     else bar.style.display = "none";
@@ -1837,6 +1913,9 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   var origUnlock = window.unlockResultButtons;
   window.unlockResultButtons = function () {
+    /* カードの おいわいが まだなら、ほかの どこからの 呼びだしでも ボタンを 色づけない
+       （おいわいを ちゃんと 見せおわったとき だけ、nextCel／おいわい画面を 閉じたときに ときはなつ） */
+    if (window.__fyCelLock) return;
     var wait = seqEndAt - Date.now();
     if (wait > 0) {
       if (unlockTimer !== null) clearTimeout(unlockTimer);
@@ -2151,6 +2230,7 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     function one(code, line) {
       var found = null, am = line.match(/ポイント\s*こうかん\s*(\d+)\s*p/), rm = line.match(/のこり\s*(\d+)\s*p/), sm = line.match(/[（(]\s*(\d+)\s*かいめ\s*[）)]/);
       var daysM = line.match(/れんしゅうした\s*日[：:]\s*(\d+)\s*日/);
+      var cntM = line.match(/つうさん\s*(\d+)\s*回/);
       ds.forEach(function (d) {
         if (found) return;
         ["treble", "bass", "master", "legend5", "maestro"].forEach(function (ty) { if (!found && codeFor(name, ty, 0, d) === code) found = { label: INFO[ty].label, d: d, card: ty === "legend5" ? "legend" : ty }; });
@@ -2182,9 +2262,22 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
             var ranks = halfRanks(pid);
             for (var ri = 0; ri < ranks.length && !found; ri++) {
               var n4 = pid + "_r" + ri;
-              if (codeFor(name, "half", n4, d) === code) found = { label: "🏅" + halfRankName(pid, ri), d: d, card: "half", award: halfRankName(pid, ri), ev: halfLabel(pid) };
+              /* 2026-11-24：ふよみ メダル（half）は アプリの中だけの カード。先生の照合画面にも 印刷ボタンは 出さない
+                 （card を つけない＝ fyPrintRow が 出ない） */
+              if (codeFor(name, "half", n4, d) === code) found = { label: "🏅" + halfLabel(pid) + "　" + halfMedalName(ri), d: d, award: halfMedalName(ri), ev: halfLabel(pid) };
             }
-            if (!found && codeFor(name, "halfend", pid, d) === code) found = { label: "📋 半期の きろく（" + halfLabel(pid) + "）", d: d, card: "halfend", award: halfLabel(pid), ev: "半期の きろく（おわり）", count: daysM ? daysM[1] : "" };
+            /* 2026-11-24：halfend の n は「期のid_回数」。文面に書いてある回数（cntM）で コードを 計算しなおし、
+               一致したときだけ 本物と みとめる（回数の 書きかえを ふせぐ・先生の指示） */
+            if (!found && cntM) {
+              var heCnt = parseInt(cntM[1], 10) || 0;
+              if (codeFor(name, "halfend", pid + "_" + heCnt, d) === code) {
+                var heRanks = halfRanks(pid), heRi = -1;
+                for (var heR = heRanks.length - 1; heR >= 0; heR--) if (heCnt >= heRanks[heR]) { heRi = heR; break; }
+                var heRankTxt = halfMedalName(heRi);
+                /* ev＝期、award＝とった メダル（印刷カードの絵に「ふよみ メダル」の文字が 入る想定なので、ここでは 重ねない） */
+                found = { label: "📋 ふよみ メダル（きろくカード）（" + halfLabel(pid) + "　" + heRankTxt + "　つうさん" + heCnt + "回）", d: d, card: "halfend", award: heRankTxt, ev: halfLabel(pid), count: cntM ? cntM[1] : "" };
+              }
+            }
           });
         }
         /* 2026-11-24：レベル1〜4「はじめて ごうかく」カードのコードも しらべられるように */
@@ -2793,7 +2886,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     try {
       var rsOk = function () { var rs = document.getElementById("resultScreen"); return rs && !rs.classList.contains("hidden"); };
       if (targetValue === 10 && selectedClef !== "do") fyWakabaVoice("zunda-next20.mp3", 3800, rsOk);
-      setTimeout(function () { if (rsOk()) fyNudge(document.querySelector("#resultButtonsWrap .accent")); }, 1200);
+      /* カードが出て ボタンが ロックされている あいだは、光らせない（おいわいを 閉じたときに 光らせる） */
+      setTimeout(function () { if (rsOk() && !window.__fyCelLock) fyNudge(document.querySelector("#resultButtonsWrap .accent")); }, 1200);
     } catch (e) {}
     try {
       var old = document.getElementById("fyHankoResult"); if (old) old.remove();
