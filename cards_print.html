@@ -120,7 +120,10 @@ var TYPES = [
   { id: "legend",  label: "ふよみレジェンド", img: "legend",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
   { id: "meijin",  label: "ふよみ名人", img: "meijin",  cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" },
   { id: "maestro", label: "ふよみマエストロ", img: "maestro", cw: 56, ch: 83.6, name: 0.7265, date: 0.818, nx: 0.558, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
-  { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } }
+  { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } },
+  /* 2026-11-24：「ふよみ名人（連続100回）」→「半期の きろく」に かわった ぶん。印刷の絵は まだ ないので、meijinの絵を そのまま つかう。 */
+  { id: "half",    label: "半期の きろく", img: "meijin", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } },
+  { id: "halfend", label: "半期の きろく（おわり）", img: "meijin", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 }, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" }
 ];
 
 /* 横長の配置（148×100mm）のなかの、おもて・うらの中心 */
