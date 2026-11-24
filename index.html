@@ -666,7 +666,10 @@ function checkAutoGradePromotion() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const aprilFirst = new Date(currentYear, 3, 1);
-  
+  /* 2026-11-24：はじめて起動した日が1〜3月だと、今までは「もう今年は進級ずみ」として記録してしまい、
+     直後の4月に進級しないバグがあった。4月はじまりの「年度」で記録するように直す。 */
+  const schoolYear = now >= aprilFirst ? currentYear : currentYear - 1;
+
   if (lastPromotedYear > 0 && now >= aprilFirst && lastPromotedYear < currentYear) {
     let profs = Storage.get("onpu_profiles", DEFAULT_PROFILES.slice());
     profs.forEach((_, idx) => {
@@ -676,7 +679,7 @@ function checkAutoGradePromotion() {
     });
     Storage.set("onpu_last_promoted_year", currentYear);
   } else if (lastPromotedYear === 0) {
-    Storage.set("onpu_last_promoted_year", currentYear);
+    Storage.set("onpu_last_promoted_year", schoolYear);
   }
 }
 
@@ -1004,7 +1007,16 @@ function restartAnimation(el) {
   el.classList.add("show");
 }
 
-/* カードデータ */
+/* カードデータ
+   2026-11-24：各レベルの境目で、わざと前後のレベルに同じカード（たとえばt_c2）を重複して入れているため、
+   そのままレベル5（全レベルの合体）に使うと、その音だけ約2倍の頻度で出題されてしまう。
+   わざとではない重複なので、カードidが同じものは1枚だけ残す（先生の指示）。 */
+function dedupCardsById(arr) {
+  var seen = {}, out = [];
+  arr.forEach(function (c) { if (!seen[c.id]) { seen[c.id] = true; out.push(c); } });
+  return out;
+}
+
 const doCards = [
   { id:"h_c1", key:"ド", img:"h_c1.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" },
   { id:"h_c00", key:"ド", img:"h_c00.png" }, { id:"h_cdo", key:"ド", img:"h_cdo.png" },
@@ -1017,7 +1029,7 @@ const trebleCards = {
   3: [ { id:"t_c3", key:"ド", img:"t_c3.png" }, { id:"t_d3", key:"レ", img:"t_d3.png" }, { id:"t_e3", key:"ミ", img:"t_e3.png" } ],
   4: [ { id:"t_e", key:"ミ", img:"t_e.png" }, { id:"t_f", key:"ファ", img:"t_f.png" }, { id:"t_g", key:"ソ", img:"t_g.png" }, { id:"t_a", key:"ラ", img:"t_a.png" }, { id:"t_b", key:"シ", img:"t_b.png" }, { id:"t_c1", key:"ド", img:"t_c1.png" }, { id:"t_d1", key:"レ", img:"t_d1.png" }, { id:"t_e1", key:"ミ", img:"t_e1.png" }, { id:"t_f1", key:"ファ", img:"t_f1.png" } ]
 };
-trebleCards[5] = [ ...trebleCards[1], ...trebleCards[2], ...trebleCards[3], ...trebleCards[4] ];
+trebleCards[5] = dedupCardsById([ ...trebleCards[1], ...trebleCards[2], ...trebleCards[3], ...trebleCards[4] ]);
 
 const bassCards = {
   1: [ { id:"h_c00", key:"ド", img:"h_c00.png" }, { id:"h_d", key:"レ", img:"h_d.png" }, { id:"h_e", key:"ミ", img:"h_e.png" }, { id:"h_f", key:"ファ", img:"h_f.png" }, { id:"h_g", key:"ソ", img:"h_g.png" }, { id:"h_a0", key:"ラ", img:"h_a0.png" }, { id:"h_b0", key:"シ", img:"h_b0.png" }, { id:"h_c1", key:"ド", img:"h_c1.png" } ],
@@ -1025,9 +1037,9 @@ const bassCards = {
   3: [ { id:"h_cdo", key:"ド", img:"h_cdo.png" }, { id:"h_bSi1", key:"シ", img:"h_bSi1.png" }, { id:"h_aRa1", key:"ラ", img:"h_aRa1.png" } ],
   4: [ { id:"h_f1", key:"ファ", img:"h_f1.png" }, { id:"h_e1", key:"ミ", img:"h_e1.png" }, { id:"h_d1", key:"レ", img:"h_d1.png" }, { id:"h_c1", key:"ド", img:"h_c1.png" }, { id:"h_b0", key:"シ", img:"h_b0.png" }, { id:"h_a0", key:"ラ", img:"h_a0.png" }, { id:"h_g", key:"ソ", img:"h_g.png" }, { id:"h_f", key:"ファ", img:"h_f.png" }, { id:"h_e", key:"ミ", img:"h_e.png" } ]
 };
-bassCards[5] = [ ...bassCards[1], ...bassCards[2], ...bassCards[3], ...bassCards[4] ];
+bassCards[5] = dedupCardsById([ ...bassCards[1], ...bassCards[2], ...bassCards[3], ...bassCards[4] ]);
 
-const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [ ...trebleCards[5] ], 5: [ ...trebleCards[5], ...bassCards[5] ] };
+const allCards = { 1: [ ...trebleCards[1] ], 2: [ ...trebleCards[4] ], 3: [ ...bassCards[2] ], 4: [ ...trebleCards[5] ], 5: dedupCardsById([ ...trebleCards[5], ...bassCards[5] ]) };
 
 /* 状態管理 */
 let profiles = Storage.get("onpu_profiles", DEFAULT_PROFILES.slice());
@@ -1061,13 +1073,20 @@ function hasLevelCleared(profileIndex, clef, level) {
 
 function getDoTestBest(profileIndex) { return Storage.get(`onpu_do_test_best_${profileIndex}`); }
 
+/* 2026-11-24：端末の現地時間（日本時間）で日付の文字列を作る。
+   toISOString() は世界標準時なので、朝9時より前（日本時間）に使うと前日の日付になってしまうバグがあった。 */
+function localDayStr(d) {
+  const m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
+}
+
 function calculateStreak(profileIndex) {
   const days = Storage.get(`onpu_days_${profileIndex}`, []);
   if (!Array.isArray(days) || !days.length) return 0;
   days.sort();
   let streak = 0, today = new Date();
   for (let i = 0; i < 30; i++) {
-    let dStr = new Date(today.getTime() - i * 86400000).toISOString().split("T")[0];
+    let dStr = localDayStr(new Date(today.getTime() - i * 86400000));
     if (days.includes(dStr)) streak++;
     else if (i > 0) break;
   }
@@ -1372,7 +1391,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1124a";
+var FY_INDEX_VER = "1124c";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -1907,10 +1926,11 @@ function fyIsMasterNow(idx) {
   return false;
 }
 function fyMeijinGlowNow(idx) {
+  /* 2026-11-24：「名人」が れんぞく100回 → 半期ごとの ゴールドランクに かわったので、ここも 合わせる */
   try {
     if (!fyIsMasterNow(idx) || !fyGlowOn(idx, "meijin")) return false;
     var a = Storage.get("fy_ach_" + idx, []);
-    if (Array.isArray(a)) for (var i = 0; i < a.length; i++) { if (a[i] && (a[i].type === "legend" || a[i].type === "legend1000")) return false; }
+    if (Array.isArray(a)) for (var i = 0; i < a.length; i++) { if (a[i] && a[i].type === "half" && a[i].rank === 2) return false; }
     return true;
   } catch (e) { return false; }
 }
@@ -2175,7 +2195,7 @@ function showResultScreen() {
   }
 
   if (accuracy >= 90) {
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = localDayStr(new Date());
     const daysArr = Storage.get(`onpu_days_${activeProfileIndex}`, []);
     if (Array.isArray(daysArr) && !daysArr.includes(todayStr)) {
       daysArr.push(todayStr);
@@ -2654,6 +2674,6 @@ showSelectScreen();
    あいことば がめんが きめる（2026-11-17 から：とうろくには あいことばが 必要な ため、
    ここでは なまえの とうろく がめんを 出さない）。 */
 </script>
-<script src="app-extras.js?v=20261124a"></script>
+<script src="app-extras.js?v=20261124c"></script>
 </body>
 </html>
