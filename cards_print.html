@@ -122,8 +122,8 @@ var TYPES = [
   { id: "maestro", label: "ふよみマエストロ", img: "maestro", cw: 56, ch: 83.6, name: 0.7265, date: 0.818, nx: 0.558, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006 },
   { id: "event",   label: "イベント", img: "event", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } },
   /* 2026-11-24：「ふよみ名人（連続100回）」→「半期の きろく」に かわった ぶん。印刷の絵は まだ ないので、meijinの絵を そのまま つかう。 */
-  { id: "half",    label: "半期の きろく", img: "meijin", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } },
-  { id: "halfend", label: "半期の きろく（おわり）", img: "meijin", cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 }, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" }
+  { id: "half",    label: "ふよみ メダル", img: "medal", fallbackImg: "meijin", noYear: true, cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 } },
+  { id: "halfend", label: "ふよみ メダル（きろくカード）", img: "medal", fallbackImg: "meijin", noYear: true, cw: 56, ch: 83.6, name: 0.728, date: 0.819, nx: 0.571, nf: 0.060, no: 0.008, df: 0.040, dof: 0.006, award: { x: 0.5, y: 0.533, w: 0.72, max: 0.075 }, ev: { x: 0.5, y: 0.455, w: 0.84, max: 0.050 }, cloud: { x: 0.499, y: 0.334, w: 0.58, max: 0.22 }, color: "#7a4f00" }
 ];
 
 /* 横長の配置（148×100mm）のなかの、おもて・うらの中心 */
@@ -146,7 +146,8 @@ awardEl.addEventListener("input", function () { render(); }); eventEl.addEventLi
 var yearEl = document.getElementById("inYear");
 (function () { var d = new Date(); yearEl.value = (d.getMonth() + 1 >= 10 ? d.getFullYear() + 1 : d.getFullYear()) + "年";  /* イベントは 1月。10〜12月に 印刷する ときは、つぎの 年 */ })();
 yearEl.addEventListener("input", function () { render(); });
-function evText() { return [yearEl.value.trim(), eventEl.value.trim()].filter(Boolean).join(" "); }
+/* 2026-11-24：メダルのカード（half／halfend）には「年」を付けない（イベント用の 年の らん と べつあつかい） */
+function evText() { var t = TYPES[cur]; return (t && t.noYear) ? eventEl.value.trim() : [yearEl.value.trim(), eventEl.value.trim()].filter(Boolean).join(" "); }
 function fitFs(o, txt) { return Math.min(o.max, o.w / Math.max(String(txt).length, 1)); }
 
 function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -194,8 +195,17 @@ function placeCard(el, cx, t) {
 
 function render() {
   var t = TYPES[cur];
-  document.getElementById("imgF").src = "card_" + t.img + "_front.png?v=" + IMG_VER;
-  document.getElementById("imgB").src = "card_" + t.img + "_back.png?v=" + IMG_VER;
+  var imgFEl = document.getElementById("imgF"), imgBEl = document.getElementById("imgB");
+  /* 2026-11-24：card_medal_front.png／card_medal_back.png が まだ 先生に 置かれて いない あいだは、
+     今までの 絵（fallbackImg）で 表示する */
+  if (t.fallbackImg) {
+    imgFEl.onerror = function () { imgFEl.onerror = null; imgFEl.src = "card_" + t.fallbackImg + "_front.png?v=" + IMG_VER; };
+    imgBEl.onerror = function () { imgBEl.onerror = null; imgBEl.src = "card_" + t.fallbackImg + "_back.png?v=" + IMG_VER; };
+  } else {
+    imgFEl.onerror = null; imgBEl.onerror = null;
+  }
+  imgFEl.src = "card_" + t.img + "_front.png?v=" + IMG_VER;
+  imgBEl.src = "card_" + t.img + "_back.png?v=" + IMG_VER;
 
   var cardF = document.getElementById("cardF"), cardB = document.getElementById("cardB");
   placeCard(cardF, CX_FRONT, t);
