@@ -1,6 +1,24 @@
-/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1116d ===== */
+/* ===== チェック場所ジャンプ一覧（このファイルだけ入れ替えれば、一覧が変わります） 1124g ===== */
 /* 先生ページ（タブ3）の一番上に ならびます。ボタンを おすと じゅんびをして その場所へ いきます。 */
 function fyJmpClear(idx, list) { list.forEach(function (k) { try { localStorage.removeItem(k + idx); } catch (e) {} }); }
+
+/* 2026-11-24：安全装置。ジャンプと「はじめの状態にもどす」は、名前が「てすと」で はじまる プレイヤーか、
+   教室用（見本）の ときだけ うごく（先生の指示）。それ以外のときは とめる。 */
+function fyJmpAllowed(idx) {
+  try {
+    var nm = (typeof profiles !== "undefined" && profiles[idx]) || "";
+    if (String(nm).indexOf("てすと") === 0) return true;
+  } catch (e) {}
+  try { if (window.fyDemoOn && window.fyDemoOn()) return true; } catch (e) {}
+  return false;
+}
+function fyJmpSafe(fn) {
+  return function (idx) {
+    if (!fyJmpAllowed(idx)) { alert("テスト用の プレイヤーで つかってね"); return; }
+    return fn(idx);
+  };
+}
+
 /* --- じゅんびの どうぐ --- */
 /* clef を レベル n まで ごうかくに する（n より うえは けす） */
 function fyJmpSet(idx, clef, n) {
@@ -33,62 +51,104 @@ function fyJmpStep(idx, clef, name) {
 }
 function fyJmpGo(after) { try { sessionStorage.setItem("fy_jump_after", after); } catch (e) {} location.reload(); }
 function fyJmpUnPt(idx, keys) { try { var g = Storage.get("fy_ptgiven_" + idx, {}) || {}; keys.forEach(function (k) { delete g[k]; }); Storage.set("fy_ptgiven_" + idx, g); } catch (e) {} }
+/* 新しい おいわい（はじめてごうかく・れんぞくしょう・半期の きろく）を もういちど 出せるように、
+   そのプレイヤーの カード・ポイントの きろくを まるごと リセットする（テスト用プレイヤーだけで つかう）。 */
+function fyJmpFreshCel(idx) {
+  localStorage.removeItem("fy_ach_" + idx);
+  Storage.set("fy_ach_" + idx, []);
+  Storage.set("fy_ptgiven_" + idx, {});
+  localStorage.removeItem("onpu_award_auto_" + idx);
+}
+/* 半期の きろく（ふよみ メダル）の じゅんび：いまの 本当の 期に、いちばん下の ランク（銅メダル）の
+   しきい値から delta を ひいた 回数を 入れる（delta=-1 で「あと1回」）。 */
+function fyJmpHalfSetup(idx, rankIdx, delta) {
+  if (!(window.fyJmpHalfRanks && window.fyJmpHalfId)) { alert("半期の きろくの しくみが みつかりません（app-extras.js を かくにんしてください）"); return; }
+  var id = window.fyJmpHalfId(new Date());
+  var ranks = window.fyJmpHalfRanks(id);
+  Storage.set("fy_half_id_" + idx, id);
+  Storage.set("fy_half_cnt_" + idx, Math.max(0, ranks[rankIdx] + (delta || 0)));
+}
+
 window.FY_JUMPS = [
-  /* ---------- 🆕 こんかい チェックして ほしい ところ（版が かわるたびに 入れかえます） ---------- */
-  { label: "🆕 1116d ①：ヘ音記号は まだ ロック", note: "『6つのド』は 合格に して、ト音・ヘ音は まだ どっちも 1回も クリアしていない 状態で おんぷカードを ひらく。ト音レベル1は ひらいて『いまここ』が 光るが、ヘ音レベル1は 🔒（まだ ロック）に なっているか",
-    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 0); fyJmpSet(idx, "bass", 0); fyJmpSet(idx, "all", 0); fyJmpGo("grid"); } },
-  { label: "🆕 1116d ②：ト音1を クリアすると ヘ音が ひらく", note: "ト音レベル1だけ クリア ずみに して おんぷカードを ひらく。ヘ音レベル1の 🔒が 外れて、こんどは ヘ音の ほうに『いまここ』の 光が 移っているか（ト音と ヘ音、両方 同時には 光らない）",
-    run: function (idx) { localStorage.setItem("fy_soundok", "1"); fyJmpBase(idx); fyJmpSet(idx, "treble", 1); fyJmpSet(idx, "bass", 0); fyJmpSet(idx, "all", 0); fyJmpGo("grid"); } },
-  { label: "🆕 1116d ③：🏫 教室用で 本当に 送れるか", note: "教室用を オンに して、全レベル 合格に した うえで『きょうは おわり』の 画面を ひらく。送る ボタンが 出て、中の コードが『みほん』に なっているか。おした あと、④の『コードを 貼って かくにん』に その文を 貼ると、グレーの『教室用（見本）』の あんないだけ 出て、確認ずみ／印刷の ボタンが 出ない。さいきんの れんらくにも 増えない",
-    run: function (idx) {
-      localStorage.setItem("fy_demo", "1");
-      fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5);
-      fyJmpDropAch(idx, ["treble", "bass", "master"]); fyJmpUnPt(idx, ["award_treble", "award_bass", "award_master"]);
-      Storage.set("fy_test_master_" + idx, true);
-      /* 送る ものが 見えるように、テスト用の きろくを 1件だけ 入れる */
-      try {
-        var a = Storage.get("fy_ach_" + idx, []); if (!Array.isArray(a)) a = [];
-        var now = new Date(), nm = (typeof profiles !== "undefined" && profiles[idx]) || "";
-        a.push({ type: "treble", n: 0, t: now.getTime(), d: now.toISOString().slice(0, 10), name: nm, code: "TEST1", us: 1 });
-        Storage.set("fy_ach_" + idx, a);
-      } catch (e) {}
-      fyJmpGo("click:fyNLOw");
-    } },
-  { label: "🆕 1116d ④：週の きろくが 2回 出ないか", note: "きょうの ハンコは もう おした ことに して、週の きろくも たった今 送った ことに する → この 状態で『きょうは おわり』を もう一度 おしても、週の きろくの 行が また 出ないか（出ないのが せいかい）",
-    run: function (idx) {
-      try { var st = Storage.get("fy_hanko_" + idx, []); if (!Array.isArray(st)) st = []; var t = new Date().toISOString().slice(0, 10); if (st.indexOf(t) === -1) st.push(t); Storage.set("fy_hanko_" + idx, st); Storage.set("fy_hanko_ok_" + idx, st.slice()); } catch (e) {}
-      localStorage.setItem("fy_rep_last_" + idx, String(Date.now()));
-      fyJmpGo("click:fyNLOw");
-    } },
-  { label: "🧹 見本の 3人（みほんA・B・C）を けす", note: "『さいきんの れんらく』から 見本だけ 消す。本物の 生徒は 残る",
-    run: function (idx) { var sn = {}; try { sn = JSON.parse(localStorage.getItem("fy_seen") || "{}") || {}; } catch (e) {} delete sn["みほんA"]; delete sn["みほんB"]; delete sn["みほんC"]; localStorage.setItem("fy_seen", JSON.stringify(sn)); alert("見本を 消しました。"); } },
   /* ---------- 見たい 場面へ ---------- */
   { label: "🎼 ト音記号マスターの 直前", note: "ト音 レベル5が すぐ始まる。『⏩ あと1もんへ』で さいごの1問だけ",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); } },
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 4); fyJmpDropAch(idx, ["treble", "master"]); fyJmpUnPt(idx, ["award_treble"]); fySkipSet(true); fyJmpGo("train:treble:5"); }) },
   { label: "🎼 ヘ音記号マスターの 直前", note: "ヘ音 レベル5が すぐ始まる（ト音は 全部 合格）",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 4); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["bass", "master"]); fyJmpUnPt(idx, ["award_bass"]); fySkipSet(true); fyJmpGo("train:bass:5"); } },
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 4); fyJmpSet(idx, "all", 0); fyJmpDropAch(idx, ["bass", "master"]); fyJmpUnPt(idx, ["award_bass"]); fySkipSet(true); fyJmpGo("train:bass:5"); }) },
   { label: "🎓 ふよみマスターの 直前", note: "全カード レベル5が すぐ始まる（ト音・ヘ音は 全部 合格）",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); fyJmpUnPt(idx, ["award_master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); fySkipSet(true); fyJmpGo("train:all:5"); } },
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpDropAch(idx, ["master"]); fyJmpUnPt(idx, ["award_master"]); Storage.set("fy_legend_opened_" + idx, false); localStorage.removeItem("fy_legend_intro_" + idx); fySkipSet(true); fyJmpGo("train:all:5"); }) },
   { label: "👑 レジェンドへの みちが 開いた 直後（トップ画面）", note: "ふよみマスターに なった すぐあとの トップ。『レジェンドへの みち』が 光る",
-    run: function (idx) { Storage.set("fy_test_master_" + idx, true); Storage.set("fy_legend_opened_" + idx, false); location.reload(); } },
+    run: fyJmpSafe(function (idx) { Storage.set("fy_test_master_" + idx, true); Storage.set("fy_legend_opened_" + idx, false); location.reload(); }) },
   { label: "🃏 おんぷカードを ぜんぶ 開く", note: "ト音・ヘ音・全カードを レベル5まで 合格に して、おんぷカードの 画面を ひらく",
-    run: function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); } },
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 5); fyJmpGo("grid"); }) },
   { label: "🎁 ポイントが たまった 状態（こうかんを ためす）", note: "60ポイントに して、こうかんの 画面を ひらく",
-    run: function (idx) { Storage.set("fy_tp_" + idx, 60); fyJmpGo("click:fyNLEx"); } },
+    run: fyJmpSafe(function (idx) { Storage.set("fy_tp_" + idx, 60); fyJmpGo("click:fyNLPt"); }) },
+  { label: "🎵 はじめて ごうかくカードの 直前", note: "ト音記号 レベル2の 直前（レベル1だけ 合格ずみ）。『⏩ あと1もんへ』で さいごの1問だけ",
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 1); fyJmpDropAch(idx, ["lvclear"]); Storage.set("fy_ptgiven_" + idx, {}); fySkipSet(true); fyJmpGo("train:treble:2"); }) },
+  { label: "🎼 ト音記号 れんぞくしょうの 直前", note: "ト音 レベル5の20問が すぐ始まる。パーフェクトで れんぞく10回に なり、カードが 出る",
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 0); Storage.set("fy_tr5run_" + idx, 9); fyJmpDropAch(idx, ["trrun"]); Storage.set("fy_ptgiven_" + idx, {}); fySkipSet(true); fyJmpGo("train:treble:5"); }) },
+  { label: "🥉 銅メダルの 直前", note: "いまの期の 回数を「銅メダルの しきい値 − 1」に して、全カード レベル5の20問へ。パーフェクトで 銅メダルの カードが 出る",
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpHalfSetup(idx, 0, -1); fyJmpDropAch(idx, ["half"]); Storage.set("fy_ptgiven_" + idx, {}); fySkipSet(true); fyJmpGo("train:all:5"); }) },
+  { label: "🥇 金メダルの 直前", note: "いまの期の 回数を「金メダル（ふよみ名人）の しきい値 − 1」に して、全カード レベル5の20問へ",
+    run: fyJmpSafe(function (idx) { fyJmpBase(idx); fyJmpSet(idx, "treble", 5); fyJmpSet(idx, "bass", 5); fyJmpSet(idx, "all", 4); fyJmpHalfSetup(idx, 2, -1); fyJmpDropAch(idx, ["half"]); Storage.set("fy_ptgiven_" + idx, {}); fySkipSet(true); fyJmpGo("train:all:5"); }) },
+  { label: "📋 期が 終わった 直後", note: "ひとつ前の期を「まだ しめていない」状態に して、つぎの トレーニングの 結果で『期の終わりの カード』が 出る",
+    run: fyJmpSafe(function (idx) {
+      fyJmpBase(idx);
+      if (!(window.fyJmpHalfRanks && window.fyJmpHalfId && window.fyJmpPrevHalfId)) { alert("半期の きろくの しくみが みつかりません（app-extras.js を かくにんしてください）"); return; }
+      var cur = window.fyJmpHalfId(new Date()), prev = window.fyJmpPrevHalfId(cur), ranks = window.fyJmpHalfRanks(prev);
+      Storage.set("fy_half_id_" + idx, prev);
+      Storage.set("fy_half_cnt_" + idx, ranks[0]);
+      fyJmpDropAch(idx, ["halfend"]);
+      Storage.set("fy_ptgiven_" + idx, {});
+      fySkipSet(true);
+      fyJmpGo("train:treble:1");
+    }) },
+  { label: "🗓 先週 4日ぶんの ハンコを つくる", note: "先週（月〜日）に 4日ぶんの ハンコを 入れる。トップに もどると「先週は…」の おしらせが 出る",
+    run: fyJmpSafe(function (idx) {
+      if (!window.fyJmpMakeLastWeekStamps) { alert("ハンコの しくみが みつかりません（app-extras.js を かくにんしてください）"); return; }
+      window.fyJmpMakeLastWeekStamps(idx);
+      alert("先週に 4日ぶんの ハンコを つくりました。\n「閉じる」で トップに もどると、おしらせが 出ます。");
+      location.reload();
+    }) },
+  { label: "🧪 ハンコと ポイントを リセット", note: "いまのプレイヤーの ハンコ・トレーニングポイントの きろくを まっさらに もどす",
+    run: fyJmpSafe(function (idx) {
+      if (!window.fyJmpResetHankoPoints) { alert("ハンコの しくみが みつかりません（app-extras.js を かくにんしてください）"); return; }
+      window.fyJmpResetHankoPoints(idx);
+      alert("ハンコと ポイントを リセットしました。");
+      location.reload();
+    }) },
+  { label: "📤 機種変更の うつしコードの 画面を 開く", note: "いまのプレイヤーの「きろくを うつす コード」の 画面を ひらく",
+    run: fyJmpSafe(function (idx) {
+      if (!window.fyShowBackup) { alert("うつしコードの しくみが みつかりません（app-extras.js を かくにんしてください）"); return; }
+      window.fyShowBackup(idx);
+    }) },
   { label: "⏩『あと1もんへ』ボタンを 出す", note: "トレーニング中の 右上に テスト用の ボタンが 出る（20問を 19問目まで じどうで すすめる。10びょう ほど）",
-    run: function (idx) { fySkipSet(true); alert("出るように しました。トレーニングを はじめると、右上に 出ます。"); } },
+    run: fyJmpSafe(function (idx) { fySkipSet(true); alert("出るように しました。トレーニングを はじめると、右上に 出ます。"); }) },
   { label: "⏩『あと1もんへ』ボタンを けす", note: "生徒に 見せる ときは けして おく",
-    run: function (idx) { fySkipSet(false); alert("けしました。"); } },
+    run: fyJmpSafe(function (idx) { fySkipSet(false); alert("けしました。"); }) },
   { label: "♻ この生徒を はじめの状態に もどす", note: "記録・光り・テスト用の印を消す（名前は残る）", confirm: true,
-    run: function (idx) {
-      var re = new RegExp("(^|_)" + idx + "(_|$)");
-      var kill = /ptgiven|gift_used|demoseen|tempo_|songguide|countvoice|best|lvfail|color|ach|test_master|legend|glow|noprac|chunk_rec|chunk_max|do_test|debug_unlocked|allkeys|gatelock|practice_guide|lv5_openall|pass_|play_/;
+    run: fyJmpSafe(function (idx) {
+      /* 2026-11-24：キーの「どこに プレイヤー番号が 入るか」は キーの かたちで ちがう。
+         「番号の すぐ あとに clef（treble/bass/all/do）が つづく」キーは、その位置だけを 見る。
+         それ以外は「番号が いちばん うしろ」の かたちなので、うしろだけを 見る
+         （前は (^|_)idx(_|$) で ぜんぶ 判定していたため、例えば 枠1を もどすと
+         枠0の「onpu_best_20_0_treble_1」（うしろの「_1」は レベル番号）まで 消えて しまっていた）。 */
+      var CLEF_THEN = /^(onpu_best_20c?_|onpu_best_10c?_|onpu_count_best_|fy_lvfailc?_|fy_color_perfect_|fy_color_)/;
+      function matchesIdx(k) {
+        if (CLEF_THEN.test(k)) {
+          var rest = k.replace(CLEF_THEN, "");
+          var m = rest.match(/^(\d+)_(treble|bass|all|do)(_|$)/);
+          return !!(m && +m[1] === idx);
+        }
+        return new RegExp("_" + idx + "$").test(k);
+      }
+      var kill = /ptgiven|gift_used|demoseen|tempo_|songguide|countvoice|best|lvfail|color|ach|test_master|legend|glow|noprac|chunk_rec|chunk_max|do_test|debug_unlocked|allkeys|gatelock|practice_guide|lv5_openall|pass_|play_|half_id_|half_cnt_|tr5run_|bs5run_|run_now_|run_best_|perfect_total_|hanko_|tp_|cel_pending_|log_|rep_last_/;
       var del = [];
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
-        if ((k.indexOf("onpu_") === 0 || k.indexOf("fy_") === 0) && re.test(k) && kill.test(k)) del.push(k);
+        if ((k.indexOf("onpu_") === 0 || k.indexOf("fy_") === 0) && kill.test(k) && matchesIdx(k)) del.push(k);
       }
       del.forEach(function (k) { localStorage.removeItem(k); });
       location.reload();
-    } }
+    }) }
 ];
