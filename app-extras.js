@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1124f";
+window.FY_EXTRAS_VER = "1124h";
 /* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
 (function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1124b")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1124b", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
@@ -66,6 +66,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     for (var c in m) { if (m[c] === slot) return c; }
     return "";
   }
+  /* 2026-11-26：解約まわり（おやすみ中の しくみ）から も、この子の あいことばを しらべられるように */
+  window.fyCodeOfSlot = codeOfSlot;
 
   function loadCodes() {
     return fetch("codes.txt?t=" + Date.now(), { cache: "no-store" })
@@ -79,7 +81,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   }
   /* codes.txt の 1ぎょう：  あいことば            …ふつうの せいと
                               あいことば,イベント     …イベントだけの こ（イベントが おわって 7日まで）
-                              あいことば,イベント,2027-02-10  …つかえる 日を じぶんで きめる */
+                              あいことば,イベント,2027-02-10  …つかえる 日を じぶんで きめる
+                              あいことば,解約,2026-11-30  …2026-11-30：解約した 子。この日まで つかえる（2026-11-26 ついか） */
   function dpad(n) { return (n < 10 ? "0" : "") + n; }
   function dstrG(d) { return d.getFullYear() + "-" + dpad(d.getMonth() + 1) + "-" + dpad(d.getDate()); }
   function addDaysG(ds, n) { var d = new Date(ds + "T00:00:00"); d.setDate(d.getDate() + n); return dstrG(d); }
@@ -96,12 +99,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
           list.push(c);
           if (a[1] && /イベント|ｲﾍﾞﾝﾄ|event/i.test(a[1])) {
             info[c] = { ev: true, until: /^\d{4}-\d{2}-\d{2}$/.test(a[2] || "") ? a[2] : "" };
+          } else if (a[1] && /解約/.test(a[1]) && /^\d{4}-\d{2}-\d{2}$/.test(a[2] || "")) {
+            info[c] = { cancel: true, date: a[2] };
           }
         });
         list.info = info;
         return list;
       });
   }
+  /* 2026-11-26：解約・おやすみ中の しくみ（下のほうの 「あたらしい みため」トップ画面）からも、
+     codes.txt の いちばん さいしんの 中みを しらべられるように */
+  window.fyLoadCodesInfo = loadCodesInfo;
 
   function cleanName(raw) { return String(raw || "").normalize("NFKC").trim(); }
   function nameError(s) {
@@ -573,6 +581,15 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   /* ri の メダルの 名前だけ（期は 入れない。例：「🥇 金メダル ふよみ名人」） */
   function halfMedalName(ri) { return ri < 0 ? "ランクなし" : (HALF_STARS[ri] + " " + HALF_MEDAL_NAMES[ri] + (ri === 2 ? " ふよみ名人" : "")); }
   function halfRankName(id, ri) { return halfMedalName(ri); }
+  /* 2026-11-24：ひとつ前の 期の id（jump_list.js の「📋 期が終わった直後」テスト用） */
+  function prevHalfId(id) {
+    var p = String(id).split("-"), y = +p[0];
+    return p[1] === "H1" ? (y - 1) + "-H2" : y + "-H1";
+  }
+  /* jump_list.js（先生ページのテスト用ジャンプ）から よべるように、window に だしておく */
+  window.fyJmpHalfId = halfId;
+  window.fyJmpHalfRanks = halfRanks;
+  window.fyJmpPrevHalfId = prevHalfId;
   function halfPracticeDays(idx, periodId) {
     try {
       var p = String(periodId).split("-"), y = +p[0], from, to;
@@ -752,14 +769,19 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
 
   /* 画面が出た しゅんかんに、ファンファーレ → （おわってから）マスターの声 */
   function playCelSounds(recs) {
-    var hasLegend = false, hasMaster = false;
+    var hasLegend = false, hasMaster = false, hasBigCard = false, hasSmallCard = false;
     recs.forEach(function (r) {
+      if (!r) return;
       if (r.type === "legend") hasLegend = true;
       if (r.type === "master" || r.type === "treble" || r.type === "bass") hasMaster = true;
+      /* 2026-11-24：カードが出るときは、必ず ファンファーレを 鳴らす（先生の指示）。
+         金メダル（half の rank 2＝ふよみ名人）は 大きい ファンファーレ、それ以外の カードは 表彰ファンファーレ1。 */
+      if (r.type === "half" && r.rank === 2) hasBigCard = true;
+      else if (r.type === "lvclear" || r.type === "trrun" || r.type === "bsrun" || r.type === "half" || r.type === "halfend" || r.type === "event") hasSmallCard = true;
     });
     var voice = heldVoice;
     heldVoice = null;
-    var fan = hasLegend ? "hyoshoFanfareAudio" : (hasMaster ? "hyoshoFanfare1Audio" : null);
+    var fan = (hasLegend || hasBigCard) ? "hyoshoFanfareAudio" : ((hasMaster || hasSmallCard) ? "hyoshoFanfare1Audio" : null);
     /* ファンファーレが先 → そのあとに、マスターの声 */
     var voiceDelay = 0;
     if (fan) {
@@ -960,9 +982,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
     o.hf = { id: Storage.get("fy_half_id_" + idx, ""), cnt: Storage.getNumber("fy_half_cnt_" + idx, 0) };
     var clT = Storage.get("fy_color_" + idx + "_treble"), clB = Storage.get("fy_color_" + idx + "_bass");
     if (clT || clB) o.cl = { t: clT || "", b: clB || "" };
+    /* 2026-11-26：「作った 日時」を 入れる（先生が「コードを しらべる」で、どちらが 新しいか わかるように）。
+       ふるい 形の コード（o.t が ない）も、今までどおり 読める */
+    o.t = Date.now();
     var payload = "FYC1|" + JSON.stringify(o);
     return "FYC1." + b64enc(payload) + "." + signOf(payload);
   }
+  window.fyMakeChunkBackup = makeChunkBackup;
   function getHankoList(idx) {
     var a = Storage.get("fy_hanko_" + idx, []);
     return Array.isArray(a) ? a : [];
@@ -2064,7 +2090,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<b style="color:#c62828;">いまボタンを押すと、' + cx.when + '</b>' +
         '<div style="margin-top:8px;background:#fff8e1;border:1px solid #ffe0b2;border-radius:10px;padding:8px 9px;text-align:left;">' +
         '<b style="color:#8a5a00;">解約する前に、かくにんしてください</b><br>' +
-        '1. 解約すると、アプリの中に入れなくなります（今までの実績は見られなくなります）<br>' +
+        '1. 解約すると、練習はできなくなります。<br>' +
+        '解約の月の さいごの3日間は、アプリを開くと『きろくを うつす コード』を送る お知らせが出ます。<br>' +
+        '解約後しばらくは、記録とカードを見たり、コードを送ったりできますが、<br>' +
+        'スマホの中の記録は、早いと1週間ほどで消えてしまいます。<br>' +
+        '記録が消えると、また始めるときに 一から やり直しに なります。<br>' +
+        'かならず、記録が消える前に『きろくを うつす コード』を先生に送ってください。<br>' +
+        'また始めるときは、先生から あいことばを もらって『📩 あいことば』に入れてください。<br>' +
         '2. 月間ベスト賞など、解約後に決まるデジタルカードは見られません（現物のカードは先生からお渡しできます）<br>' +
         '3. <button id="fyCancelBk' + idx + '" style="margin:3px 0;padding:6px 10px;font-size:11px;font-weight:800;border:none;border-radius:8px;background:#5c6bc0;color:#fff;">📤 きろくを うつす コードを作る</button>を押して、先生に送ってください。先生が預かっておきます。将来また始めるときはその記録から戻しますが、戻せない記録もあります（くわしくはその画面に書いてあります）' +
         '</div>' +
@@ -2073,7 +2105,17 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         '<span>上の内容を読んで、理解しました</span></label>' +
         '<div id="fyCancelSend' + idx + '" style="display:none;margin-top:6px;">' +
         '<div style="margin-top:2px;">下のボタンを押すとLINEが開きます。送信ボタン（✈マーク）を押して送ってください。</div>' +
-        (function () { window.fyNoBackNote = 1; var hh = window.fyLineBtn('【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）', '✉ 解約のご連絡（LINEを開く）', '#9e9e9e', true); window.fyNoBackNote = 0; return hh; })() +
+        /* 2026-11-26：解約の ご連絡に、この子の「きろくを うつす コード」(FYC1) を じどうで 入れる。
+           25日までの ご連絡なので、月末までの よび（予備）。おやすみ中に なった ときにも、
+           もういちど うつしコードを 送って もらう（上の お知らせの とおり）。 */
+        (function () {
+          window.fyNoBackNote = 1;
+          var bk = window.fyMakeChunkBackup ? window.fyMakeChunkBackup(idx) : "";
+          var msg = '【ふよみ】' + n + ' さん\n解約のお願いです。（' + cx.when.replace('になります。', '') + '）' + (bk ? '\n\nきろくの うつしコード：\n' + bk : '');
+          var hh = window.fyLineBtn(msg, '✉ 解約のご連絡（LINEを開く）', '#9e9e9e', true);
+          window.fyNoBackNote = 0;
+          return hh;
+        })() +
         '<div style="margin-top:4px;">送信後、先生からの返信をもって解約完了となります。3日経っても返信がない場合は、お手数ですが再度ご連絡ください。</div>' +
         '</div>' +
         '</details>';
@@ -2213,8 +2255,13 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
       var o; try { o = JSON.parse(payload.slice(5)); } catch (e2) { return ng("コードの 中みが ちがいます"); }
       var recs = Object.keys(o.r || {}).filter(function (k) { return k.indexOf("rec_") === 0; }).length;
       var pc = o.p ? Object.keys(o.p).length : 0, qc = o.q ? Object.keys(o.q).length : 0;
+      /* 2026-11-26：「作った 日時」が 入っている コードなら、それを 表示（ふるい 形の コードには 入っていないので、出さない） */
+      var madeAt = "";
+      if (typeof o.t === "number" && o.t > 0) {
+        try { var dT = new Date(o.t); madeAt = "<br><b>" + (dT.getMonth() + 1) + "月" + dT.getDate() + "日 " + dT.getHours() + "時に 作った コード</b>"; } catch (eT) {}
+      }
       return { kind: "text", html: '<div style="color:#2e7d32;font-weight:800;font-size:14px;">✅ 本物の「うつしコード」です（生徒が 機種変更で つかうコード）</div>' +
-        '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(o.n) + '</b><br>ひらいている レベル：' + (o.m | 0) + '<br>レベルの きろく：' + recs + ' こ　／　ふよみテスト ごうかく：' + pc + ' 曲　／　えんそう ごうかく：' + qc + ' 曲　／　ハンコ：' + ((o.h || []).length) + ' 日<br><span style="color:#806c5a;">先生が することは ありません。生徒が あたらしい 端末で「きろくの 復元」に はります。</span></div>' };
+        '<div style="font-size:13px;line-height:1.7;text-align:left;">なまえ：<b>' + esc3(o.n) + '</b>' + madeAt + '<br>ひらいている レベル：' + (o.m | 0) + '<br>レベルの きろく：' + recs + ' こ　／　ふよみテスト ごうかく：' + pc + ' 曲　／　えんそう ごうかく：' + qc + ' 曲　／　ハンコ：' + ((o.h || []).length) + ' 日<br><span style="color:#806c5a;">先生が することは ありません。生徒が あたらしい 端末で「きろくの 復元」に はります。</span></div>' };
     }
     if (/FY[12]\.[A-Za-z0-9_\-]+\.[A-Z0-9]{6}/.test(t)) return { kind: "text", html: '<div style="font-size:14px;font-weight:800;">これは 先生が つくった「復元コード」です。（保護者に おくる もの）</div>' };
     var nm = t.match(/【ふよみ】\s*([^\n]+?)\s*さん/), cd = t.match(/コード[：:]\s*([A-Z0-9]{4})/);
@@ -3102,36 +3149,22 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   window.fyParentTP = function (idx) { return getTP(idx) + " p"; };
   window.fyParentStamps = function (idx) { return daysThisWeek(idx) + "日（月〜日）"; };
 
-  /* ---- 先生ページ：ためすための ボタン（1週間 まてないので） ---- */
-  try {
-    var t3 = document.getElementById("teacherTab3");
-    if (t3) {
-      var tb = document.createElement("div");
-      tb.innerHTML =
-        '<div style="font-size:12px;font-weight:bold;color:#5b4636;margin:12px 0 6px;text-align:left;">🧪 トレーニングポイントの テスト</div>' +
-        '<button id="fyTestWeek" class="modal-btn" style="background:#43a047;font-size:12px;padding:8px;margin-bottom:6px;">🧪 先週 4日ぶんの ハンコを つくる（つぎに トップを ひらくと おしらせ）</button>' +
-        '<button id="fyTestReset" class="modal-btn" style="background:#2e7d32;font-size:12px;padding:8px;margin-bottom:6px;">🧪 いまのプレイヤーの ハンコと ポイントを リセット</button>';
-      tb.id = "fyPtTest"; t3.insertBefore(tb, t3.firstChild);
-      document.getElementById("fyTestWeek").addEventListener("click", function () {
-        var idx = activeProfileIndex;
-        var lastWs = addDays(weekStartOf(new Date()), -7);
-        var s = getStamps(idx);
-        [0, 1, 3, 4].forEach(function (k) { var ds = dstr(addDays(lastWs, k)); if (s.indexOf(ds) === -1) s.push(ds); });
-        s.sort();
-        Storage.set(K.stamps(idx), s);
-        Storage.set(K.paid(idx), dstr(lastWs));
-        Storage.set(K.notice(idx), null);
-        alert("先週に 4日ぶんの ハンコを つくりました。\n「閉じる」で トップに もどると、おしらせが 出ます。");
-      });
-      document.getElementById("fyTestReset").addEventListener("click", function () {
-        var idx = activeProfileIndex;
-        [K.stamps(idx), K.tp(idx), K.paid(idx), K.notice(idx), "fy_tp_log_" + idx].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
-        voice1Done = {};
-        try { initProfiles(); } catch (e) {}
-        alert("ハンコと ポイントを リセットしました。");
-      });
-    }
-  } catch (e) {}
+  /* 2026-11-24：先生ページの「🧪 先週4日ぶんのハンコ」「🧪 ハンコとポイントをリセット」ボタンは、
+     ジャンプの一覧（jump_list.js）のほうへ まとめた（先生の指示）。ここでは、同じ なかみを
+     jump_list.js から よべるように window に だしておくだけに する。 */
+  window.fyJmpMakeLastWeekStamps = function (idx) {
+    var lastWs = addDays(weekStartOf(new Date()), -7);
+    var s = getStamps(idx);
+    [0, 1, 3, 4].forEach(function (k) { var ds = dstr(addDays(lastWs, k)); if (s.indexOf(ds) === -1) s.push(ds); });
+    s.sort();
+    Storage.set(K.stamps(idx), s);
+    Storage.set(K.paid(idx), dstr(lastWs));
+    Storage.set(K.notice(idx), null);
+  };
+  window.fyJmpResetHankoPoints = function (idx) {
+    [K.stamps(idx), K.tp(idx), K.paid(idx), K.notice(idx), "fy_tp_log_" + idx].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    voice1Done = {};
+  };
 
   /* はじめの 表示 */
   try { initProfiles(); } catch (e) {}
@@ -3736,26 +3769,8 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
   };
 })();
 
-/* ===== 🏅 半期の きろく（全カード レベル5・20問 ぜんぶ いっぱつ せいかいの 通算回数）の テスト用ボタン
-   2026-11-24：「ふよみ名人（連続100回）」→「半期ごとの つうさん回数」に変わったので、ここも 合わせる。 */
-window.setStreak99ForTest = function () {
-  var i = activeProfileIndex;
-  Storage.set("fy_run_now_" + i, 0);
-  Storage.set("fy_run_best_" + i, 0);
-  alert((profiles[i] || "") + " さんの「全カード レベル5」テストは、半期の 回数を 直接 すすめてください（🧪いまのプレイヤーの たっせいの きろくと れんぞくを リセット の 下の テストボタン、または fy_half_cnt_ を 直接 さわる）。");
-  try { initProfiles(); } catch (e) {}
-};
-window.resetLegendForTest = function () {
-  var i = activeProfileIndex;
-  Storage.set("fy_run_now_" + i, 0);
-  Storage.set("fy_run_best_" + i, 0);
-  Storage.set("fy_half_id_" + i, "");
-  Storage.set("fy_half_cnt_" + i, 0);
-  var a = Storage.get("fy_ach_" + i, []);
-  if (Array.isArray(a)) Storage.set("fy_ach_" + i, a.filter(function (r) { return !(r && (r.type === "legend" || r.type === "half" || r.type === "halfend")); }));
-  alert((profiles[i] || "") + " さんの 半期の きろくと 20問れんぞくを リセットしました。");
-  try { initProfiles(); } catch (e) {}
-};
+/* 2026-11-24：🧪連続を99回にする／👑と連続をリセット の2つは、先生ページから ボタンごと 削除（先生の指示）。
+   setStreak99ForTest・resetLegendForTest も、もう よぶ ところが ないので 削除。 */
 
 /* ===== 古い「100回れんぞく」のレジェンドを、見えなくする（記録は のこす） ===== */
 (function () {
@@ -4326,6 +4341,60 @@ window.FYAK = FYAK;
     return out;
   }
 
+  /* ===================================================================================
+     🛌 解約・おやすみ中（1124h）
+     ・codes.txt の 1ぎょうに「あいことば,解約,YYYY-MM-DD」と 書くと、その日まで つかえる。
+     ・さいごの3日間は、トップに 大きな お知らせ＋送るボタンを 出す。
+     ・その日を すぎた子、または codes.txt から 消された子は「おやすみ中」になり、
+       トップの下の4つ（きろく・カード・おとな・あいことば）だけ つかえる。
+     =================================================================================== */
+  var CANCEL_FINAL_DAYS = 3;   /* さいごの何日間を「大きな お知らせ」にするか（当日ふくむ） */
+  var cancelByIdx = {}, cancelFetching = false;
+  function ymdNow() { return ymd(new Date()); }
+  function daysUntil(dateStr) {
+    try { return Math.round((new Date(dateStr + "T00:00:00") - new Date(ymdNow() + "T00:00:00")) / 86400000); } catch (e) { return 999; }
+  }
+  function mdLabel(ds) { try { var p = ds.split("-"); return (+p[1]) + "月" + (+p[2]) + "日"; } catch (e) { return ds; } }
+  function getCancelState(idx) { return cancelByIdx[idx] || { state: "normal" }; }
+  function refreshCancelState() {
+    var idx = activeProfileIndex;
+    if (!isRegistered(idx) || !window.fyLoadCodesInfo || !window.fyCodeOfSlot) { cancelByIdx[idx] = { state: "normal" }; return; }
+    if (cancelFetching) return;
+    cancelFetching = true;
+    window.fyLoadCodesInfo().then(function (list) {
+      cancelFetching = false;
+      var code = window.fyCodeOfSlot(idx), st = { state: "normal" };
+      if (code) {
+        var found = list.indexOf(code) !== -1, inf = list.info && list.info[code];
+        if (!found) {
+          st = { state: "dormant", key: "removed" };
+        } else if (inf && inf.cancel && inf.date) {
+          var dLeft = daysUntil(inf.date);
+          if (dLeft < 0) st = { state: "dormant", key: "cancel:" + inf.date, date: inf.date };
+          else if (dLeft < CANCEL_FINAL_DAYS) st = { state: "final", date: inf.date, daysLeft: dLeft, key: "cancel:" + inf.date };
+          else st = { state: "warn", date: inf.date, key: "cancel:" + inf.date };
+        }
+      }
+      cancelByIdx[idx] = st;
+      schedule();
+    }).catch(function () { cancelFetching = false; /* オフライン：いまの状態の まま（はじめては ふつう あつかい） */ });
+  }
+  /* 📨 せんせいに おくる LINEの コードに「FYC1.」が 入っていたら、解約の お知らせを「送った」ことに する
+     （きろく画面・保護者ページ・この下の お知らせ、どこから 送っても、ここで まとめて 見ている） */
+  document.addEventListener("click", function (e) {
+    try {
+      var a = e.target.closest ? e.target.closest('a[href*="line.me"]') : null;
+      if (!a) return;
+      var href = decodeURIComponent(a.href || "");
+      if (href.indexOf("FYC1.") === -1) return;
+      var idx2 = activeProfileIndex, cs2 = getCancelState(idx2);
+      if (cs2.state === "final") localStorage.setItem("fy_cancel_sent_" + idx2 + "_" + ymdNow(), "1");
+      if (cs2.state === "dormant") localStorage.setItem("fy_dormant_sent_" + idx2, cs2.key || "sent");
+      setTimeout(schedule, 300);
+    } catch (e2) {}
+  }, true);
+  function cancelAlert() { alert("いまは おやすみ中だよ。また はじめるときは、せんせいに あいことばを もらってね"); }
+
   var timer = null, busy = false, lastHtml = "", quietUntil = 0;
   function schedule() { if (timer) clearTimeout(timer); timer = setTimeout(render, 120); }
   /* はじめから あたらしい みためで だす（ふるい がめんが ちらっと みえない ように） */
@@ -4339,6 +4408,12 @@ window.FYAK = FYAK;
       var t = $("fyTop"); if (!t) { t = document.createElement("div"); t.id = "fyTop"; s.insertBefore(t, s.firstChild); }
       var idx = activeProfileIndex, name = (profiles && profiles[idx]) || "", many = 0;
       try { for (var mi2 = 0; mi2 < 3; mi2++) { if (isRegistered(mi2)) many++; } } catch (e) {}
+      /* 🛌 解約・おやすみ中の いまの 状態（normal／warn／final／dormant） */
+      if (!(idx in cancelByIdx)) refreshCancelState();
+      var cs = getCancelState(idx), isDormant = cs.state === "dormant";
+      var finalSentToday = (cs.state === "final") && localStorage.getItem("fy_cancel_sent_" + idx + "_" + ymdNow()) === "1";
+      var dormantSentKey = localStorage.getItem("fy_dormant_sent_" + idx) || "";
+      var dormantNeedSend = isDormant && dormantSentKey !== (cs.key || "");
       var pts = Storage.getNumber("fy_tp_" + idx, 0);
       var wk = false; try { wk = fyWakabaOn(); } catch (e) {}
       var doBest = null; try { doBest = getDoTestBest(idx); } catch (e) {}
@@ -4357,24 +4432,42 @@ window.FYAK = FYAK;
       var pendN = 0; try { pendN = okList(idx).pend.length; } catch (e) {}
       /* 版の ばんごう（テストの あいだ だけ。もとの「版」の ひょうじを そのまま うつす） */
       var verTx = ""; try { var vb = $("fyVerBar"); if (vb && vb.style.display !== "none") verTx = vb.textContent || ""; } catch (e) {}
+      /* 🛌 解約・おやすみ中の お知らせ（小さい おしらせ・大きい おしらせ） */
+      var cancelSmallNote = (cs.state === "warn" || cs.state === "final")
+        ? '<div style="position:absolute;left:8px;top:22px;z-index:2;font-size:10px;font-weight:800;color:#b45309;background:#fff3e0;border-radius:8px;padding:2px 8px;">' + mdLabel(cs.date) + 'で おやすみに なります</div>' : "";
+      var cancelBigNote = "";
+      if (cs.state === "final" && !finalSentToday) {
+        cancelBigNote = '<div class="fyCancelBig" style="margin:10px 14px 0;background:#fff3e0;border:3px solid #ff7043;border-radius:16px;padding:10px 12px;text-align:center;">' +
+          '<div style="font-size:15px;font-weight:900;color:#d84315;">あと ' + Math.max(cs.daysLeft, 0) + '日で つかえなくなります</div>' +
+          '<div style="font-size:12px;color:#8a5a00;margin:4px 0 8px;">いまの きろくを せんせいに おくってね</div>' +
+          '<button id="fyCancelSendBtn" style="width:100%;padding:10px;font-size:14px;font-weight:900;border:none;border-radius:12px;background:#ff7043;color:#fff;">📨 うつしコードを せんせいに おくる</button>' +
+          '</div>';
+      } else if (isDormant && dormantNeedSend) {
+        cancelBigNote = '<div class="fyCancelBig" style="margin:10px 14px 0;background:#eceff1;border:3px solid #78909c;border-radius:16px;padding:10px 12px;text-align:center;">' +
+          '<div style="font-size:15px;font-weight:900;color:#37474f;">おやすみ中です。きろくは もうすぐ きえてしまいます。</div>' +
+          '<div style="font-size:12px;color:#546e7a;margin:4px 0 8px;line-height:1.6;">また はじめるときに つづきから できるように、『📜 きろく』の いちばん下の<br>『📤 きろくを うつす コード』を、せんせいに おくってね</div>' +
+          '</div>';
+      }
       var html =
         (verTx ? '<div style="position:absolute;left:0;right:0;top:1px;z-index:4;text-align:center;font-size:10px;font-weight:800;color:' + (/そろって/.test(verTx) ? '#d32f2f;background:#fff' : '#5b88a8') + ';">' + esc(verTx) + '</div>' : '') +
         '<div class="sky"><div class="cl" style="width:60px;left:250px;top:12px;"></div><div class="cl" style="width:50px;left:-10px;top:92px;transform:scale(.7)"></div>' +
           '<div class="appTitle">🎹 ふよみチャレンジ</div>' +
+          cancelSmallNote +
           '<div class="pal"><i class="a"></i><i class="b"></i><u></u></div>' +
           '<button class="hello" id="fyNLName">' + esc(name) + '<small> さん' + (many > 1 ? " ▼" : "") + '</small></button>' +
           (wk ? '<button class="wk" id="fyNLWk">🌱 わかば</button>' : '') + '</div>' +
-        '<button class="pt' + (pts >= 10 ? " can" : "") + '" id="fyNLPt"><b>' + pts + '</b><span>ポイント</span>' + (exUns ? '<span class="dot" style="top:-8px;right:-6px;">📨</span>' : '') + '</button>' +
-        '<div class="hk" id="fyNLHk">' + hk + '</div>' +
-        '<div class="road">' +
+        cancelBigNote +
+        '<button class="pt' + (pts >= 10 ? " can" : "") + '" id="fyNLPt"' + (isDormant ? ' style="opacity:.5"' : '') + '><b>' + pts + '</b><span>ポイント</span>' + (exUns ? '<span class="dot" style="top:-8px;right:-6px;">📨</span>' : '') + '</button>' +
+        '<div class="hk" id="fyNLHk"' + (isDormant ? ' style="opacity:.5"' : '') + '>' + hk + '</div>' +
+        '<div class="road"' + (isDormant ? ' style="opacity:.5"' : '') + '>' +
           '<button class="st s1' + (here === 1 ? " here" : "") + '" id="fyNLDo"><div class="ic">🎵</div><div>6つの「ド」</div>' + (doOk ? '<span class="r">💮</span>' : '') + '</button>' +
           '<button class="st ' + (doOk ? "s2" : "lk") + (here === 2 ? " here" : "") + '" id="fyNLCard"><div class="ic">🎼</div><div>おんぷカード' + (doOk ? '<small>ト音 ' + (tr >= 5 ? "💮" : tr + 1) + ' ・ ヘ音 ' + (ba >= 5 ? "💮" : ba + 1) + '</small>' : '') + '</div>' + (doOk ? '' : '<span class="r">🔒</span>') + '</button>' +
           '<button class="st ' + (chLock ? "lk" : "s3") + (here === 3 ? " here" : "") + '" id="fyNLLeg"><div class="ic">👑</div><div>レジェンドへの みち</div>' + (chLock ? '<span class="r">🔒</span>' : '') + '</button>' +
           (evOn ? '<button class="st ' + (window.fyEvBtnDim && window.fyEvBtnDim() ? "lk" : "s4") + '" id="fyNLEv"><div class="ic">🏆</div><div>' + esc((window.fyEvBtnLabel ? window.fyEvBtnLabel() : "🏆 イベントの きろく").replace(/^🏆\s*/, "")) + '</div></button>' : '') +
         '</div>' +
-        '<button class="ow" id="fyNLOw">🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨' + (unsDays > 0 ? unsDays : '') + '</span>' : '') + '</button>' +
+        '<button class="ow" id="fyNLOw"' + (isDormant ? ' style="opacity:.5"' : '') + '>🌙 きょうは おわり' + ((uns || exUns) ? '<span class="dot owd" style="top:-12px;right:6px;">📨' + (unsDays > 0 ? unsDays : '') + '</span>' : '') + '</button>' +
         '<div class="bar">' +
-          '<button id="fyNLRec"><b style="background:#ffe08a' + (uns ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + (uns ? '<span class="dot">📨</span>' : '') + '</button>' +
+          '<button id="fyNLRec"><b style="background:#ffe08a' + ((uns || dormantNeedSend) ? ';animation:fyNLp 1.3s ease-out infinite' : '') + '">📜</b>きろく' + ((uns || dormantNeedSend) ? '<span class="dot">📨</span>' : '') + '</button>' +
           '<button id="fyNLBook"><b style="background:#d7c2ff">🎴</b>カード</button>' +
           '<button id="fyNLAk"><b style="background:#ffd3b0">📩</b>あいことば</button>' +
           '<button id="fyNLAd"><b style="background:#e3e3e3">⚙️</b>おとな</button>' +
@@ -4383,17 +4476,20 @@ window.FYAK = FYAK;
       if (html === lastHtml && t.firstChild) { busy = false; return; }
       lastHtml = html; quietUntil = Date.now() + 200;
       t.innerHTML = html;
-      $("fyNLDo").addEventListener("click", function () { clickOld("#selectScreen > .select-button.special"); });
+      if ($("fyCancelSendBtn")) $("fyCancelSendBtn").addEventListener("click", function () { try { window.fyShowBackup(idx); } catch (e) {} });
+      $("fyNLDo").addEventListener("click", function () { if (isDormant) return cancelAlert(); clickOld("#selectScreen > .select-button.special"); });
       $("fyNLCard").addEventListener("click", function () {
+        if (isDormant) return cancelAlert();
         var last = "treble"; try { last = localStorage.getItem("fy_nl_lastclef_" + idx) || "treble"; if (last === "all" || last === "bass") { if (!hasLevelCleared(idx, "treble", 1) && !dbg) last = "treble"; } } catch (e) {}
         selectClef(doOk ? last : "treble"); if (selectedClef !== last && doOk) selectClef("treble");
       });
-      $("fyNLLeg").addEventListener("click", function () { clickOld("#fyChunkBtn"); });
-      if ($("fyNLEv")) $("fyNLEv").addEventListener("click", function () { clickOld("#fyEvBtn"); });
+      $("fyNLLeg").addEventListener("click", function () { if (isDormant) return cancelAlert(); clickOld("#fyChunkBtn"); });
+      if ($("fyNLEv")) $("fyNLEv").addEventListener("click", function () { if (isDormant) return cancelAlert(); clickOld("#fyEvBtn"); });
       $("fyNLRec").addEventListener("click", function () { try { window.showCardCodes(); } catch (e) {} });
       $("fyNLBook").addEventListener("click", function () { try { window.showCardBook(); } catch (e) {} });
-      $("fyNLPt").addEventListener("click", function () { clickOld("#fyExBtn"); });
+      $("fyNLPt").addEventListener("click", function () { if (isDormant) return cancelAlert(); clickOld("#fyExBtn"); });
       $("fyNLOw").addEventListener("click", function () {
+        if (isDormant) return cancelAlert();
         var o = okList(idx), pend = o.pend.slice(), today = ymd(new Date());
         var lines = []; try { lines = (window.fyUnsentLines(idx) || []).concat(window.fyExUnsentLines(idx) || []); } catch (e) {}
         var demo = !!(window.fyDemoOn && window.fyDemoOn());
@@ -4480,6 +4576,7 @@ window.FYAK = FYAK;
         });
       });
       $("fyNLHk").addEventListener("click", function () {
+        if (isDormant) return cancelAlert();
         var hb = $("fyHankoTop"); if (!hb) return;
         sheet(function (inn) { inn.appendChild(hb); });   /* もとの ハンコの はこを、そのまま ここで みせる（「きょう」も ここで おせる） */
       });
@@ -4589,22 +4686,23 @@ window.FYAK = FYAK;
       if (b && window.__fyBackToAdult && Date.now() - window.__fyBackToAdult < 600000) { window.__fyBackToAdult = 0; setTimeout(function () { var a = $("fyNLAd"); if (a) a.click(); }, 350); }
     } catch (e2) {}
   });
-  /* 先生ページ：タブは やめて「コード・管理」だけ／とじる ボタンは したに はりつける */
+  /* 2026-11-24：先生ページの タブ（生徒登録・表彰カードのデザイン）は 古いタブごと 削除したので、
+     タブを かくす スタイルや、タブ3に 切りかえなおす しくみは もう いらない。
+     「とじる」ボタンを したに はりつける ぶんだけ 残す。 */
   try {
     var st2 = document.createElement("style");
-    st2.textContent = "#tTab1,#tTab2{display:none !important}#managementModal .modal-box{max-height:92vh;overflow-y:auto}#managementModal .modal-btn.cancel{position:sticky;bottom:-2px;z-index:3;box-shadow:0 -10px 10px -4px rgba(255,255,255,.95)}";
+    st2.textContent = "#managementModal .modal-box{max-height:92vh;overflow-y:auto}#managementModal .modal-btn.cancel{position:sticky;bottom:-2px;z-index:3;box-shadow:0 -10px 10px -4px rgba(255,255,255,.95)}";
     document.head.appendChild(st2);
-    if (typeof showTeacherAuth === "function" && !showTeacherAuth.__nl) {
-      var ota = showTeacherAuth;
-      window.showTeacherAuth = function () { var r = ota.apply(this, arguments); [60, 400, 1200].forEach(function (ms) { setTimeout(function () { try { if (!$("teacherTab3") || $("teacherTab3").classList.contains("hidden")) switchTeacherTab(3); } catch (e) {} }, ms); }); return r; };
-      window.showTeacherAuth.__nl = true;
-    }
   } catch (e) {}
   window.fyNewLookRender = render;
   window.fyNewLookSet = function (v) { try { localStorage.setItem("fy_newlook", v ? "on" : "off"); } catch (e) {} location.reload(); };
   if (document.readyState === "complete") setTimeout(hook, 300); else window.addEventListener("load", function () { setTimeout(hook, 300); });
   setTimeout(hook, 1500);
   try { hook(); } catch (e) {}   /* まてずに すぐ だす（はいけいだけ さきに みえない ように） */
+  /* 🛌 解約・おやすみ中：日づけが かわったり、先生が codes.txt を なおしたり しても、
+     しばらく すれば きちんと わかるように、ときどき しらべなおす（起動したときは すぐに しらべる） */
+  refreshCancelState();
+  setInterval(function () { refreshCancelState(); }, 60000);
 })();
 
 /* 📨 「LINEで おくる」を おして、アプリに もどって きたとき：へんじを まってね の おしらせ */
