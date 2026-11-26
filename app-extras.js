@@ -2,7 +2,7 @@
 (function () { try { var st = document.createElement("style"); st.textContent = "@keyframes fyLB{0%{box-shadow:0 0 0 0 rgba(6,199,85,.85)}100%{box-shadow:0 0 0 16px rgba(6,199,85,0)}}.fyLineBlink{animation:fyLB 1.1s ease-out infinite;outline:3px solid #b9f6ca}"; document.head.appendChild(st); } catch (e) {} })();
 /* ★ 公式LINEの ID（せいとから せんせいへ おくる ボタンは、このトークを ちょくせつ ひらく） */
 window.FY_OA = "@892rfjzh";
-window.FY_EXTRAS_VER = "1124h";
+window.FY_EXTRAS_VER = "1124i";
 /* 2026-11-22：以前の テストで「あと1もんへ（テスト）」が ONの ままに なっていた 端末が あったので、1回だけ 強制的に けす */
 (function () { try { if (!localStorage.getItem("fy_cleared_test_skip_1124b")) { localStorage.removeItem("fy_test_skip"); localStorage.setItem("fy_cleared_test_skip_1124b", "1"); } } catch (e) {} })();
 /* 公式LINEを ちょくせつ ひらく（iPadでは うごいた。iPhoneでは 一覧が出る＝まちがいは おきない）。つかわない ときは false */
@@ -288,8 +288,10 @@ window.fyRestoreText = function (text, code) { return text + "\n\n▼ ここを 
         if (fromUser) {
           showCode("あいことばが ちがうよ。もういちど いれてね", true);
         } else {
-          cancelable = false;
-          showCode("あいことばが つかえなくなりました。せんせいに きいてね", true);
+          /* 2026-11-26：とうろくずみの子の あいことばが codes.txt から 消えていても、
+             起動時（fromUser=false）は ブロック画面を 出さず openApp() して、
+             おやすみ中（下の4つだけ使える）に する。 */
+          openApp();
         }
       }
     }).catch(function () {
@@ -4438,7 +4440,7 @@ window.FYAK = FYAK;
       var cancelBigNote = "";
       if (cs.state === "final" && !finalSentToday) {
         cancelBigNote = '<div class="fyCancelBig" style="margin:10px 14px 0;background:#fff3e0;border:3px solid #ff7043;border-radius:16px;padding:10px 12px;text-align:center;">' +
-          '<div style="font-size:15px;font-weight:900;color:#d84315;">あと ' + Math.max(cs.daysLeft, 0) + '日で つかえなくなります</div>' +
+          '<div style="font-size:15px;font-weight:900;color:#d84315;">' + (cs.daysLeft <= 0 ? 'きょうが さいごの日です' : 'あと ' + cs.daysLeft + '日で つかえなくなります') + '</div>' +
           '<div style="font-size:12px;color:#8a5a00;margin:4px 0 8px;">いまの きろくを せんせいに おくってね</div>' +
           '<button id="fyCancelSendBtn" style="width:100%;padding:10px;font-size:14px;font-weight:900;border:none;border-radius:12px;background:#ff7043;color:#fff;">📨 うつしコードを せんせいに おくる</button>' +
           '</div>';
