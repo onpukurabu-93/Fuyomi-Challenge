@@ -284,6 +284,8 @@ input, textarea { -webkit-user-select:text; user-select:text; }
 <audio id="zundaOmedetoAudio" preload="auto" src="zunda-omedeto.mp3"></audio>
 <audio id="osiAudio" preload="auto" src="osi.mp3"></audio>
 <audio id="ganbatteAudio" preload="auto" src="ganbatte.mp3"></audio>
+<!-- 2026-11-24：20問・90〜99%「ごうかく！」の声。先生があとで zunda-goukaku.mp3 を置くまでは、ファイルが無いので声は鳴らない（エラーは出ない） -->
+<audio id="zundaGoukakuAudio" preload="auto" src="zunda-goukaku.mp3"></audio>
 <audio id="audio6do" preload="auto" src="6do.mp3"></audio>
 <audio id="audioToon1" preload="auto" src="toon1.mp3"></audio>
 <audio id="audioToon2" preload="auto" src="toon2.mp3"></audio>
@@ -549,29 +551,11 @@ input, textarea { -webkit-user-select:text; user-select:text; }
         <button class="modal-btn cancel" onclick="resetMgSection()">戻る</button>
       </div>
       <div id="teacherContentBox" class="hidden">
-        <div class="teacher-tabs">
-          <button id="tTab1" class="teacher-tab-btn active" onclick="switchTeacherTab(1)">⚡生徒登録</button>
-          <button id="tTab2" class="teacher-tab-btn" onclick="switchTeacherTab(2)">🎨表彰カード</button>
-          <button id="tTab3" class="teacher-tab-btn" onclick="switchTeacherTab(3)">🔑コード・管理</button>
-        </div>
+        <!-- 2026-11-24：生徒登録・PINタブ、表彰カードのデザインタブは、画面にも出ていない古いタブだったため削除（先生の指示）。
+             いまは「🔑コード・管理」のなかみ（teacherTab3）だけを、タブなしで そのまま 出す。 -->
 
-        <!-- タブ1: 生徒名前・区分・PIN登録 -->
-        <div id="teacherTab1">
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:4px; text-align:left;">生徒名・区分・4桁PIN設定</div>
-          <div style="font-size:10.5px; color:#e99595; margin-bottom:6px; text-align:left;">※お名前は「ひらがな・数字」最大8字</div>
-          <div id="teacherStudentConfigList"></div>
-        </div>
-
-        <!-- タブ2: 表彰カード設定＆プレビュー -->
-        <div id="teacherTab2" class="hidden">
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">表彰式デザイン事前設定・見本</div>
-          <div id="teacherAwardThemeList"></div>
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin:12px 0 6px; text-align:left;">👑 100回れんぞく 画面の見本</div>
-          <div id="teacherLegendPreviewList"></div>
-        </div>
-
-        <!-- タブ3: データリセット＆デバッグ機能 -->
-        <div id="teacherTab3" class="hidden">
+        <!-- タブ3だった なかみ：データリセット＆デバッグ機能 -->
+        <div id="teacherTab3">
           <details id="fyOtherDrawer" style="margin-top:10px;border-top:2px solid #eadcc8;text-align:left;"><summary style="font-size:14px;font-weight:900;color:#5b4636;padding:10px 0;">⚙ そのほか（パスワード・初期化）</summary>
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🎨 画面の みため</div>
           <div style="background:#eceff1;border-radius:12px;padding:8px;margin-bottom:10px;">
@@ -584,29 +568,12 @@ input, textarea { -webkit-user-select:text; user-select:text; }
             <button class="modal-btn" style="background:#f06292; font-size:13px; padding:10px;" onclick="fyDemoColorSet(true)">🎨 ドレミを 色おんぷに する</button>
             <button class="modal-btn" style="background:#78909c; font-size:13px; padding:10px;" onclick="fyDemoColorSet(false)">⬛ ドレミを くろおんぷに する</button>
           </div>
-          <button class="modal-btn" style="background:#42a5f5; font-size:13px; padding:10px;" onclick="fyNewLookSet(!fyNewLookOn())">あたらしい みため ⇄ もとの みため を きりかえる</button>
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">保護者パスワード初期化</div>
-          <button class="modal-btn" style="background:#e99595; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetParentPasswordByTeacher()">保護者パスワードを [ 0123 ] にリセット</button>
-          
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">全データの完全初期化</div>
-          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="resetAllDataForTest()">⚠️ 全データを消去して初期状態に戻す</button>
+          <button class="modal-btn" style="background:#d32f2f; font-size:12px; padding:8px;" onclick="if(confirm('本当に、全データを消去しますか？\nこの操作はもとに戻せません。')){resetAllDataForTest()}">⚠️ 全データを消去して初期状態に戻す</button>
           </details>
           <details id="fyTestDrawer" style="margin-top:6px;border-top:2px solid #eadcc8;text-align:left;"><summary style="font-size:14px;font-weight:900;color:#00897b;padding:10px 0;">🧪 テスト用（チェック場所へジャンプ など）</summary>
           <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🚀 チェック場所へ ジャンプ（いまのプレイヤー）</div>
           <div id="fyJumpBox" style="margin-bottom:12px;"></div>
-
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">✨ ふよみマスターのあとの「光るボタン」（いまのプレイヤー）</div>
-          <button id="fyGlowLegendBtn" class="modal-btn" style="background:#7e57c2; font-size:12px; padding:8px; margin-bottom:6px;" onclick="fyToggleGlow('legend')">🟣 レジェンドの光</button>
-          <button id="fyGlowMeijinBtn" class="modal-btn" style="background:#c9962b; font-size:12px; padding:8px; margin-bottom:12px;" onclick="fyToggleGlow('meijin')">🟡 名人の光</button>
-
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🧪 100回目のテスト（使っていない生徒枠で試してね）</div>
-          <button class="modal-btn" style="background:#43a047; font-size:12px; padding:8px; margin-bottom:6px;" onclick="setStreak99ForTest()">🧪 いまのプレイヤーの連続を99回にする</button>
-          <button class="modal-btn" style="background:#2e7d32; font-size:12px; padding:8px; margin-bottom:12px;" onclick="resetLegendForTest()">🧪 いまのプレイヤーの 👑と連続をリセット</button>
-
-          <div style="font-size:12px; font-weight:bold; color:#5b4636; margin-bottom:6px; text-align:left;">🔓 テスト用：全鍵解除</div>
-          <button class="modal-btn" style="background:#ff9800; font-size:12px; padding:8px; margin-bottom:8px;" onclick="unlockClefsToLevel5ForTest()">🔓 ト音記号・ヘ音記号を レベル5まで開く</button>
-          <button class="modal-btn" style="background:#fb8c00; font-size:12px; padding:8px; margin-bottom:12px;" onclick="unlockAllCardsToLevel5ForTest()">🔓 全カードを レベル5まで開く</button>
-
           </details>
         </div>
 
@@ -1391,7 +1358,7 @@ function fyToggleGlow(kind) {
 })();
 /* 🔢 版の ばんごう（テスト中だけ トップ画面の いちばん上に 出す。公開の まえに SHOW_VERSION を false に する） */
 var SHOW_VERSION = true;
-var FY_INDEX_VER = "1124f";
+var FY_INDEX_VER = "1124h";
 function fyShowVersion() {
   try {
     var el = document.getElementById("fyVerBar"); if (!el || !SHOW_VERSION) return;
@@ -2237,7 +2204,9 @@ function showResultScreen() {
 
   const isPerfect = (accuracy === 100);
 
-  /* 音声切り替え指定: 100% -> sugoi.mp3 のあとに Tassei-fanfare.mp3, 90〜99% -> osi.mp3, 〜89% -> ganbatte.mp3 */
+  /* 音声切り替え指定（20問のとき）: 100% -> sugoi.mp3 のあとに Tassei-fanfare.mp3、90〜99% -> ごうかく！（zunda-goukaku.mp3。無ければ声なし）、
+     80〜89% -> おしい！osi.mp3、70〜79% -> あとすこし！ganbatte.mp3、〜69% -> れんしゅうしよう！ganbatte.mp3
+     （10問は今までどおり：100%かんぺき／90%以上おしい／それ未満ganbatte） */
   /* resultSoundsEndMs = 結果の音がすべて鳴り終わるまでの時間（ボタンが色づく・場面を切り替えるタイミングの基準） */
   let resultSoundsEndMs = 0;
   if (accuracy === 100) {
@@ -2252,7 +2221,15 @@ function showResultScreen() {
       playAudioCloned("tasseiFanfareAudio");
     }, sugoiMs + 200);
     resultSoundsEndMs = sugoiMs + 200 + fanfareMs + 600;
+  } else if (targetValue >= 20 && accuracy >= 90) {
+    /* 2026-11-24：90〜99%は「合格」。90%台で「おしい」と出るのは矛盾するので、ごうかく！に変更（先生の指示） */
+    document.getElementById("resultTitleBig").textContent = "ごうかく！";
+    playAudioCloned("zundaGoukakuAudio");
   } else if (accuracy >= 90) {
+    document.getElementById("resultTitleBig").textContent = "おしい！";
+    playAudioCloned("osiAudio");
+  } else if (targetValue >= 20 && accuracy >= 80) {
+    /* 2026-11-24：「おしい」は、今までの90%台から 80〜89%の あつかいへ 移動（先生の指示） */
     document.getElementById("resultTitleBig").textContent = "おしい！";
     playAudioCloned("osiAudio");
   } else {
@@ -2468,63 +2445,10 @@ function verifyTeacherPass() {
   } else { alert("パスワードが違います"); }
 }
 
-function switchTeacherTab(tabNum) {
-  [1, 2, 3].forEach(n => {
-    document.getElementById(`teacherTab${n}`).classList.toggle("hidden", n !== tabNum);
-    document.getElementById(`tTab${n}`).classList.toggle("active", n === tabNum);
-  });
-}
-
-function renderTeacherView() {
-  let listHtml = `<table class="compare-table"><thead><tr><th>枠</th><th>名前 (ひらがな)</th><th>区分</th><th>PIN</th><th>保存</th></tr></thead><tbody>`;
-  for (let i = 0; i < 3; i++) {
-    const category = Storage.get(`onpu_category_${i}`, "年少");
-    
-    let catOptions = CATEGORIES.map(cat => 
-      `<option value="${cat}" ${category===cat?'selected':''}>${cat}</option>`
-    ).join("");
-
-    listHtml += `<tr>
-      <td>${i+1}</td>
-      <td><input type="text" id="tName_${i}" value="${profiles[i]||""}" maxlength="8" style="width:60px;text-align:center;"></td>
-      <td>
-        <select id="tCategory_${i}" style="font-size:10px;">
-          ${catOptions}
-        </select>
-      </td>
-      <td><input type="text" id="tPin_${i}" value="${Storage.get(`onpu_pin_${i}`, "0000")}" maxlength="4" style="width:36px;text-align:center;"></td>
-      <td><button onclick="saveStudentByTeacher(${i})" style="font-size:10px;padding:2px 4px;">保存</button></td>
-    </tr>`;
-  }
-  document.getElementById("teacherStudentConfigList").innerHTML = listHtml + `</tbody></table>`;
-  
-  let themeHtml = `<table class="compare-table"><thead><tr><th>名前</th><th>デザイン</th><th>見本</th></tr></thead><tbody>`;
-  profiles.forEach((name, idx) => {
-    const cT = Storage.get(`onpu_award_theme_${idx}`, "cat");
-    themeHtml += `<tr>
-      <td><strong>${name}</strong></td>
-      <td>
-        <select onchange="saveAwardTheme(${idx}, this.value)" style="font-size:10px;">
-          <option value="cat" ${cT==='cat'?'selected':''}>🐱 ねこ</option><option value="cool" ${cT==='cool'?'selected':''}>⚡ クール</option>
-          <option value="game" ${cT==='game'?'selected':''}>🎮 ゲーム</option><option value="pop" ${cT==='pop'?'selected':''}>🌈 ポップ</option>
-        </select>
-      </td>
-      <td><button onclick="previewAwardModal(${idx})" style="font-size:10px;padding:2px 4px;">見本</button></td>
-    </tr>`;
-  });
-  document.getElementById("teacherAwardThemeList").innerHTML = themeHtml + `</tbody></table>`;
-
-  let legendHtml = `<table class="compare-table"><thead><tr><th>名前</th><th>称号</th><th>見本</th></tr></thead><tbody>`;
-  profiles.forEach((name, idx) => {
-    const cnt = getLegendCount(idx);
-    legendHtml += `<tr>
-      <td><strong>${name}</strong></td>
-      <td>${cnt > 0 ? "👑 ×" + cnt : "なし"}</td>
-      <td><button onclick="previewLegendModal(${idx})" style="font-size:10px;padding:2px 4px;">100回目の画面</button></td>
-    </tr>`;
-  });
-  document.getElementById("teacherLegendPreviewList").innerHTML = legendHtml + `</tbody></table>`;
-}
+/* 2026-11-24：生徒登録・PINタブ／表彰カードのデザインタブ（画面にも出ていない古いタブ）を削除したため、
+   タブの切りかえは もう いらない。renderTeacherView は、あとから app-extras.js が
+   じぶんの なかみ（あいことばの 表など）を つくる ための「よび出し場所」として、からのまま 残す。 */
+function renderTeacherView() {}
 
 function saveStudentByTeacher(slot) {
   let rawName = document.getElementById(`tName_${slot}`).value.trim();
@@ -2542,26 +2466,9 @@ function saveStudentByTeacher(slot) {
   alert(`スロット${slot+1} を [${rawName}（${category}）] （PIN: ${newPin}）で保存しました！`);
 }
 
-function saveAwardTheme(slot, themeVal) { Storage.set(`onpu_award_theme_${slot}`, themeVal); }
-function previewAwardModal(slot) { openAwardModal(slot); }
-function previewLegendModal(slot) { showLegendModal(slot); }
-
-/* 🧪 100回目のテスト用（確認が終わったら消します） */
-function setStreak99ForTest() {
-  Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 99);
-  alert(`${profiles[activeProfileIndex]} さんの連続を 99回 にしました。\nトップ画面にもどって、どのコースでも100%で終わると 100回目の画面が出ます。`);
-  initProfiles();
-}
-function resetLegendForTest() {
-  Storage.set(`onpu_legend_${activeProfileIndex}`, false);
-  Storage.set(`onpu_legend_count_${activeProfileIndex}`, 0);
-  Storage.set(`onpu_perf_streak_${activeProfileIndex}`, 0);
-  Storage.set(`onpu_perf_max_${activeProfileIndex}`, 0);
-  Storage.set(`onpu_award_auto_${activeProfileIndex}`, false);
-  alert(`${profiles[activeProfileIndex]} さんの 👑・100回達成の記録・連続回数・自動表彰式の記録を リセットしました。`);
-  initProfiles();
-  renderTeacherView();
-}
+/* 2026-11-24：saveAwardTheme・previewAwardModal・previewLegendModal（表彰カードのデザインタブ用）、
+   setStreak99ForTest・resetLegendForTest（100回目のテスト用。今のしくみ＝ふよみ名人の100回れんぞくでは使えない）は、
+   画面にも出ていない古いタブ・ボタンだったので削除（先生の指示）。 */
 
 function fyTestPass(idx, clef, level) {
   const k = `onpu_best_20_${idx}_${clef}_${level}`;
@@ -2573,26 +2480,6 @@ function fyTestBasics(idx) {
   if (!doBest || doBest.accuracy < 90) Storage.set(`onpu_do_test_best_${idx}`, { accuracy: 100, time: 60000, mode: "count", count: 20 });
   /* 色おんぷは レベル1だけ。テストでは 黒おんぷに して、レベル2いじょうを ひらく */
   Storage.set(`fy_color_${idx}_treble`, "off"); Storage.set(`fy_color_${idx}_bass`, "off");
-}
-/* ト音記号・ヘ音記号を レベル5まで開く（レベル4までに 合格を 書きこむ。全カードは まだ 閉じたまま） */
-function unlockClefsToLevel5ForTest() {
-  const idx = activeProfileIndex;
-  fyTestBasics(idx);
-  ["treble", "bass"].forEach(c => { for (let l = 1; l <= 4; l++) fyTestPass(idx, c, l); });
-  alert("ト音記号・ヘ音記号を レベル5まで開きました！（テスト用）\n全カードは、ト音・ヘ音のレベル5に合格すると開きます。");
-  initProfiles();
-}
-/* 全カードを レベル5まで開く（ト音・ヘ音は レベル5まで合格。全カードは レベル4まで合格） */
-function unlockAllCardsToLevel5ForTest() {
-  const idx = activeProfileIndex;
-  fyTestBasics(idx);
-  ["treble", "bass"].forEach(c => { for (let l = 1; l <= 5; l++) fyTestPass(idx, c, l); });
-  for (let l = 1; l <= 4; l++) fyTestPass(idx, "all", l);
-  /* ふよみマスターの印は つけない（全カードの レベル5に 合格して はじめて ふよみマスター） */
-  Storage.set(`fy_test_master_${idx}`, false);
-  Storage.set(`fy_legend_opened_${idx}`, false);
-  alert("全カードを レベル5まで開きました！（テスト用）\nト音記号・ヘ音記号も レベル5まで 開いています。\n全カードのレベル5に 合格すると ふよみマスターです。");
-  initProfiles();
 }
 
 /* チェック場所ジャンプ：jump_list.js（入れ替え用ファイル）から ボタンを つくる */
@@ -2620,7 +2507,6 @@ function fyRenderJumps() {
   s.onerror = fyRenderJumps;
   document.head.appendChild(s);
 })();
-function resetParentPasswordByTeacher() { Storage.set("onpu_parent_pass", "0123"); alert("保護者パスワードを [ 0123 ] にリセットしました"); }
 function resetAllDataForTest() { if (confirm("本当にすべてのデータを消去して初期状態に戻しますか？")) { localStorage.clear(); alert("全データを初期化しました！"); location.reload(); } }
 
 function renderParentCompareTable() {
@@ -2674,6 +2560,6 @@ showSelectScreen();
    あいことば がめんが きめる（2026-11-17 から：とうろくには あいことばが 必要な ため、
    ここでは なまえの とうろく がめんを 出さない）。 */
 </script>
-<script src="app-extras.js?v=20261124f"></script>
+<script src="app-extras.js?v=20261124h"></script>
 </body>
 </html>
